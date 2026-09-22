@@ -2,222 +2,581 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Мастерская Ручеёк</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #111419);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #1c2027);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #8b929a);
-            --accent-color: var(--tg-theme-button-color, #3390ec);
-            --accent-text: var(--tg-theme-button-text-color, #ffffff);
-            --border-radius: 16px;
+            /* Базовая тема (Light) */
+            --bg-color: #f5f5f7;
+            --surface-color: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #007aff;
+            --accent-bg: rgba(0, 122, 255, 0.08);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --danger-color: #ff3b30;
+            --nav-bg: rgba(255, 255, 255, 0.85);
+            
+            /* Метрики */
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            
+            /* Safe Areas */
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* Темная тема через медиазапрос (переопределяется Telegram, если нужно) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --surface-color: #1c1c1e;
+                --text-primary: #f5f5f7;
+                --text-secondary: #98989d;
+                --accent-color: #0a84ff;
+                --accent-bg: rgba(10, 132, 255, 0.12);
+                --border-color: rgba(255, 255, 255, 0.1);
+                --nav-bg: rgba(28, 28, 30, 0.85);
+            }
+        }
+
+        /* Интеграция с Telegram Theme Params (приоритет) */
+        body.tg-dark {
+            --bg-color: var(--tg-theme-bg-color, #000000);
+            --surface-color: var(--tg-theme-secondary-bg-color, #1c1c1e);
+            --text-primary: var(--tg-theme-text-color, #ffffff);
+            --text-secondary: var(--tg-theme-hint-color, #98989d);
+            --accent-color: var(--tg-theme-button-color, #0a84ff);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --nav-bg: rgba(28, 28, 30, 0.9);
+        }
+        
+        body.tg-light {
+            --bg-color: var(--tg-theme-bg-color, #f5f5f7);
+            --surface-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            --text-primary: var(--tg-theme-text-color, #000000);
+            --text-secondary: var(--tg-theme-hint-color, #86868b);
+            --accent-color: var(--tg-theme-button-color, #007aff);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --nav-bg: rgba(255, 255, 255, 0.9);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 16px 16px 24px;
+            color: var(--text-primary);
             overscroll-behavior-y: none;
+            padding-bottom: calc(100px + var(--safe-bottom)); /* Отступ под навигацию */
+            transition: background-color 0.3s ease;
         }
 
-        .header {
-            margin-bottom: 24px;
+        /* Views System (SPA) */
+        .view {
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .header h1 {
+        /* Typography & Header */
+        header {
+            margin-bottom: 28px;
+        }
+        .brand-subtitle {
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        h1 {
             font-size: 28px;
             font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
+            line-height: 1.2;
         }
-
-        .header p {
+        .desc {
             font-size: 15px;
-            color: var(--hint-color);
+            color: var(--text-secondary);
             line-height: 1.4;
         }
 
-        .service-list {
+        /* Cards System */
+        .list-group {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
-
         .card {
-            background-color: var(--secondary-bg);
-            border-radius: var(--border-radius);
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
             padding: 16px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            transition: transform 0.15s ease, background-color 0.2s ease;
+            justify-content: space-between;
             cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-
         .card:active {
             transform: scale(0.97);
         }
-
-        .card.active {
+        .card.selected {
             border-color: var(--accent-color);
-            background-color: rgba(51, 144, 236, 0.08);
+            background-color: var(--accent-bg);
         }
-
         .card-content {
             flex: 1;
-            padding-right: 12px;
+            padding-right: 16px;
         }
-
         .card-title {
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 6px;
-            line-height: 1.25;
+            margin-bottom: 4px;
+            line-height: 1.2;
         }
-
         .card-price {
             font-size: 14px;
             font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .card.selected .card-price {
             color: var(--accent-color);
         }
 
-        .checkbox {
+        /* Premium Checkbox */
+        .checkbox-wrapper {
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            border: 2px solid var(--hint-color);
+            border: 2px solid var(--text-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            flex-shrink: 0;
+            opacity: 0.5;
         }
-
-        .card.active .checkbox {
+        .card.selected .checkbox-wrapper {
             background-color: var(--accent-color);
             border-color: var(--accent-color);
+            opacity: 1;
+        }
+        .check-icon {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s ease;
+            fill: none;
+            stroke: #fff;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .card.selected .check-icon {
+            opacity: 1;
+            transform: scale(1);
         }
 
-        .card.active .checkbox::after {
-            content: '';
-            width: 6px;
-            height: 10px;
-            border: solid var(--accent-text);
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
+        /* Contacts UI */
+        .contact-card {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: inherit;
+            margin-bottom: 12px;
+            transition: transform 0.1s ease;
+        }
+        .contact-card:active {
+            transform: scale(0.97);
+        }
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--accent-bg);
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 16px;
+        }
+        .contact-info h3 {
+            font-size: 16px;
+            font-weight: 600;
             margin-bottom: 2px;
         }
-
-        .section-title {
+        .contact-info p {
             font-size: 14px;
-            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        /* Summary UI */
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 15px;
+        }
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* Floating Action Bar (Cart sum) */
+        .floating-bar {
+            position: fixed;
+            bottom: calc(70px + var(--safe-bottom));
+            left: 16px;
+            right: 16px;
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            z-index: 100;
+        }
+        .floating-bar.visible {
+            transform: translateY(0);
+        }
+        .floating-bar:active {
+            transform: scale(0.98);
+        }
+        .fb-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .fb-count {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .fb-total {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .fb-action {
+            font-size: 16px;
             font-weight: 600;
-            color: var(--hint-color);
-            margin-bottom: 12px;
-            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(65px + var(--safe-bottom));
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: var(--safe-bottom);
+            z-index: 90;
+        }
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .nav-item.active {
+            color: var(--accent-color);
+        }
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Прайс-лист</h1>
-        <p>Выберите необходимые услуги. Итоговая стоимость рассчитается автоматически.</p>
+    <main id="view-services" class="view active">
+        <header>
+            <div class="brand-subtitle">Мастерская Ручеёк</div>
+            <h1>Услуги</h1>
+            <p class="desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
+        </header>
+
+        <div class="list-group" id="services-container">
+            </div>
+    </main>
+
+    <main id="view-contacts" class="view">
+        <header>
+            <div class="brand-subtitle">Информация</div>
+            <h1>Контакты</h1>
+            <p class="desc">Свяжитесь с нами удобным способом.</p>
+        </header>
+
+        <a href="tel:+79918886017" class="contact-card">
+            <div class="contact-icon">📞</div>
+            <div class="contact-info">
+                <h3>+7 (991) 888-60-17</h3>
+                <p>Телефон / WhatsApp</p>
+            </div>
+        </a>
+
+        <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" class="contact-card">
+            <div class="contact-icon">💬</div>
+            <div class="contact-info">
+                <h3>@IvanMiroshnichenkoo</h3>
+                <p>Написать в Telegram</p>
+            </div>
+        </a>
+
+        <div class="contact-card">
+            <div class="contact-icon">📍</div>
+            <div class="contact-info">
+                <h3>ПГТ Ручейк, ул., д. 1</h3>
+                <p>Выезд на дом по договоренности</p>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-summary" class="view">
+        <header>
+            <div class="brand-subtitle">Оформление</div>
+            <h1>Ваш заказ</h1>
+            <p class="desc">Проверьте выбранные услуги перед отправкой заявки.</p>
+        </header>
+
+        <div class="card" style="cursor: default; transform: none;">
+            <div class="list-group" id="summary-list" style="width: 100%;">
+                </div>
+        </div>
+    </main>
+
+    <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
+        <div class="fb-info">
+            <span class="fb-count" id="fb-count">0 услуг</span>
+            <span class="fb-total" id="fb-total">0 ₽</span>
+        </div>
+        <div class="fb-action">
+            Продолжить <span>→</span>
+        </div>
     </div>
 
-    <div class="section-title">Услуги мастерской</div>
-    
-    <div class="service-list" id="services">
-        <!-- Карточки генерируются динамически для чистоты HTML -->
-    </div>
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="navigate('services')" id="nav-services">
+            <span class="nav-icon">▤</span>
+            <span>Услуги</span>
+        </div>
+        <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
+            <span class="nav-icon">●</span>
+            <span>Контакты</span>
+        </div>
+    </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
 
-        // Настройка нативной кнопки Telegram
-        tg.MainButton.color = tg.themeParams.button_color || '#3390ec';
-        tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
+        // Адаптация под тему Telegram
+        document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
+        tg.onEvent('themeChanged', () => {
+            document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
+        });
 
         const servicesData = [
             { id: 1, name: "Диагностика компьютера", price: 0, label: "Бесплатно*" },
             { id: 2, name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "1 500 ₽" },
             { id: 3, name: "Чистка ноутбука от пыли и устранение перегрева", price: 2000, label: "2 000 ₽" },
-            { id: 4, name: "Установка Windows (с активацией и драйверами)", price: 1500, label: "1 500 ₽" },
+            { id: 4, name: "Установка Windows (с активацией)", price: 1500, label: "1 500 ₽" },
             { id: 5, name: "Установка пакета Microsoft Office", price: 500, label: "500 ₽" },
-            { id: 6, name: "Сборка компьютера из ваших комплектующих", price: 2500, label: "2 500 ₽" },
-            { id: 7, name: "Оптимизация: чистка от вирусов и мусора", price: 1000, label: "1 000 ₽" }
+            { id: 6, name: "Сборка ПК из ваших комплектующих", price: 2500, label: "2 500 ₽" },
+            { id: 7, name: "Оптимизация и чистка от вирусов", price: 1000, label: "1 000 ₽" }
         ];
 
-        let cart = [];
+        let cart = new Map();
+        let currentView = 'services';
 
+        // 1. Рендер услуг
         function renderServices() {
-            const container = document.getElementById('services');
+            const container = document.getElementById('services-container');
+            container.innerHTML = '';
             
-            servicesData.forEach(service => {
+            servicesData.forEach(s => {
+                const isSelected = cart.has(s.id);
                 const card = document.createElement('div');
-                card.className = 'card';
-                card.onclick = () => toggleService(card, service);
+                card.className = `card ${isSelected ? 'selected' : ''}`;
+                // Клик работает по всей площади карточки
+                card.onclick = () => toggleService(card, s);
                 
                 card.innerHTML = `
                     <div class="card-content">
-                        <div class="card-title">${service.name}</div>
-                        <div class="card-price">${service.label}</div>
+                        <div class="card-title">${s.name}</div>
+                        <div class="card-price">${s.label}</div>
                     </div>
-                    <div class="checkbox"></div>
+                    <div class="checkbox-wrapper">
+                        <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                 `;
                 container.appendChild(card);
             });
         }
 
+        // 2. Логика выбора услуги
         function toggleService(cardElement, service) {
-            const index = cart.findIndex(item => item.id === service.id);
-            
-            if (index > -1) {
-                cart.splice(index, 1);
-                cardElement.classList.remove('active');
+            // Haptic отклик
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            if (cart.has(service.id)) {
+                cart.delete(service.id);
+                cardElement.classList.remove('selected');
             } else {
-                cart.push(service);
-                cardElement.classList.add('active');
+                cart.set(service.id, service);
+                cardElement.classList.add('selected');
             }
-            
-            updateMainButton();
+            updateCartState();
         }
 
-        function updateMainButton() {
-            if (cart.length > 0) {
-                const total = cart.reduce((sum, item) => sum + item.price, 0);
-                tg.MainButton.text = `Оформить заказ на ${total} ₽`;
-                tg.MainButton.show();
+        // 3. Обновление Floating Bar и MainButton
+        function updateCartState() {
+            const bar = document.getElementById('floating-bar');
+            if (cart.size > 0) {
+                let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
+                document.getElementById('fb-count').innerText = `${cart.size} услуг${cart.size === 1 ? 'а' : (cart.size > 1 && cart.size < 5 ? 'и' : '')}`;
+                document.getElementById('fb-total').innerText = `${total.toLocaleString('ru-RU')} ₽`;
+                
+                if (currentView === 'services') {
+                    bar.classList.add('visible');
+                }
+            } else {
+                bar.classList.remove('visible');
+                if (currentView === 'summary') navigate('services'); // уходим из пустой корзины
+            }
+        }
+
+        // 4. SPA Навигация
+        function navigate(viewName) {
+            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            currentView = viewName;
+
+            // Скрываем все экраны
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            // Сбрасываем активные табы
+            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+
+            // Показываем нужный экран
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            const navBtn = document.getElementById(`nav-${viewName}`);
+            if(navBtn) navBtn.classList.add('active');
+
+            // Управление UI в зависимости от экрана
+            const floatingBar = document.getElementById('floating-bar');
+            
+            if (viewName === 'summary') {
+                floatingBar.classList.remove('visible');
+                renderSummary();
+                setupMainButton();
             } else {
                 tg.MainButton.hide();
+                if (cart.size > 0 && viewName === 'services') {
+                    floatingBar.classList.add('visible');
+                } else {
+                    floatingBar.classList.remove('visible');
+                }
             }
         }
 
-        // Обработка нажатия на нативную кнопку
-        Telegram.WebApp.onEvent('mainButtonClicked', function() {
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            const data = {
-                items: cart,
-                total: total
-            };
-            tg.sendData(JSON.stringify(data));
-        });
+        // 5. Рендер Summary
+        function renderSummary() {
+            const container = document.getElementById('summary-list');
+            container.innerHTML = '';
+            
+            let total = 0;
+            cart.forEach(item => {
+                total += item.price;
+                const priceStr = item.price === 0 ? "Бесплатно" : `${item.price.toLocaleString('ru-RU')} ₽`;
+                container.innerHTML += `
+                    <div class="summary-item">
+                        <span style="flex:1; padding-right:12px;">✓ ${item.name}</span>
+                        <span style="font-weight:600;">${priceStr}</span>
+                    </div>
+                `;
+            });
 
-        // Инициализация
+            container.innerHTML += `
+                <div class="summary-total">
+                    <span>Итого:</span>
+                    <span>${total.toLocaleString('ru-RU')} ₽</span>
+                </div>
+            `;
+        }
+
+        // 6. Отправка заказа (MainButton)
+        function setupMainButton() {
+            tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
+            tg.MainButton.color = tg.themeParams.button_color || '#007aff';
+            tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
+            tg.MainButton.show();
+            
+            tg.MainButton.offClick(sendOrder); // предотвращаем дубли
+            tg.MainButton.onClick(sendOrder);
+        }
+
+        function sendOrder() {
+            const items = Array.from(cart.values());
+            const total = items.reduce((sum, item) => sum + item.price, 0);
+            
+            tg.sendData(JSON.stringify({ items, total }));
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // Init
         renderServices();
     </script>
 </body>
