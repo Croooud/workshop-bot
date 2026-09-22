@@ -28,22 +28,28 @@ dp = Dispatcher()
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ (SQLite) ---
+# --- ИНИЦИАЛИЗАЦИЯ И ОБНОВЛЕНИЕ БАЗЫ ДАННЫХ (SQLite) ---
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
+    
+    # Таблица клиентов с сохранением ссылок и контактов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             username TEXT,
             full_name TEXT,
+            profile_link TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Таблица заказов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             order_id TEXT PRIMARY KEY,
             user_id INTEGER,
+            client_link TEXT,
             items TEXT,
             total INTEGER,
             status TEXT DEFAULT 'Новый',
@@ -84,19 +90,29 @@ async def download_database(key: str = ""):
 async def create_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
     
-    items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
+    # Ищем информацию о клиенте в базе, чтобы подтянуть его юзернейм
+    client_link = f"tg://user?id={order.chat_id}"
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
+        cursor.execute("SELECT username FROM users WHERE user_id = ?", (order.chat_id,))
+        res = cursor.fetchone()
+        if res and res[0]:
+            client_link = f"https://t.me/{res[0]}"
+            
+        items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
+        
+        # Сохраняем заказ вместе со ссылкой на клиента
         cursor.execute(
-            "INSERT INTO orders (order_id, user_id, items, total) VALUES (?, ?, ?, ?)",
-            (order_id, order.chat_id, items_str, order.total)
+            "INSERT INTO orders (order_id, user_id, client_link, items, total) VALUES (?, ?, ?, ?, ?)",
+            (order_id, order.chat_id, client_link, items_str, order.total)
         )
         conn.commit()
         conn.close()
     except Exception as e:
         logging.error(f"DB Error: {e}")
 
+    # Формируем чек клиенту
     receipt = f"🧾 <b>ЗАКАЗ {order_id} ПРИНЯТ</b>\n\n"
     receipt += "<blockquote>"
     for item in order.items:
@@ -111,16 +127,17 @@ async def create_order(order: OrderRequest):
         [InlineKeyboardButton(text="❌ Отменить заказ", callback_data=f"cancel_order")]
     ])
     
+    # Чек для админа с кликабельной ссылкой на профиль клиента
     admin_receipt = (
         f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
-        f"👤 Клиент ID: <code>{order.chat_id}</code>\n"
+        f"👤 Клиент: <a href='{client_link}'>Открыть профиль</a> (ID: <code>{order.chat_id}</code>)\n"
         f"🛒 Состав:\n{items_str}\n\n"
         f"💳 <b>Сумма: {order.total:,} ₽</b>".replace(',', ' ')
     )
     
     try:
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML", reply_markup=kb)
-        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
+        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML", disable_web_page_preview=True)
         return {"success": True}
     except Exception as e:
         logging.error(f"Telegram API Error: {str(e)}")
@@ -131,13 +148,21 @@ async def create_order(order: OrderRequest):
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
     user = message.from_user
+    username = user.username or ""
+    profile_link = f"https://t.me/{username}" if username else f"tg://user?id={user.id}"
+    
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR IGNORE INTO users (user_id, username, full_name) VALUES (?, ?, ?)",
-            (user.id, user.username or "", user.full_name)
-        )
+        # Сохраняем или обновляем данные клиента
+        cursor.execute("""
+            INSERT INTO users (user_id, username, full_name, profile_link) 
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET 
+                username=excluded.username, 
+                full_name=excluded.full_name, 
+                profile_link=excluded.profile_link
+        """, (user.id, username, user.full_name, profile_link))
         conn.commit()
         conn.close()
     except Exception as e:
