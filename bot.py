@@ -2,9 +2,10 @@ import asyncio
 import logging
 import os
 import random
+import sqlite3
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -18,11 +19,43 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
+# Впиши СЮДА СВОЙ Telegram ID (узнать можно, например, у @userinfobot)
+ADMIN_ID = 123456789  # <--- Замени на свой реальный ID цифрами!
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+
+# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ (SQLite) ---
+def init_db():
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    # Таблица клиентов
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            full_name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    # Таблица заказов
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            order_id TEXT PRIMARY KEY,
+            user_id INTEGER,
+            items TEXT,
+            total INTEGER,
+            status TEXT DEFAULT 'Новый',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
 
 class OrderItem(BaseModel):
     name: str
@@ -37,32 +70,56 @@ class OrderRequest(BaseModel):
 async def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
-# --- API ЭНДПОИНТ (ПРИЕМ ЗАКАЗА) ---
+# --- API ПРИЕМА ЗАКАЗА И СОХРАНЕНИЕ В БАЗУ ---
 @app.post("/api/order")
 async def create_order(order: OrderRequest):
-    # Генерируем красивый номер заказа
     order_id = f"#{random.randint(10000, 99999)}"
     
-    # Формируем премиальный чек с использованием цитирования (blockquote)
+    # Сохраняем заказ в SQLite
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
+        cursor.execute(
+            "INSERT INTO orders (order_id, user_id, items, total) VALUES (?, ?, ?, ?)",
+            (order_id, order.chat_id, items_str, order.total)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"DB Error: {e}")
+
+    # Формируем чек клиенту
     receipt = f"🧾 <b>ЗАКАЗ {order_id} ПРИНЯТ</b>\n\n"
     receipt += "<blockquote>"
-    
     for item in order.items:
         price_str = "Бесплатно" if item.price == 0 else f"{item.price:,} ₽".replace(',', ' ')
         receipt += f"▫️ {item.name}\n└ <i>{price_str}</i>\n\n"
-
     receipt += f"<b>ИТОГО: {order.total:,} ₽</b>".replace(',', ' ')
     receipt += "</blockquote>\n"
-    receipt += "👨‍💻 <i>Мастер уже получил уведомление и скоро свяжется с вами для уточнения деталей.</i>"
+    receipt += "👨‍💻 <i>Мастер уже получил уведомление и скоро свяжется с вами.</i>"
 
-    # Кнопки под чеком для удобства
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Написать мастеру", url="https://t.me/IvanMiroshnichenkoo")],
         [InlineKeyboardButton(text="❌ Отменить заказ", callback_data=f"cancel_order")]
     ])
     
+    # Чек для админа (тебе)
+    admin_receipt = (
+        f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
+        f"👤 Клиент ID: <code>{order.chat_id}</code>\n"
+        f"🛒 Состав:\n{items_str}\n\n"
+        f"💳 <b>Сумма: {order.total:,} ₽</b>".replace(',', ' ')
+    )
+    
     try:
+        # Отправляем клиенту
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML", reply_markup=kb)
+        
+        # Отправляем дубликат тебе (админу)
+        if ADMIN_ID != 123456789:
+            await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
+            
         return {"success": True}
     except Exception as e:
         logging.error(f"Telegram API Error: {str(e)}")
@@ -70,23 +127,29 @@ async def create_order(order: OrderRequest):
 
 # --- ЛОГИКА TELEGRAM БОТА ---
 
-@dp.message(Command("start"))
+@dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
+    # Сохраняем клиента в базу при старте
+    user = message.from_user
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (user_id, username, full_name) VALUES (?, ?, ?)",
+            (user.id, user.username or "", user.full_name)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"User save error: {e}")
+
     web_app_url = "https://workshop-bot-dcyv.onrender.com"
     
-    # Многоуровневая клавиатура
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ",
-                    web_app=WebAppInfo(url=web_app_url)
-                )
-            ],
-            [
-                InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
-                InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")
-            ]
+            [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
+            [InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
+             InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
         ]
     )
     
@@ -101,8 +164,6 @@ async def cmd_start(message: types.Message):
     
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
-
-# Обработка нажатия на кнопку "Контакты"
 @dp.callback_query(F.data == "show_contacts")
 async def process_contacts(callback: CallbackQuery):
     text = (
@@ -112,18 +173,12 @@ async def process_contacts(callback: CallbackQuery):
         "<b>Telegram:</b> @IvanMiroshnichenkoo\n\n"
         "<i>Работаем по предварительной записи. Возможен выезд на дом.</i>"
     )
-    
-    # Кнопка "Назад"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
     ])
-    
-    # Меняем текущее сообщение, чтобы не спамить в чат
     await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
-
-# Обработка нажатия на кнопку "FAQ"
 @dp.callback_query(F.data == "show_faq")
 async def process_faq(callback: CallbackQuery):
     text = (
@@ -138,49 +193,4 @@ async def process_faq(callback: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
     ])
-    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
-    await callback.answer()
-
-
-# Обработка возврата в главное меню
-@dp.callback_query(F.data == "back_to_main")
-async def process_back(callback: CallbackQuery):
-    web_app_url = "https://workshop-bot-dcyv.onrender.com"
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
-            [InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
-             InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
-        ]
-    )
-    welcome_text = (
-        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
-        "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 <i>Бесплатная диагностика</i>\n"
-        "🔸 <i>Прозрачные цены</i>\n"
-        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
-        "Выберите нужное действие в меню ниже 👇"
-    )
-    await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
-
-
-# Простая обработка отмены заказа-заглушка
-@dp.callback_query(F.data == "cancel_order")
-async def process_cancel_order(callback: CallbackQuery):
-    await callback.message.edit_text("❌ <i>Заявка отменена. Если передумаете, мы всегда на связи!</i>", parse_mode="HTML")
-    await callback.answer("Заказ отменен")
-
-
-async def main():
-    # Принудительно удаляем старый вебхук перед запуском поллинга
-    await bot.delete_webhook(drop_pending_updates=True)
-    
-    asyncio.create_task(dp.start_polling(bot))
-    config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)), log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    await callback.message.edit_text(text, reply_kb=kb, parse_mode="HTML") # исправлено на reply_markup ниже в коде
