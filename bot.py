@@ -4,7 +4,7 @@ import os
 import json
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -21,7 +21,6 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    # Исправленный синтаксис ответа шаблонизатора для новых версий FastAPI/Starlette
     return templates.TemplateResponse(request=request, name="index.html")
 
 @dp.message(Command("start"))
@@ -29,21 +28,23 @@ async def cmd_start(message: types.Message):
     # Укажи свой актуальный URL Render
     web_app_url = "https://workshop-bot-q85s.onrender.com"
     
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
+    # Используем ReplyKeyboardMarkup вместо InlineKeyboardMarkup
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
             [
-                InlineKeyboardButton(
-                    text="Открыть приложение",
+                KeyboardButton(
+                    text="📱 Открыть приложение",
                     web_app=WebAppInfo(url=web_app_url)
                 )
             ]
-        ]
+        ],
+        resize_keyboard=True
     )
     
     await message.answer(
         "⚡️ **Мастерская Ручеёк**\n\n"
         "Ремонт, обслуживание и настройка компьютерной техники.\n"
-        "Запустите приложение ниже, чтобы выбрать услуги:",
+        "Нажмите кнопку «📱 Открыть приложение» на клавиатуре ниже, чтобы выбрать услуги:",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
