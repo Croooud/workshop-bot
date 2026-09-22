@@ -12,38 +12,30 @@ import uvicorn
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Токен твоего бота
 TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Инициализация FastAPI
 app = FastAPI()
-
-# Указываем папку с шаблонами
 templates = Jinja2Templates(directory="templates")
 
-
-# --- FastAPI Маршруты для Mini App ---
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
 
-# --- Telegram Бот ---
-
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    # Укажи здесь свою актуальную ссылку с Render
+    # Укажи свою актуальную ссылку с Render
     web_app_url = "https://workshop-bot-q85s.onrender.com" 
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🛠 Открыть мастерскую",
+                    text="🛍 Открыть каталог магазина",
                     web_app=WebAppInfo(url=web_app_url)
                 )
             ]
@@ -51,15 +43,13 @@ async def cmd_start(message: types.Message):
     )
     
     await message.answer(
-        "👋 **Добро пожаловать в «Мастерская Ручеёк»!**\n\n"
-        "Профессиональный ремонт и обслуживание техники. "
-        "Нажми кнопку ниже, чтобы выбрать услугу и оформить заявку:",
+        "🎮 **Добро пожаловать в игровой маркетплейс!**\n\n"
+        "Огромный выбор игр, подписок и пополнений баланса. "
+        "Нажми кнопку ниже, чтобы открыть каталог:",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
-
-# --- Запуск ---
 
 async def main():
     asyncio.create_task(dp.start_polling(bot))
