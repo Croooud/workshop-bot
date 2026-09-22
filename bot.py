@@ -14,14 +14,16 @@ import aiohttp
 
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
+# КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: .strip() удаляет любые невидимые пробелы и \n, которые ломают токен на Render (ошибка 401)
+TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA").strip()
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Строгая модель: принимаем только имя и цену, чтобы избежать ошибок валидации
+# Модели данных
 class OrderItem(BaseModel):
     name: str
     price: int
@@ -45,7 +47,7 @@ async def create_order(order: OrderRequest):
     receipt += f"\n💳 <b>Итого: {order.total:,} ₽</b>".replace(',', ' ')
     receipt += "\n\nСпасибо! Мы получили вашу заявку. Мастер скоро свяжется с вами."
 
-    # Прямой запрос к Telegram API. Это на 100% исключает зависания и конфликты библиотек
+    # Прямой запрос к Telegram API
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": order.chat_id,
