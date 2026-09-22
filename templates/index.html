@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Market</title>
+    <title>Мастерская Ручеёк</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #0f1115);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #8e9297);
-            --button-color: var(--tg-theme-button-color, #5865f2);
-            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --card-bg: #181c24;
-            --card-border: #252b36;
-            --accent: #5865f2;
-            --discount: #ed4245;
+            --bg-color: #0f1115;
+            --text-color: #ffffff;
+            --hint-color: #8e9297;
+            --button-color: #3b82f6; /* Красивый синий технический цвет */
+            --button-text-color: #ffffff;
+            --card-bg: #1c1f26;
+            --card-border: #2a2f3a;
+            --accent: #3b82f6;
         }
 
         * {
@@ -50,6 +49,10 @@
             color: var(--text-color);
             font-size: 14px;
             outline: none;
+        }
+
+        .search-input::placeholder {
+            color: var(--hint-color);
         }
 
         .search-icon {
@@ -95,9 +98,7 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: #fff;
         }
 
         .grid {
@@ -125,7 +126,7 @@
         .product-img-container {
             position: relative;
             width: 100%;
-            height: 110px;
+            height: 120px;
             background: #222;
         }
 
@@ -135,33 +136,21 @@
             object-fit: cover;
         }
 
-        .badge-discount {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: var(--discount);
-            color: white;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 6px;
-            border-radius: 6px;
-        }
-
         .badge-platform {
             position: absolute;
             bottom: 8px;
             left: 8px;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.7);
             backdrop-filter: blur(4px);
             color: white;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
 
         .product-content {
-            padding: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             flex-grow: 1;
@@ -171,10 +160,11 @@
         .product-name {
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 6px;
-            line-height: 1.2;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.3;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -183,24 +173,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
-        }
-
-        .price-box {
-            display: flex;
-            flex-direction: column;
+            margin-top: auto;
         }
 
         .current-price {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
-            color: var(--text-color);
-        }
-
-        .old-price {
-            font-size: 11px;
-            color: var(--hint-color);
-            text-decoration: line-through;
+            color: var(--accent);
         }
 
         .add-btn {
@@ -210,11 +189,17 @@
             width: 32px;
             height: 32px;
             border-radius: 10px;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .add-btn.added {
+            background: #10b981; /* Зеленый цвет, когда добавлено */
         }
 
         .cart-bar {
@@ -222,32 +207,34 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(18, 20, 26, 0.95);
+            background: rgba(28, 31, 38, 0.95);
             backdrop-filter: blur(10px);
             border-top: 1px solid var(--card-border);
-            padding: 14px 16px;
+            padding: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+            z-index: 100;
         }
 
         .cart-info {
             font-size: 13px;
             color: var(--hint-color);
+            margin-bottom: 2px;
         }
 
         .cart-total {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
-            color: var(--text-color);
+            color: #ffffff;
         }
 
         .checkout-btn {
             background: var(--button-color);
             color: var(--button-text-color);
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
@@ -260,90 +247,69 @@
     <header>
         <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" placeholder="Поиск по играм и подпискам...">
+            <input type="text" class="search-input" placeholder="Поиск услуг...">
         </div>
 
         <div class="categories">
-            <div class="cat-chip active">🔥 Распродажа</div>
-            <div class="cat-chip">🎮 Игры PS5</div>
-            <div class="cat-chip">🕹 Игры PS4</div>
-            <div class="cat-chip">👑 Подписки PS Plus</div>
+            <div class="cat-chip active">🔥 Популярное</div>
+            <div class="cat-chip">💻 ПК</div>
+            <div class="cat-chip">🔋 Ноутбуки</div>
+            <div class="cat-chip">⚙️ Система</div>
         </div>
     </header>
 
-    <div class="section-title">
-        <span>Специальные предложения</span>
-    </div>
+    <div class="section-title">Прайс-лист услуг</div>
 
     <div class="grid" id="productGrid">
         <div class="product-card">
             <div class="product-img-container">
-                <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60" class="product-img" alt="game">
-                <span class="badge-discount">-50%</span>
-                <span class="badge-platform">PS5</span>
+                <img src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=500&q=80" class="product-img" alt="pc">
+                <span class="badge-platform">Хит</span>
             </div>
             <div class="product-content">
-                <div class="product-name">Grand Theft Auto Online (PlayStation 5)</div>
+                <div class="product-name">Комплексная чистка ПК + замена термопасты</div>
                 <div class="product-footer">
-                    <div class="price-box">
-                        <span class="current-price">875 ₽</span>
-                        <span class="old-price">1 750 ₽</span>
-                    </div>
-                    <button class="add-btn" onclick="addToCart('Grand Theft Auto Online', 875)">+</button>
+                    <span class="current-price">1 500 ₽</span>
+                    <button class="add-btn" onclick="toggleCart(this, 'Чистка ПК', 1500)">+</button>
                 </div>
             </div>
         </div>
 
         <div class="product-card">
             <div class="product-img-container">
-                <img src="https://images.unsplash.com/photo-1612287233202-b51e36616785?w=500&auto=format&fit=crop&q=60" class="product-img" alt="game">
-                <span class="badge-discount">-50%</span>
-                <span class="badge-platform">PS4 / PS5</span>
+                <img src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=500&q=80" class="product-img" alt="laptop">
             </div>
             <div class="product-content">
-                <div class="product-name">Grand Theft Auto V (PS4 & PS5)</div>
+                <div class="product-name">Чистка ноутбука от пыли и устранение перегрева</div>
                 <div class="product-footer">
-                    <div class="price-box">
-                        <span class="current-price">1 750 ₽</span>
-                        <span class="old-price">3 500 ₽</span>
-                    </div>
-                    <button class="add-btn" onclick="addToCart('Grand Theft Auto V', 1750)">+</button>
+                    <span class="current-price">2 000 ₽</span>
+                    <button class="add-btn" onclick="toggleCart(this, 'Чистка ноутбука', 2000)">+</button>
                 </div>
             </div>
         </div>
 
         <div class="product-card">
             <div class="product-img-container">
-                <img src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=500&auto=format&fit=crop&q=60" class="product-img" alt="game">
-                <span class="badge-discount">-38%</span>
-                <span class="badge-platform">PS5</span>
+                <img src="https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&w=500&q=80" class="product-img" alt="windows">
             </div>
             <div class="product-content">
-                <div class="product-name">Resident Evil Requiem</div>
+                <div class="product-name">Установка Windows (с активацией и драйверами)</div>
                 <div class="product-footer">
-                    <div class="price-box">
-                        <span class="current-price">5 350 ₽</span>
-                        <span class="old-price">8 625 ₽</span>
-                    </div>
-                    <button class="add-btn" onclick="addToCart('Resident Evil Requiem', 5350)">+</button>
+                    <span class="current-price">1 500 ₽</span>
+                    <button class="add-btn" onclick="toggleCart(this, 'Установка Windows', 1500)">+</button>
                 </div>
             </div>
         </div>
 
         <div class="product-card">
             <div class="product-img-container">
-                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=60" class="product-img" alt="game">
-                <span class="badge-discount">-75%</span>
-                <span class="badge-platform">PS4</span>
+                <img src="https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=500&q=80" class="product-img" alt="build">
             </div>
             <div class="product-content">
-                <div class="product-name">Call of Duty: Modern Warfare</div>
+                <div class="product-name">Сборка компьютера из ваших комплектующих</div>
                 <div class="product-footer">
-                    <div class="price-box">
-                        <span class="current-price">1 350 ₽</span>
-                        <span class="old-price">5 400 ₽</span>
-                    </div>
-                    <button class="add-btn" onclick="addToCart('Call of Duty', 1350)">+</button>
+                    <span class="current-price">2 500 ₽</span>
+                    <button class="add-btn" onclick="toggleCart(this, 'Сборка ПК', 2500)">+</button>
                 </div>
             </div>
         </div>
@@ -351,10 +317,10 @@
 
     <div class="cart-bar" id="cartBar" style="display: none;">
         <div>
-            <div class="cart-info" id="cartCount">Товаров: 0</div>
+            <div class="cart-info" id="cartCount">Выбрано услуг: 0</div>
             <div class="cart-total" id="cartTotal">0 ₽</div>
         </div>
-        <button class="checkout-btn" onclick="checkout()">Оформить заказ</button>
+        <button class="checkout-btn" onclick="checkout()">Оформить</button>
     </div>
 
     <script>
@@ -363,8 +329,22 @@
 
         let cart = [];
 
-        function addToCart(name, price) {
-            cart.push({ name, price });
+        function toggleCart(btnElement, name, price) {
+            // Проверяем, есть ли уже товар в корзине
+            const index = cart.findIndex(item => item.name === name);
+            
+            if (index > -1) {
+                // Если есть - удаляем
+                cart.splice(index, 1);
+                btnElement.innerText = '+';
+                btnElement.classList.remove('added');
+            } else {
+                // Если нет - добавляем
+                cart.push({ name, price });
+                btnElement.innerText = '✓';
+                btnElement.classList.add('added');
+            }
+            
             updateCartBar();
         }
 
@@ -376,7 +356,7 @@
             if (cart.length > 0) {
                 bar.style.display = 'flex';
                 let total = cart.reduce((sum, item) => sum + item.price, 0);
-                countEl.innerText = `Выбрано товаров: ${cart.length}`;
+                countEl.innerText = `Услуг: ${cart.length}`;
                 totalEl.innerText = total.toLocaleString() + ' ₽';
             } else {
                 bar.style.display = 'none';
@@ -393,7 +373,6 @@
             tg.close();
         }
 
-        // Переключение категорий
         const chips = document.querySelectorAll('.cat-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', () => {
