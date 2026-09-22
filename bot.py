@@ -21,7 +21,7 @@ dp = Dispatcher()
 # Инициализация FastAPI
 app = FastAPI()
 
-# Указываем папку с HTML шаблонами
+# Указываем папку с шаблонами
 templates = Jinja2Templates(directory="templates")
 
 
@@ -29,7 +29,6 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    # Рендерим файл index.html из папки templates
     return templates.TemplateResponse(request, "index.html")
 
 
@@ -37,14 +36,14 @@ async def read_root(request: Request):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    # Кнопка для открытия мини-приложения
+    # Укажи здесь свою актуальную ссылку с Render
     web_app_url = "https://workshop-bot-q85s.onrender.com" 
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Открыть мини-приложение",
+                    text="🛠 Открыть мастерскую",
                     web_app=WebAppInfo(url=web_app_url)
                 )
             ]
@@ -52,18 +51,18 @@ async def cmd_start(message: types.Message):
     )
     
     await message.answer(
-        "Привет! Нажми кнопку ниже, чтобы открыть мини-приложение:",
-        reply_markup=keyboard
+        "👋 **Добро пожаловать в «Мастерская Ручеёк»!**\n\n"
+        "Профессиональный ремонт и обслуживание техники. "
+        "Нажми кнопку ниже, чтобы выбрать услугу и оформить заявку:",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
     )
 
 
-# --- Функция одновременного запуска бота и сервера ---
+# --- Запуск ---
 
 async def main():
-    # Запускаем поллинг Telegram-бота в фоне
     asyncio.create_task(dp.start_polling(bot))
-    
-    # Запускаем FastAPI через uvicorn
     config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)), log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
