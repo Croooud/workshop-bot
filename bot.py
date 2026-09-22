@@ -10,12 +10,12 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
 import uvicorn
-import aiohttp
 
 logging.basicConfig(level=logging.INFO)
 
-# КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: .strip() удаляет любые невидимые пробелы и \n, которые ломают токен на Render (ошибка 401)
-TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA").strip()
+# Очистка токена от скрытых символов или кавычек (частая проблема при деплое)
+raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
+TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -23,7 +23,6 @@ dp = Dispatcher()
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Модели данных
 class OrderItem(BaseModel):
     name: str
     price: int
@@ -46,25 +45,13 @@ async def create_order(order: OrderRequest):
 
     receipt += f"\n💳 <b>Итого: {order.total:,} ₽</b>".replace(',', ' ')
     receipt += "\n\nСпасибо! Мы получили вашу заявку. Мастер скоро свяжется с вами."
-
-    # Прямой запрос к Telegram API
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {
-        "chat_id": order.chat_id,
-        "text": receipt,
-        "parse_mode": "HTML"
-    }
     
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as resp:
-                if resp.status != 200:
-                    err_text = await resp.text()
-                    logging.error(f"TG API Error: {err_text}")
-                    return {"success": False, "error": f"Ошибка TG: {resp.status}"}
+        # Используем встроенный метод aiogram, так как он уже 100% авторизован
+        await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML")
         return {"success": True}
     except Exception as e:
-        logging.error(f"Request Error: {e}")
+        logging.error(f"Error sending message: {e}")
         return {"success": False, "error": str(e)}
 
 @dp.message(Command("start"))
