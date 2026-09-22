@@ -9,7 +9,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
@@ -28,14 +27,14 @@ async def read_root(request: Request):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    # Укажи свою актуальную ссылку с Render
+    # Твоя ссылка на Render
     web_app_url = "https://workshop-bot-q85s.onrender.com" 
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🛍 Открыть каталог магазина",
+                    text="🛠 Открыть прайс-лист",
                     web_app=WebAppInfo(url=web_app_url)
                 )
             ]
@@ -43,9 +42,9 @@ async def cmd_start(message: types.Message):
     )
     
     await message.answer(
-        "🎮 **Добро пожаловать в игровой маркетплейс!**\n\n"
-        "Огромный выбор игр, подписок и пополнений баланса. "
-        "Нажми кнопку ниже, чтобы открыть каталог:",
+        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
+        "Профессиональный ремонт, чистка и настройка компьютерной техники.\n"
+        "Нажми кнопку ниже, чтобы выбрать нужные услуги:",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
