@@ -32,7 +32,6 @@ templates = Jinja2Templates(directory="templates")
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    # Таблица клиентов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
@@ -41,7 +40,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # Таблица заказов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             order_id TEXT PRIMARY KEY,
@@ -73,7 +71,6 @@ async def read_root(request: Request):
 # --- СКАЧИВАНИЕ БАЗЫ ДАННЫХ ПО ССЫЛКЕ ---
 @app.get("/admin/download-db")
 async def download_database(key: str = ""):
-    # Защита секретным ключом, чтобы никто посторонний не скачал базу
     if key != "ruch_secret_123":
         return {"error": "Unauthorized access"}
     
@@ -87,7 +84,6 @@ async def download_database(key: str = ""):
 async def create_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
     
-    # Сохраняем заказ в SQLite
     items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
     try:
         conn = sqlite3.connect("database.db")
@@ -101,7 +97,6 @@ async def create_order(order: OrderRequest):
     except Exception as e:
         logging.error(f"DB Error: {e}")
 
-    # Формируем чек клиенту
     receipt = f"🧾 <b>ЗАКАЗ {order_id} ПРИНЯТ</b>\n\n"
     receipt += "<blockquote>"
     for item in order.items:
@@ -116,7 +111,6 @@ async def create_order(order: OrderRequest):
         [InlineKeyboardButton(text="❌ Отменить заказ", callback_data=f"cancel_order")]
     ])
     
-    # Чек для админа (тебе)
     admin_receipt = (
         f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
         f"👤 Клиент ID: <code>{order.chat_id}</code>\n"
@@ -125,12 +119,8 @@ async def create_order(order: OrderRequest):
     )
     
     try:
-        # Отправляем клиенту
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML", reply_markup=kb)
-        
-        # Отправляем дубликат тебе (админу)
         await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
-            
         return {"success": True}
     except Exception as e:
         logging.error(f"Telegram API Error: {str(e)}")
@@ -140,7 +130,6 @@ async def create_order(order: OrderRequest):
 
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
-    # Сохраняем клиента в базу при старте
     user = message.from_user
     try:
         conn = sqlite3.connect("database.db")
@@ -250,5 +239,4 @@ async def main():
     await server.serve()
 
 if __name__ == "__main__":
-    main_loop = asyncio.get_event_loop()
-    main_loop.run_until_complete(main())
+    asyncio.run(main())
