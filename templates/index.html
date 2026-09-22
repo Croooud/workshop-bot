@@ -20,7 +20,6 @@
             --radius-md: 16px;
             --radius-lg: 24px;
             
-            /* Динамические отступы для безопасных зон (iPhone) */
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --nav-height: 65px;
         }
@@ -70,7 +69,6 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             overscroll-behavior-y: none;
-            /* Точный паддинг, чтобы контент скроллился выше обеих нижних панелей */
             padding-bottom: calc(var(--nav-height) + 90px + var(--safe-bottom)); 
             transition: background-color 0.3s ease;
         }
@@ -261,10 +259,8 @@
             font-weight: 700;
         }
 
-        /* Плавающая панель услуг */
         .floating-bar {
             position: fixed;
-            /* Располагаем СТРОГО над нижней навигацией */
             bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
             left: 16px;
             right: 16px;
@@ -319,7 +315,6 @@
             gap: 6px;
         }
 
-        /* Нижняя навигация */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -508,7 +503,6 @@
             if (cart.size > 0) {
                 let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
                 
-                // Склонение слова "услуга"
                 let words = ['услуга', 'услуги', 'услуг'];
                 let n = cart.size % 100;
                 let n1 = n % 10;
@@ -589,21 +583,22 @@
         }
 
         function sendOrder() {
-            const items = Array.from(cart.values());
-            const total = items.reduce((sum, item) => sum + item.price, 0);
-            
-            // Получаем ID пользователя из Telegram
             const user = tg.initDataUnsafe?.user;
-            
             if (!user) {
-                tg.showAlert("Ошибка: невозможно определить пользователя. Откройте приложение через Telegram.");
+                tg.showAlert("Ошибка: невозможно определить ID пользователя.");
                 return;
             }
 
-            // Показываем индикатор загрузки на кнопке (Premium фича)
+            // Очищаем данные от лишних полей перед отправкой на бэкенд
+            const items = Array.from(cart.values()).map(item => ({
+                name: item.name,
+                price: item.price
+            }));
+            
+            const total = items.reduce((sum, item) => sum + item.price, 0);
+
             tg.MainButton.showProgress();
 
-            // Отправляем данные на наш сервер
             fetch('/api/order', {
                 method: 'POST',
                 headers: {
@@ -615,23 +610,28 @@
                     total: total
                 })
             })
-            .then(response => response.json())
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 tg.MainButton.hideProgress();
                 if (data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    tg.close(); // Закрываем приложение при успехе
+                    tg.close();
                 } else {
-                    tg.showAlert("Произошла ошибка на сервере.");
+                    // Теперь покажет точную причину, если вдруг что-то пойдет не так
+                    tg.showAlert("Ошибка сервера: " + data.error);
                 }
             })
             .catch(error => {
                 tg.MainButton.hideProgress();
-                tg.showAlert("Ошибка соединения с сервером.");
+                tg.showAlert("Сетевая ошибка: " + error.message);
             });
         }
 
-        // Init
         renderServices();
     </script>
 </body>
