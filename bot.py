@@ -19,8 +19,8 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Впиши СЮДА СВОЙ Telegram ID (узнать можно, например, у @userinfobot)
-ADMIN_ID = 123456789  # <--- Замени на свой реальный ID цифрами!
+# Твой реальный Telegram ID для получения уведомлений о заказах
+ADMIN_ID = 1044338073
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -76,10 +76,10 @@ async def create_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
     
     # Сохраняем заказ в SQLite
+    items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
         cursor.execute(
             "INSERT INTO orders (order_id, user_id, items, total) VALUES (?, ?, ?, ?)",
             (order_id, order.chat_id, items_str, order.total)
@@ -117,8 +117,7 @@ async def create_order(order: OrderRequest):
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML", reply_markup=kb)
         
         # Отправляем дубликат тебе (админу)
-        if ADMIN_ID != 123456789:
-            await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
+        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
             
         return {"success": True}
     except Exception as e:
@@ -193,4 +192,51 @@ async def process_faq(callback: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
     ])
-    await callback.message.edit_text(text, reply_kb=kb, parse_mode="HTML") # исправлено на reply_markup ниже в коде
+    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "back_to_main")
+async def process_back(callback: CallbackQuery):
+    web_app_url = "https://workshop-bot-dcyv.onrender.com"
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
+            [InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
+             InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
+        ]
+    )
+    welcome_text = (
+        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
+        "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
+        "🔸 <i>Бесплатная диагностика</i>\n"
+        "🔸 <i>Прозрачные цены</i>\n"
+        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
+        "Выберите нужное действие в меню ниже 👇"
+    )
+    await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "cancel_order")
+async def process_cancel_order(callback: CallbackQuery):
+    await callback.message.edit_text("❌ <i>Заявка отменена. Если передумаете, мы всегда на связи!</i>", parse_mode="HTML")
+    await callback.answer("Заказ отменен")
+
+async def set_bot_commands(bot: Bot):
+    commands = [
+        BotCommand(command="start", description="Главное меню"),
+        BotCommand(command="restart", description="Перезапустить бота")
+    ]
+    await bot.set_my_commands(commands)
+
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await set_bot_commands(bot)
+    
+    asyncio.create_task(dp.start_polling(bot))
+    config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)), log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+if __name__ == "__main__":
+    main_loop = asyncio.get_event_loop()
+    main_loop.run_until_complete(main())
