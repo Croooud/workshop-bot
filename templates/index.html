@@ -1,126 +1,314 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Прайс-лист Мастерской</title>
-<style>
-  body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-    background: #fff; 
-    padding: 40px; 
-    color: #000; 
-  }
-  .price-list { 
-    max-width: 700px; 
-    margin: 0 auto; 
-  }
-  .header { 
-    font-size: 28px; 
-    font-weight: 700; 
-    margin-bottom: 40px; 
-    display: flex; 
-    align-items: center; 
-  }
-  .header svg { 
-    margin-left: 8px; 
-    width: 24px; 
-    height: 24px; 
-    margin-top: 4px;
-  }
-  .row { 
-    display: flex; 
-    justify-content: space-between; 
-    padding: 16px 0; 
-    font-size: 15px;
-    border-bottom: 1px solid transparent; /* Для ровного выравнивания */
-  }
-  .service { 
-    color: #111; 
-  }
-  .price { 
-    font-weight: 700; 
-    white-space: nowrap;
-  }
-  
-  /* Блок контактов */
-  .contacts {
-    margin-top: 50px;
-    padding-top: 24px;
-    border-top: 1px solid #eaeaea;
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #555;
-    line-height: 1.6;
-  }
-  .contacts-col strong {
-    color: #000;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мастерская Ручеёк</title>
+    <!-- Подключаем Telegram WebApp скрипт -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #121212);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #aaaaaa);
+            --button-color: var(--tg-theme-button-color, #3b82f6);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --card-bg: #1e1e1e;
+            --card-border: #2a2a2a;
+            --accent: #60a5fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px;
+            padding-bottom: 90px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+
+        header p {
+            font-size: 14px;
+            color: var(--hint-color);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .services-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .service-card:active {
+            transform: scale(0.98);
+        }
+
+        .service-card.selected {
+            border-color: var(--button-color);
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .service-info {
+            flex: 1;
+            padding-right: 12px;
+        }
+
+        .service-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .service-price {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #555;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .service-card.selected .checkbox {
+            background-color: var(--button-color);
+            border-color: var(--button-color);
+        }
+
+        .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            display: none;
+        }
+
+        .service-card.selected .checkbox::after {
+            display: block;
+        }
+
+        .contacts-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 13px;
+            color: var(--hint-color);
+            line-height: 1.6;
+        }
+
+        .contacts-box strong {
+            color: var(--text-color);
+        }
+
+        .footer-action {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            padding: 12px 16px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-price {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .order-btn {
+            background-color: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .order-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
 </head>
 <body>
 
-<div class="price-list">
-  <div class="header">
-    Прайс-лист
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  </div>
+    <header>
+        <h1>Мастерская Ручеёк</h1>
+        <p>Выберите нужные услуги и оформите заявку</p>
+    </header>
 
-  <div class="row">
-    <div class="service">Диагностика компьютера (при продолжении работ)</div>
-    <div class="price">Бесплатно</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Комплексная чистка ПК + замена термопасты</div>
-    <div class="price">1 500 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Чистка ноутбука от пыли и устранение перегрева</div>
-    <div class="price">2 000 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Установка Windows (с активацией и драйверами)</div>
-    <div class="price">1 500 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Установка пакета Microsoft Office</div>
-    <div class="price">500 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Сборка компьютера из ваших комплектующих</div>
-    <div class="price">2 500 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Замена или установка новых комплектующих</div>
-    <div class="price">500 ₽</div>
-  </div>
-  
-  <div class="row">
-    <div class="service">Оптимизация: чистка от вирусов и удаление мусора</div>
-    <div class="price">1 000 ₽</div>
-  </div>
+    <div class="section-title">📋 Прайс-лист</div>
+    <div class="services-list" id="services">
+        <div class="service-card" data-name="Диагностика компьютера" data-price="0">
+            <div class="service-info">
+                <div class="service-name">Диагностика компьютера</div>
+                <div class="service-price">Бесплатно (при продолжении работ)</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
 
-  <!-- Блок контактов -->
-  <div class="contacts">
-    <div class="contacts-col">
-      <div><strong>Телефон / WhatsApp:</strong> +7 (991) 868-60-17</div>
-      <div><strong>Telegram:</strong> @IvanMiroshnichenkoo</div>
+        <div class="service-card" data-name="Комплексная чистка ПК + замена термопасты" data-price="1500">
+            <div class="service-info">
+                <div class="service-name">Комплексная чистка ПК + замена термопасты</div>
+                <div class="service-price">1 500 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
+
+        <div class="service-card" data-name="Чистка ноутбука от пыли и устранение перегрева" data-price="2000">
+            <div class="service-info">
+                <div class="service-name">Чистка ноутбука от пыли и перегрева</div>
+                <div class="service-price">2 000 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
+
+        <div class="service-card" data-name="Установка Windows (с активацией и драйверами)" data-price="1500">
+            <div class="service-info">
+                <div class="service-name">Установка Windows (активация + драйверы)</div>
+                <div class="service-price">1 500 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
+
+        <div class="service-card" data-name="Установка пакета Microsoft Office" data-price="500">
+            <div class="service-info">
+                <div class="service-name">Установка Microsoft Office</div>
+                <div class="service-price">500 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
+
+        <div class="service-card" data-name="Сборка компьютера из ваших комплектующих" data-price="2500">
+            <div class="service-info">
+                <div class="service-name">Сборка компьютера из комплектующих</div>
+                <div class="service-price">2 500 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
+
+        <div class="service-card" data-name="Оптимизация: чистка от вирусов и мусора" data-price="1000">
+            <div class="service-info">
+                <div class="service-name">Оптимизация и удаление мусора</div>
+                <div class="service-price">1 000 ₽</div>
+            </div>
+            <div class="checkbox"></div>
+        </div>
     </div>
-    <div class="contacts-col" style="text-align: right;">
-      <div><strong>Адрес:</strong> ПГТ Ручеёк, ул., д. 1</div>
-      <div>Выезд на дом по договоренности</div>
-    </div>
-  </div>
-  
-</div>
 
+    <div class="section-title">📍 Контакты</div>
+    <div class="contacts-box">
+        <strong>Адрес:</strong> ПГТ Ручейк, ул., д. 1<br>
+        *(Выезд на дом по договоренности)*<br><br>
+        <strong>Телефон / WhatsApp:</strong> +7 (991) 888-60-17<br>
+        <strong>Telegram:</strong> @IvanMiroshnickoo
+    </div>
+
+    <div class="footer-action">
+        <div>
+            <div style="font-size: 12px; color: var(--hint-color);">Итого:</div>
+            <div class="total-price" id="totalPrice">0 ₽</div>
+        </div>
+        <button class="order-btn" id="orderBtn">Заказать</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Растягиваем на весь экран
+
+        const cards = document.querySelectorAll('.service-card');
+        const totalPriceEl = document.getElementById('totalPrice');
+        const orderBtn = document.getElementById('orderBtn');
+
+        let selectedServices = [];
+        let totalSum = 0;
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('selected');
+                const name = card.getAttribute('data-name');
+                const price = parseInt(card.getAttribute('data-price'));
+
+                if (card.classList.contains('selected')) {
+                    selectedServices.push({ name, price });
+                    totalSum += price;
+                } else {
+                    selectedServices = selectedServices.filter(s => s.name !== name);
+                    totalSum -= price;
+                }
+
+                totalPriceEl.innerText = totalSum.toLocaleString() + ' ₽';
+
+                if (selectedServices.length > 0) {
+                    orderBtn.classList.add('active');
+                } else {
+                    orderBtn.classList.remove('active');
+                }
+            });
+        });
+
+        orderBtn.addEventListener('click', () => {
+            let data = {
+                services: selectedServices,
+                total: totalSum
+            };
+            // Отправляем данные обратно в бота
+            tg.sendData(JSON.stringify(data));
+            tg.close();
+        });
+    </script>
 </body>
 </html>
