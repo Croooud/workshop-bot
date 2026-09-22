@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Твой реальный Telegram ID для получения уведомлений о заказах
+# Твой реальный Telegram ID
 ADMIN_ID = 1044338073
 
 bot = Bot(token=TOKEN)
@@ -69,6 +69,18 @@ class OrderRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
+
+# --- СКАЧИВАНИЕ БАЗЫ ДАННЫХ ПО ССЫЛКЕ ---
+@app.get("/admin/download-db")
+async def download_database(key: str = ""):
+    # Защита секретным ключом, чтобы никто посторонний не скачал базу
+    if key != "ruch_secret_123":
+        return {"error": "Unauthorized access"}
+    
+    db_path = "database.db"
+    if os.path.exists(db_path):
+        return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
+    return {"error": "Database file not found"}
 
 # --- API ПРИЕМА ЗАКАЗА И СОХРАНЕНИЕ В БАЗУ ---
 @app.post("/api/order")
