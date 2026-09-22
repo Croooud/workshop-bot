@@ -19,25 +19,20 @@ dp = Dispatcher()
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# --- FastAPI Маршруты ---
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse(request, "index.html")
-
-
-# --- Telegram Бот ---
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    # Твоя ссылка на Render
-    web_app_url = "https://workshop-bot-q85s.onrender.com" 
+    # Укажи свой актуальный URL Render
+    web_app_url = "https://workshop-bot-q85s.onrender.com"
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Открыть прайс-лист",
+                    text="Открыть приложение",
                     web_app=WebAppInfo(url=web_app_url)
                 )
             ]
@@ -45,14 +40,13 @@ async def cmd_start(message: types.Message):
     )
     
     await message.answer(
-        "👋 **Мастерская Ручеёк**\n\n"
-        "Профессиональный ремонт и обслуживание компьютерной техники.\n"
-        "Нажмите кнопку ниже, чтобы выбрать услуги и оформить заявку:",
+        "⚡️ **Мастерская Ручеёк**\n\n"
+        "Ремонт, обслуживание и настройка компьютерной техники.\n"
+        "Запустите приложение ниже, чтобы выбрать услуги:",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
-# Обработчик данных, пришедших из Mini App
 @dp.message(F.web_app_data)
 async def web_app_data_handler(message: types.Message):
     try:
@@ -61,24 +55,21 @@ async def web_app_data_handler(message: types.Message):
         total = data.get("total", 0)
 
         if not services:
-            await message.answer("Корзина пуста.")
             return
 
-        receipt_text = "🧾 **Ваша заявка принята!**\n\n**Выбранные услуги:**\n"
-        for idx, item in enumerate(services, 1):
-            price_text = "Бесплатно" if item['price'] == 0 else f"{item['price']} ₽"
-            receipt_text += f"{idx}. {item['name']} — {price_text}\n"
+        receipt = "📋 **НОВАЯ ЗАЯВКА**\n\n"
+        for item in services:
+            price_str = "Бесплатно" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
+            receipt += f"• {item['name']} — {price_str}\n"
         
-        receipt_text += f"\n💰 **Итого к оплате:** {total} ₽\n\n"
-        receipt_text += "Скоро с вами свяжется мастер для уточнения деталей."
+        receipt += f"\n💳 **Итого: {total:,} ₽**".replace(',', ' ')
+        receipt += "\n\nСпасибо! Мы получили вашу заявку. Мастер скоро свяжется с вами."
 
-        await message.answer(receipt_text, parse_mode="Markdown")
+        await message.answer(receipt, parse_mode="Markdown")
+        
     except Exception as e:
-        logging.error(f"Error parsing web app data: {e}")
-        await message.answer("Произошла ошибка при обработке заказа.")
-
-
-# --- Запуск ---
+        logging.error(f"Error: {e}")
+        await message.answer("Произошла ошибка. Попробуйте еще раз.")
 
 async def main():
     asyncio.create_task(dp.start_polling(bot))
