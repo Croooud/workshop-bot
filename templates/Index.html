@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Прайс-лист Мастерской</title>
+<style>
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    background: #fff; 
+    padding: 40px; 
+    color: #000; 
+  }
+  .price-list { 
+    max-width: 700px; 
+    margin: 0 auto; 
+  }
+  .header { 
+    font-size: 28px; 
+    font-weight: 700; 
+    margin-bottom: 40px; 
+    display: flex; 
+    align-items: center; 
+  }
+  .header svg { 
+    margin-left: 8px; 
+    width: 24px; 
+    height: 24px; 
+    margin-top: 4px;
+  }
+  .row { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 16px 0; 
+    font-size: 15px;
+    border-bottom: 1px solid transparent; /* Для ровного выравнивания */
+  }
+  .service { 
+    color: #111; 
+  }
+  .price { 
+    font-weight: 700; 
+    white-space: nowrap;
+  }
+  
+  /* Блок контактов */
+  .contacts {
+    margin-top: 50px;
+    padding-top: 24px;
+    border-top: 1px solid #eaeaea;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+  }
+  .contacts-col strong {
+    color: #000;
+  }
+</style>
+</head>
+<body>
+
+<div class="price-list">
+  <div class="header">
+    Прайс-лист
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+
+  <div class="row">
+    <div class="service">Диагностика компьютера (при продолжении работ)</div>
+    <div class="price">Бесплатно</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Комплексная чистка ПК + замена термопасты</div>
+    <div class="price">1 500 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Чистка ноутбука от пыли и устранение перегрева</div>
+    <div class="price">2 000 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Установка Windows (с активацией и драйверами)</div>
+    <div class="price">1 500 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Установка пакета Microsoft Office</div>
+    <div class="price">500 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Сборка компьютера из ваших комплектующих</div>
+    <div class="price">2 500 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Замена или установка новых комплектующих</div>
+    <div class="price">500 ₽</div>
+  </div>
+  
+  <div class="row">
+    <div class="service">Оптимизация: чистка от вирусов и удаление мусора</div>
+    <div class="price">1 000 ₽</div>
+  </div>
+
+  <!-- Блок контактов -->
+  <div class="contacts">
+    <div class="contacts-col">
+      <div><strong>Телефон / WhatsApp:</strong> +7 (991) 868-60-17</div>
+      <div><strong>Telegram:</strong> @IvanMiroshnichenkoo</div>
+    </div>
+    <div class="contacts-col" style="text-align: right;">
+      <div><strong>Адрес:</strong> ПГТ Ручеёк, ул., д. 1</div>
+      <div>Выезд на дом по договоренности</div>
+    </div>
+  </div>
+  
+</div>
+
+</body>
+</html>
