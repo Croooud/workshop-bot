@@ -1,19 +1,18 @@
 import asyncio
 import logging
 import os
-from aiogram import Bot, Dispatcher, F, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import uvicorn
-import threading
+import uviicorn
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Токен твоего бота (лучше использовать переменные окружения, но можно вставить строку)
+# Токен твоего бота
 TOKEN = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 
 bot = Bot(token=TOKEN)
@@ -31,7 +30,7 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     # Рендерим файл index.html из папки templates
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 # --- Telegram Бот ---
@@ -39,7 +38,6 @@ async def read_root(request: Request):
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     # Кнопка для открытия мини-приложения
-    # ЗАМЕНИ "https://tvoiservise.onrender.com" на твою реальную ссылку с Render!
     web_app_url = "https://workshop-bot-q85s.onrender.com" 
     
     keyboard = InlineKeyboardMarkup(
