@@ -13,7 +13,7 @@ import uvicorn
 
 logging.basicConfig(level=logging.INFO)
 
-# Очистка токена от скрытых символов или кавычек (частая проблема при деплое)
+# Получаем токен и жестко очищаем его от любых пробелов и кавычек
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
@@ -47,16 +47,18 @@ async def create_order(order: OrderRequest):
     receipt += "\n\nСпасибо! Мы получили вашу заявку. Мастер скоро свяжется с вами."
     
     try:
-        # Используем встроенный метод aiogram, так как он уже 100% авторизован
+        # Отправляем сообщение от имени бота
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML")
         return {"success": True}
     except Exception as e:
-        logging.error(f"Error sending message: {e}")
-        return {"success": False, "error": str(e)}
+        error_msg = str(e)
+        logging.error(f"Telegram API Error: {error_msg}")
+        return {"success": False, "error": error_msg}
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    web_app_url = "https://workshop-bot-q85s.onrender.com"
+    # Твоя актуальная ссылка с Render
+    web_app_url = "https://workshop-bot-dcyv.onrender.com"
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
