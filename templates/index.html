@@ -70,7 +70,7 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             overscroll-behavior-y: none;
-            /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Точный паддинг, чтобы контент скроллился выше обеих нижних панелей */
+            /* Точный паддинг, чтобы контент скроллился выше обеих нижних панелей */
             padding-bottom: calc(var(--nav-height) + 90px + var(--safe-bottom)); 
             transition: background-color 0.3s ease;
         }
@@ -261,7 +261,7 @@
             font-weight: 700;
         }
 
-        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Плавающая панель услуг */
+        /* Плавающая панель услуг */
         .floating-bar {
             position: fixed;
             /* Располагаем СТРОГО над нижней навигацией */
@@ -276,7 +276,6 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-            /* Скрытое состояние: панель убрана вниз, pointer-events отключены */
             transform: translateY(150px);
             opacity: 0;
             pointer-events: none;
@@ -286,7 +285,6 @@
         }
         
         .floating-bar.visible {
-            /* Видимое состояние */
             transform: translateY(0);
             opacity: 1;
             pointer-events: auto;
@@ -321,7 +319,7 @@
             gap: 6px;
         }
 
-        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Нижняя навигация */
+        /* Нижняя навигация */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -594,10 +592,46 @@
             const items = Array.from(cart.values());
             const total = items.reduce((sum, item) => sum + item.price, 0);
             
-            tg.sendData(JSON.stringify({ items, total }));
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            // Получаем ID пользователя из Telegram
+            const user = tg.initDataUnsafe?.user;
+            
+            if (!user) {
+                tg.showAlert("Ошибка: невозможно определить пользователя. Откройте приложение через Telegram.");
+                return;
+            }
+
+            // Показываем индикатор загрузки на кнопке (Premium фича)
+            tg.MainButton.showProgress();
+
+            // Отправляем данные на наш сервер
+            fetch('/api/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: user.id,
+                    items: items,
+                    total: total
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                tg.MainButton.hideProgress();
+                if (data.success) {
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    tg.close(); // Закрываем приложение при успехе
+                } else {
+                    tg.showAlert("Произошла ошибка на сервере.");
+                }
+            })
+            .catch(error => {
+                tg.MainButton.hideProgress();
+                tg.showAlert("Ошибка соединения с сервером.");
+            });
         }
 
+        // Init
         renderServices();
     </script>
 </body>
