@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -15,25 +16,25 @@ import uvicorn
 
 logging.basicConfig(level=logging.INFO)
 
-# Очистка токена
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Твой реальный Telegram ID
 ADMIN_ID = 1044338073
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 app = FastAPI()
+
+# Подключаем папку со статическими файлами (твоими иконками)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
-# --- ИНИЦИАЛИЗАЦИЯ И ОБНОВЛЕНИЕ БАЗЫ ДАННЫХ (SQLite) ---
+# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ---
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    
-    # Таблица клиентов с сохранением ссылок и контактов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
@@ -43,8 +44,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    
-    # Таблица заказов
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             order_id TEXT PRIMARY KEY,
@@ -74,23 +73,18 @@ class OrderRequest(BaseModel):
 async def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
-# --- СКАЧИВАНИЕ БАЗЫ ДАННЫХ ПО ССЫЛКЕ ---
 @app.get("/admin/download-db")
 async def download_database(key: str = ""):
     if key != "ruch_secret_123":
         return {"error": "Unauthorized access"}
-    
     db_path = "database.db"
     if os.path.exists(db_path):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
-# --- API ПРИЕМА ЗАКАЗА И СОХРАНЕНИЕ В БАЗУ ---
 @app.post("/api/order")
 async def create_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
-    
-    # Ищем информацию о клиенте в базе, чтобы подтянуть его юзернейм
     client_link = f"tg://user?id={order.chat_id}"
     try:
         conn = sqlite3.connect("database.db")
@@ -101,8 +95,6 @@ async def create_order(order: OrderRequest):
             client_link = f"https://t.me/{res[0]}"
             
         items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
-        
-        # Сохраняем заказ вместе со ссылкой на клиента
         cursor.execute(
             "INSERT INTO orders (order_id, user_id, client_link, items, total) VALUES (?, ?, ?, ?, ?)",
             (order_id, order.chat_id, client_link, items_str, order.total)
@@ -112,7 +104,6 @@ async def create_order(order: OrderRequest):
     except Exception as e:
         logging.error(f"DB Error: {e}")
 
-    # Формируем чек клиенту
     receipt = f"🧾 <b>ЗАКАЗ {order_id} ПРИНЯТ</b>\n\n"
     receipt += "<blockquote>"
     for item in order.items:
@@ -127,7 +118,6 @@ async def create_order(order: OrderRequest):
         [InlineKeyboardButton(text="❌ Отменить заказ", callback_data=f"cancel_order")]
     ])
     
-    # Чек для админа с кликабельной ссылкой на профиль клиента
     admin_receipt = (
         f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
         f"👤 Клиент: <a href='{client_link}'>Открыть профиль</a> (ID: <code>{order.chat_id}</code>)\n"
@@ -143,8 +133,6 @@ async def create_order(order: OrderRequest):
         logging.error(f"Telegram API Error: {str(e)}")
         return {"success": False, "error": str(e)}
 
-# --- ЛОГИКА TELEGRAM БОТА ---
-
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
     user = message.from_user
@@ -154,7 +142,6 @@ async def cmd_start(message: types.Message):
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        # Сохраняем или обновляем данные клиента
         cursor.execute("""
             INSERT INTO users (user_id, username, full_name, profile_link) 
             VALUES (?, ?, ?, ?)
@@ -169,7 +156,6 @@ async def cmd_start(message: types.Message):
         logging.error(f"User save error: {e}")
 
     web_app_url = "https://workshop-bot-dcyv.onrender.com"
-    
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
@@ -177,7 +163,6 @@ async def cmd_start(message: types.Message):
              InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
         ]
     )
-    
     welcome_text = (
         "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
         "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
@@ -186,7 +171,6 @@ async def cmd_start(message: types.Message):
         "🔸 <i>Выезд на дом по договоренности</i>\n\n"
         "Выберите нужное действие в меню ниже 👇"
     )
-    
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
 @dp.callback_query(F.data == "show_contacts")
@@ -257,7 +241,6 @@ async def set_bot_commands(bot: Bot):
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await set_bot_commands(bot)
-    
     asyncio.create_task(dp.start_polling(bot))
     config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)), log_level="info")
     server = uvicorn.Server(config)
