@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Базовая тема (Light) */
             --bg-color: #f5f5f7;
             --surface-color: #ffffff;
             --text-primary: #1d1d1f;
@@ -15,22 +14,17 @@
             --accent-color: #007aff;
             --accent-bg: rgba(0, 122, 255, 0.08);
             --border-color: rgba(0, 0, 0, 0.08);
-            --danger-color: #ff3b30;
             --nav-bg: rgba(255, 255, 255, 0.85);
             
-            /* Метрики */
             --radius-sm: 12px;
             --radius-md: 16px;
             --radius-lg: 24px;
-            --spacing-sm: 8px;
-            --spacing-md: 16px;
-            --spacing-lg: 24px;
             
-            /* Safe Areas */
+            /* Динамические отступы для безопасных зон (iPhone) */
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --nav-height: 65px;
         }
 
-        /* Темная тема через медиазапрос (переопределяется Telegram, если нужно) */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #000000;
@@ -44,7 +38,6 @@
             }
         }
 
-        /* Интеграция с Telegram Theme Params (приоритет) */
         body.tg-dark {
             --bg-color: var(--tg-theme-bg-color, #000000);
             --surface-color: var(--tg-theme-secondary-bg-color, #1c1c1e);
@@ -77,26 +70,27 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             overscroll-behavior-y: none;
-            padding-bottom: calc(100px + var(--safe-bottom)); /* Отступ под навигацию */
+            /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Точный паддинг, чтобы контент скроллился выше обеих нижних панелей */
+            padding-bottom: calc(var(--nav-height) + 90px + var(--safe-bottom)); 
             transition: background-color 0.3s ease;
         }
 
-        /* Views System (SPA) */
         .view {
             display: none;
             opacity: 0;
             animation: fadeIn 0.3s ease forwards;
-            padding: var(--spacing-lg) var(--spacing-md);
+            padding: 24px 16px;
         }
+        
         .view.active {
             display: block;
         }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Typography & Header */
         header {
             margin-bottom: 28px;
         }
@@ -121,12 +115,12 @@
             line-height: 1.4;
         }
 
-        /* Cards System */
         .list-group {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+        
         .card {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -139,33 +133,38 @@
             transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
+        
         .card:active {
             transform: scale(0.97);
         }
+        
         .card.selected {
             border-color: var(--accent-color);
             background-color: var(--accent-bg);
         }
+        
         .card-content {
             flex: 1;
             padding-right: 16px;
         }
+        
         .card-title {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 4px;
             line-height: 1.2;
         }
+        
         .card-price {
             font-size: 14px;
             font-weight: 500;
             color: var(--text-secondary);
         }
+        
         .card.selected .card-price {
             color: var(--accent-color);
         }
 
-        /* Premium Checkbox */
         .checkbox-wrapper {
             width: 24px;
             height: 24px;
@@ -178,11 +177,13 @@
             flex-shrink: 0;
             opacity: 0.5;
         }
+        
         .card.selected .checkbox-wrapper {
             background-color: var(--accent-color);
             border-color: var(--accent-color);
             opacity: 1;
         }
+        
         .check-icon {
             opacity: 0;
             transform: scale(0.5);
@@ -193,12 +194,12 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
+        
         .card.selected .check-icon {
             opacity: 1;
             transform: scale(1);
         }
 
-        /* Contacts UI */
         .contact-card {
             display: flex;
             align-items: center;
@@ -211,9 +212,11 @@
             margin-bottom: 12px;
             transition: transform 0.1s ease;
         }
+        
         .contact-card:active {
             transform: scale(0.97);
         }
+        
         .contact-icon {
             width: 40px;
             height: 40px;
@@ -226,17 +229,18 @@
             font-size: 20px;
             margin-right: 16px;
         }
+        
         .contact-info h3 {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 2px;
         }
+        
         .contact-info p {
             font-size: 14px;
             color: var(--text-secondary);
         }
 
-        /* Summary UI */
         .summary-item {
             display: flex;
             justify-content: space-between;
@@ -244,9 +248,11 @@
             border-bottom: 1px solid var(--border-color);
             font-size: 15px;
         }
+        
         .summary-item:last-child {
             border-bottom: none;
         }
+        
         .summary-total {
             display: flex;
             justify-content: space-between;
@@ -255,58 +261,73 @@
             font-weight: 700;
         }
 
-        /* Floating Action Bar (Cart sum) */
+        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Плавающая панель услуг */
         .floating-bar {
             position: fixed;
-            bottom: calc(70px + var(--safe-bottom));
+            /* Располагаем СТРОГО над нижней навигацией */
+            bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
             left: 16px;
             right: 16px;
             background-color: var(--accent-color);
             color: #ffffff;
             border-radius: var(--radius-md);
-            padding: 16px;
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
-            transform: translateY(150%);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            /* Скрытое состояние: панель убрана вниз, pointer-events отключены */
+            transform: translateY(150px);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+            z-index: 95;
             cursor: pointer;
-            z-index: 100;
         }
+        
         .floating-bar.visible {
+            /* Видимое состояние */
             transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
         }
+        
         .floating-bar:active {
             transform: scale(0.98);
         }
+        
         .fb-info {
             display: flex;
             flex-direction: column;
         }
+        
         .fb-count {
             font-size: 13px;
             opacity: 0.9;
+            font-weight: 500;
         }
+        
         .fb-total {
             font-size: 18px;
             font-weight: 700;
+            margin-top: 2px;
         }
+        
         .fb-action {
             font-size: 16px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
-        /* Bottom Navigation */
+        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Нижняя навигация */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            height: calc(65px + var(--safe-bottom));
+            height: calc(var(--nav-height) + var(--safe-bottom));
             background: var(--nav-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -314,8 +335,9 @@
             display: flex;
             justify-content: space-around;
             padding-bottom: var(--safe-bottom);
-            z-index: 90;
+            z-index: 100;
         }
+        
         .nav-item {
             flex: 1;
             display: flex;
@@ -328,12 +350,14 @@
             cursor: pointer;
             transition: color 0.2s;
         }
+        
         .nav-item.active {
             color: var(--accent-color);
         }
+        
         .nav-icon {
             font-size: 22px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -347,7 +371,8 @@
         </header>
 
         <div class="list-group" id="services-container">
-            </div>
+            <!-- JS генерирует карточки -->
+        </div>
     </main>
 
     <main id="view-contacts" class="view">
@@ -389,12 +414,14 @@
             <p class="desc">Проверьте выбранные услуги перед отправкой заявки.</p>
         </header>
 
-        <div class="card" style="cursor: default; transform: none;">
+        <div class="card" style="cursor: default; transform: none; box-shadow: none;">
             <div class="list-group" id="summary-list" style="width: 100%;">
-                </div>
+                <!-- JS генерирует список -->
+            </div>
         </div>
     </main>
 
+    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -405,6 +432,7 @@
         </div>
     </div>
 
+    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -421,7 +449,6 @@
         tg.expand();
         tg.ready();
 
-        // Адаптация под тему Telegram
         document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
         tg.onEvent('themeChanged', () => {
             document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
@@ -440,7 +467,6 @@
         let cart = new Map();
         let currentView = 'services';
 
-        // 1. Рендер услуг
         function renderServices() {
             const container = document.getElementById('services-container');
             container.innerHTML = '';
@@ -449,7 +475,6 @@
                 const isSelected = cart.has(s.id);
                 const card = document.createElement('div');
                 card.className = `card ${isSelected ? 'selected' : ''}`;
-                // Клик работает по всей площади карточки
                 card.onclick = () => toggleService(card, s);
                 
                 card.innerHTML = `
@@ -467,9 +492,7 @@
             });
         }
 
-        // 2. Логика выбора услуги
         function toggleService(cardElement, service) {
-            // Haptic отклик
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
             if (cart.has(service.id)) {
@@ -482,12 +505,18 @@
             updateCartState();
         }
 
-        // 3. Обновление Floating Bar и MainButton
         function updateCartState() {
             const bar = document.getElementById('floating-bar');
             if (cart.size > 0) {
                 let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
-                document.getElementById('fb-count').innerText = `${cart.size} услуг${cart.size === 1 ? 'а' : (cart.size > 1 && cart.size < 5 ? 'и' : '')}`;
+                
+                // Склонение слова "услуга"
+                let words = ['услуга', 'услуги', 'услуг'];
+                let n = cart.size % 100;
+                let n1 = n % 10;
+                let word = (n > 10 && n < 20) ? words[2] : (n1 > 1 && n1 < 5) ? words[1] : (n1 === 1) ? words[0] : words[2];
+                
+                document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
                 document.getElementById('fb-total').innerText = `${total.toLocaleString('ru-RU')} ₽`;
                 
                 if (currentView === 'services') {
@@ -495,27 +524,22 @@
                 }
             } else {
                 bar.classList.remove('visible');
-                if (currentView === 'summary') navigate('services'); // уходим из пустой корзины
+                if (currentView === 'summary') navigate('services');
             }
         }
 
-        // 4. SPA Навигация
         function navigate(viewName) {
             if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
             currentView = viewName;
 
-            // Скрываем все экраны
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            // Сбрасываем активные табы
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
 
-            // Показываем нужный экран
             document.getElementById(`view-${viewName}`).classList.add('active');
             
             const navBtn = document.getElementById(`nav-${viewName}`);
             if(navBtn) navBtn.classList.add('active');
 
-            // Управление UI в зависимости от экрана
             const floatingBar = document.getElementById('floating-bar');
             
             if (viewName === 'summary') {
@@ -532,7 +556,6 @@
             }
         }
 
-        // 5. Рендер Summary
         function renderSummary() {
             const container = document.getElementById('summary-list');
             container.innerHTML = '';
@@ -557,14 +580,13 @@
             `;
         }
 
-        // 6. Отправка заказа (MainButton)
         function setupMainButton() {
             tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
             tg.MainButton.color = tg.themeParams.button_color || '#007aff';
             tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
             tg.MainButton.show();
             
-            tg.MainButton.offClick(sendOrder); // предотвращаем дубли
+            tg.MainButton.offClick(sendOrder);
             tg.MainButton.onClick(sendOrder);
         }
 
@@ -576,7 +598,6 @@
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // Init
         renderServices();
     </script>
 </body>
