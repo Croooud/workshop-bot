@@ -21,7 +21,8 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Исправленный синтаксис ответа шаблонизатора для новых версий FastAPI/Starlette
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
