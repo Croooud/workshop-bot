@@ -63,11 +63,6 @@ async def create_order(order: OrderRequest):
     
     try:
         await bot.send_message(chat_id=order.chat_id, text=receipt, parse_mode="HTML", reply_markup=kb)
-        
-        # ОПЦИОНАЛЬНО: Отправка копии заказа тебе в личку (раскомментируй и впиши свой ID)
-        # admin_id = 123456789 
-        # await bot.send_message(chat_id=admin_id, text=f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\nОт пользователя ID: <code>{order.chat_id}</code>\nСумма: {order.total} ₽", parse_mode="HTML")
-        
         return {"success": True}
     except Exception as e:
         logging.error(f"Telegram API Error: {str(e)}")
@@ -178,10 +173,14 @@ async def process_cancel_order(callback: CallbackQuery):
 
 
 async def main():
+    # Принудительно удаляем старый вебхук перед запуском поллинга
+    await bot.delete_webhook(drop_pending_updates=True)
+    
     asyncio.create_task(dp.start_polling(bot))
     config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)), log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
