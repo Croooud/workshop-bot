@@ -776,6 +776,7 @@
         </div>
     </main>
 
+    <!-- Экран успешного оформления с поддержкой AI-анализа -->
     <main id="view-success" class="view">
         <div class="success-icon-wrap">
             <svg viewBox="0 0 24 24">
@@ -783,8 +784,15 @@
             </svg>
         </div>
         <div class="success-title">Спасибо!<br>Ваша заявка принята</div>
-        <div class="success-desc">Мы свяжемся с вами в ближайшее время.</div>
-        <button class="btn-close" onclick="tg.close()">Отлично</button>
+        
+        <!-- Блок для вывода результатов AI-анализа -->
+        <div id="ai-result-box" style="display: none; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin: 16px 0; text-align: left; width: 100%;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--accent-color); margin-bottom: 4px;">🤖 Предварительный анализ по фото:</div>
+            <div id="ai-result-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;"></div>
+        </div>
+
+        <div class="success-desc" style="margin-top: 12px;">Мы отправили детали заявки и результат анализа вам в чат.</div>
+        <button class="btn-close" onclick="tg.close()">Закрыть</button>
     </main>
 
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
@@ -986,7 +994,6 @@
             }
         }
 
-        // --- УЛУЧШЕННАЯ ЛОГИКА ТАЙМЛАЙНА (ВКЛЮЧАЯ СТАТУС «ОТМЕНЕН / ОТКАЗ») ---
         function getTimelineHtml(statusText) {
             let activeStep = 1; 
             const s = statusText.toLowerCase();
@@ -1170,8 +1177,14 @@
                 tg.MainButton.hideProgress();
                 if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    
+                    // Показываем результат AI-анализа на экране успеха, если он есть
+                    if (data.ai_analysis && data.ai_analysis !== "Фото не загружалось") {
+                        document.getElementById('ai-result-text').innerText = data.ai_analysis;
+                        document.getElementById('ai-result-box').style.display = 'block';
+                    }
+
                     navigate('success');
-                    setTimeout(() => { tg.close(); }, 4000);
                 } else {
                     tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
                     tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
