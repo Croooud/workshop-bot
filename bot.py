@@ -5,7 +5,14 @@ import random
 import sqlite3
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand
+from aiogram.types import (
+    InlineKeyboardButton, 
+    InlineKeyboardMarkup, 
+    WebAppInfo, 
+    CallbackQuery, 
+    BotCommand, 
+    MenuButtonWebApp
+)
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
@@ -174,15 +181,6 @@ async def cmd_start(message: types.Message):
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
-# --- НОВЫЙ ХЭНДЛЕР ДЛЯ КОНТАКТА ---
-@dp.message(F.contact)
-async def process_contact_message(message: types.Message):
-    text = (
-        "✅ **Контакт успешно получен!**\n\n"
-        "Пожалуйста, вернитесь в открытое окно заявки и нажмите большую синюю кнопку **«ОФОРМИТЬ ЗАЯВКУ»** в самом низу, чтобы мы получили список выбранных вами услуг."
-    )
-    await message.answer(text, parse_mode="HTML")
-
 @dp.callback_query(F.data == "show_contacts")
 async def process_contacts(callback: CallbackQuery):
     text = (
@@ -242,6 +240,15 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="restart", description="Перезапустить бота")
     ]
     await bot.set_my_commands(commands)
+
+    # Настройка системной кнопки меню (слева от поля ввода в чате)
+    web_app_url = "https://workshop-bot-dcyv.onrender.com"
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="Прайс и Заказ",
+            web_app=WebAppInfo(url=web_app_url)
+        )
+    )
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
