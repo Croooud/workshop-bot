@@ -3,6 +3,9 @@ import logging
 import os
 import random
 import sqlite3
+import json
+import base64
+import openai
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import (
@@ -21,17 +24,19 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 from pydantic import BaseModel
 from typing import List
-import json
 
 logging.basicConfig(level=logging.INFO)
 
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
+# Инициализация OpenAI (ключ берется из переменных окружения Render)
+openai.api_key = os.getenv("OPENAI_API_KEY", "")
+
 # ID вашего общего рабочего чата (группы)
 ADMIN_CHAT_ID = -5308446621
 
-# Список ID администраторов (твой и товарища)
+# Список ID администраторов
 ADMIN_IDS = [1044338073, 602535191] 
 
 bot = Bot(token=TOKEN)
@@ -65,7 +70,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # Таблица для сохранения клиентских оценок
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,7 +97,6 @@ async def download_database(key: str = ""):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
-# Эндпоинт для получения истории заказов пользователя в личный кабинет
 @app.get("/api/orders/{chat_id}")
 async def get_user_orders(chat_id: int):
     try:
@@ -109,23 +112,11 @@ async def get_user_orders(chat_id: int):
         
         orders = []
         for row in rows:
-            status_text = row["status"]
-            if status_text == "Новый":
-                status_formatted = "🕒 В обработке"
-            elif status_text == "В работе":
-                status_formatted = "🛠 В работе"
-            elif status_text == "Готово":
-                status_formatted = "✅ Готово"
-            elif status_text == "Отменен":
-                status_formatted = "❌ Отменен"
-            else:
-                status_formatted = f"📌 {status_text}"
-
             orders.append({
                 "order_id": row["order_id"],
                 "items": row["items"],
                 "total": row["total"],
-                "status": status_formatted,
+                "status": row["status"],
                 "created_at": row["created_at"]
             })
             
@@ -134,7 +125,41 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
-# Обработка отправки заявки с поддержкой фото и FormData
+async def analyze_device_photo(file_bytes: bytes) -> str:
+    """Анализирует фото с помощью OpenAI Vision API"""
+    if not openai.api_key:
+        return "Фото принято, точную стоимость назовет мастер после осмотра."
+    
+    try:
+        base64_image = base64.b64encode(file_bytes).decode('utf-8')
+        
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Ты профессиональный мастер по ремонту компьютеров и ноутбуков. Проанализируй фото повреждения или проблемы. Выдай короткий предварительный вердикт на русском языке: какая это поломка и примерный диапазон стоимости ремонта в рублях. Если фото размытое, не имеет отношения к технике или поломку невозможно определить, строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Оцени поломку по этому фото:"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=150
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(f"OpenAI Vision API Error: {e}")
+        return "Фото принято, точную стоимость назовет мастер после осмотра."
+
 @app.post("/api/order")
 async def api_order(
     chat_id: int = Form(...),
@@ -152,6 +177,13 @@ async def api_order(
         items_list = json.loads(items)
     except:
         items_list = []
+
+    ai_analysis_text = "Фото не загружалось"
+    file_bytes = None
+
+    if photo:
+        file_bytes = await photo.read()
+        ai_analysis_text = await analyze_device_photo(file_bytes)
 
     try:
         conn = sqlite3.connect("database.db")
@@ -178,7 +210,8 @@ async def api_order(
         f"👤 Клиент: [ID {chat_id}]({client_link})\n"
         f"📱 Телефон: `{phone}`\n"
         f"💻 Тип устройства: {device}\n"
-        f"⚠️ Проблема: {problem}\n\n"
+        f"⚠️ Проблема: {problem}\n"
+        f"🤖 **AI-оценка по фото:** {ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
         f"💳 **Сумма: {total_str}**"
     )
@@ -192,8 +225,7 @@ async def api_order(
     ])
     
     try:
-        if photo:
-            file_bytes = await photo.read()
+        if photo and file_bytes:
             photo_file = BufferedInputFile(file_bytes, filename=photo.filename or "problem.jpg")
             await bot.send_photo(
                 chat_id=ADMIN_CHAT_ID,
@@ -210,15 +242,19 @@ async def api_order(
                 parse_mode="HTML"
             )
         
-        reply_text = "✅ Ваша заявка принята! Вы можете отслеживать её статус в «Личном кабинете» внутри мини-приложения."
+        reply_text = (
+            f"✅ Ваша заявка **{order_id}** принята!\n\n"
+            f"🤖 **Предварительный анализ вашей фотографии:**\n"
+            f"*{ai_analysis_text}*\n\n"
+            f"Вы можете отслеживать статус заказа в «Личном кабинете»."
+        )
         await bot.send_message(chat_id=chat_id, text=reply_text, parse_mode="HTML")
         
-        return {"success": True}
+        return {"success": True, "ai_analysis": ai_analysis_text}
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
-# Обработчик команды /stats для проверки аналитики мастерами
 @dp.message(Command("stats"))
 async def cmd_stats(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
@@ -255,14 +291,12 @@ async def cmd_stats(message: types.Message):
         )
 
         await message.answer(stats_text, parse_mode="HTML")
-
     except Exception as e:
-        logging.error(f"Stats calculation error: {e}")
-        await message.answer("⚠️ Ошибка при подсчете статистики из базы данных.")
+        logging.error(f"Stats error: {e}")
+        await message.answer("⚠️ Ошибка при подсчете статистики.")
 
-# Функция отложенного запроса отзыва через 24 часа
 async def schedule_review_request(client_chat_id: int, order_id: str):
-    await asyncio.sleep(86400) # 24 часа (для тестов можно временно изменить)
+    await asyncio.sleep(86400) # 24 часа
 
     try:
         conn = sqlite3.connect("database.db")
@@ -288,12 +322,10 @@ async def schedule_review_request(client_chat_id: int, order_id: str):
             f"👋 Привет! Прошли сутки с момента завершения ремонта в **«Мастерской Ручеёк»** (заказ **{order_id}**).\n\n"
             f"Как работает техника? Оцените, пожалуйста, качество обслуживания от 1 до 5 звезд 👇"
         )
-
         await bot.send_message(chat_id=client_chat_id, text=msg_text, reply_markup=review_kb, parse_mode="HTML")
     except Exception as e:
-        logging.error(f"Error sending review request to {client_chat_id}: {e}")
+        logging.error(f"Error sending review request: {e}")
 
-# Обработчик нажатия на звезды оценки от клиента
 @dp.callback_query(F.data.startswith("review:"))
 async def process_review_rating(callback: CallbackQuery):
     parts = callback.data.split(":")
@@ -307,10 +339,7 @@ async def process_review_rating(callback: CallbackQuery):
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO reviews (order_id, user_id, rating) VALUES (?, ?, ?)",
-            (order_id, user_id, int(rating))
-        )
+        cursor.execute("INSERT INTO reviews (order_id, user_id, rating) VALUES (?, ?, ?)", (order_id, user_id, int(rating)))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -323,29 +352,20 @@ async def process_review_rating(callback: CallbackQuery):
 
     stars = "⭐" * int(rating)
     await callback.answer("Спасибо за вашу оценку!", show_alert=True)
-    await callback.message.edit_text(
-        f"Спасибо за ваш отзыв! Вы поставили нам оценку: **{stars} ({rating}/5)**.\n"
-        f"Будем рады видеть вас снова!", 
-        parse_mode="HTML"
-    )
+    await callback.message.edit_text(f"Спасибо за ваш отзыв! Вы поставили нам оценку: **{stars} ({rating}/5)**.", parse_mode="HTML")
 
-    admin_review_notification = (
+    admin_notification = (
         f"⭐ **НОВЫЙ ОТЗЫВ КЛИЕНТА**\n\n"
         f"📦 Заказ: **{order_id}**\n"
-        f"👤 Клиент: [{user_name}]({user_link}) (ID: `{user_id}`)\n"
+        f"👤 Клиент: [{user_name}]({user_link})\n"
         f"📊 Оценка: **{stars} ({rating} из 5)**"
     )
+    await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_notification, parse_mode="HTML")
 
-    try:
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_review_notification, parse_mode="HTML")
-    except Exception as e:
-        logging.error(f"Failed to send review to admin chat: {e}")
-
-# Обработчик нажатия на кнопки статусов в рабочем чате с отправкой ЛС клиенту
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("У вас нет прав для изменения статуса.", show_alert=True)
+        await callback.answer("У вас нет прав.", show_alert=True)
         return
 
     parts = callback.data.split(":")
@@ -357,33 +377,27 @@ async def process_status_change(callback: CallbackQuery):
         "done": "Готово",
         "cancelled": "Отменен"
     }
-    
     new_status = status_map.get(action, "Новый")
 
     client_chat_id = None
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        
         cursor.execute("SELECT user_id FROM orders WHERE order_id = ?", (order_id,))
         row = cursor.fetchone()
         if row:
             client_chat_id = row[0]
-
         cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, order_id))
         conn.commit()
         conn.close()
     except Exception as e:
-        logging.error(f"DB Update Error: {e}")
-        await callback.answer("Ошибка при обновлении базы данных.", show_alert=True)
+        logging.error(f"DB Error: {e}")
         return
 
-    # Если статус изменен на "Готово", запускаем таймер сбора отзыва через 24 часа
     if action == "done" and client_chat_id:
         asyncio.create_task(schedule_review_request(client_chat_id, order_id))
 
     master_name = callback.from_user.full_name
-    
     updated_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🛠 В работу", callback_data=f"status:in_progress:{order_id}"),
@@ -393,14 +407,9 @@ async def process_status_change(callback: CallbackQuery):
     ])
 
     raw_text = callback.message.text if callback.message.text else (callback.message.caption or "")
-
-    if "\n\n📌 **" in raw_text:
-        base_text = raw_text.split("\n\n📌 **")[0]
-    else:
-        base_text = raw_text
-
+    base_text = raw_text.split("\n\n📌 **")[0] if "\n\n📌 **" in raw_text else raw_text
     updated_text = base_text + f"\n\n📌 **Текущий статус: {new_status}** (изменил {master_name})"
-    
+
     try:
         if callback.message.photo:
             await callback.message.edit_caption(caption=updated_text, parse_mode="HTML", reply_markup=updated_kb)
@@ -418,13 +427,13 @@ async def process_status_change(callback: CallbackQuery):
             elif action == "cancelled":
                 client_msg = f"❌ Статус вашего заказа **{order_id}** изменен на: **Отменен**."
             else:
-                client_msg = f"📌 Статус вашего заказа **{order_id}** обновлен: {new_status}."
+                client_msg = f"📌 Статус заказа **{order_id}** обновлен: {new_status}."
 
             await bot.send_message(chat_id=client_chat_id, text=client_msg, parse_mode="HTML")
         except Exception as e:
-            logging.error(f"Failed to send direct message to client {client_chat_id}: {e}")
+            logging.error(f"DM error: {e}")
 
-    await callback.answer(f"Статус заказа {order_id} изменен на «{new_status}»!")
+    await callback.answer(f"Статус изменен на «{new_status}»!")
 
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
@@ -446,7 +455,7 @@ async def cmd_start(message: types.Message):
         conn.commit()
         conn.close()
     except Exception as e:
-        logging.error(f"User save error: {e}")
+        logging.error(f"User error: {e}")
 
     web_app_url = "https://workshop-bot-dcyv.onrender.com"
     keyboard = InlineKeyboardMarkup(
@@ -458,11 +467,7 @@ async def cmd_start(message: types.Message):
     )
     welcome_text = (
         "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
-        "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 *Бесплатная диагностика*\n"
-        "🔸 *Прозрачные цены*\n"
-        "🔸 *Выезд на дом по договоренности*\n\n"
-        "Выберите нужное действие в меню ниже 👇"
+        "Профессиональный ремонт и обслуживание компьютерной техники."
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
@@ -471,9 +476,8 @@ async def process_contacts(callback: CallbackQuery):
     text = (
         "📍 **НАШИ КОНТАКТЫ**\n\n"
         "**Адрес:** ПГТ Ручейк, ул., д. 1\n"
-        "**Телефон / WhatsApp:** `+7 (991) 888-60-17`\n"
-        "**Telegram:** @IvanMiroshnichenkoo\n\n"
-        "*Работаем по предварительной записи. Возможен выезд на дом.*"
+        "**Телефон:** `+7 (991) 888-60-17`\n"
+        "**Telegram:** @IvanMiroshnichenkoo"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -485,12 +489,8 @@ async def process_contacts(callback: CallbackQuery):
 async def process_faq(callback: CallbackQuery):
     text = (
         "❓ **ЧАСТЫЕ ВОПРОСЫ**\n\n"
-        "**— Сколько длится диагностика?**\n"
-        "Обычно от 1 до 3 часов в зависимости от сложности.\n\n"
-        "**— Можно ли со своими запчастями?**\n"
-        "Да, мы соберем ПК из ваших комплектующих.\n\n"
-        "**— Даете ли гарантию?**\n"
-        "Да, на все виды работ предоставляется техническая гарантия."
+        "**— Диагностика платная?**\nБесплатно при последующем ремонте.\n\n"
+        "**— Даете гарантию?**\nДа, на все виды работ."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -510,11 +510,7 @@ async def process_back(callback: CallbackQuery):
     )
     welcome_text = (
         "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
-        "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 *Бесплатная диагностика*\n"
-        "🔸 *Прозрачные цены*\n"
-        "🔸 *Выезд на дом по договоренности*\n\n"
-        "Выберите нужное действие в меню ниже 👇"
+        "Профессиональный ремонт и обслуживание компьютерной техники."
     )
     await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
@@ -535,7 +531,7 @@ async def set_bot_commands(bot: Bot):
         )
         await bot.set_chat_menu_button(menu_button=menu_button)
     except Exception as e:
-        logging.error(f"Menu button setup error: {e}")
+        logging.error(f"Menu error: {e}")
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
