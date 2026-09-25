@@ -30,7 +30,7 @@ TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 ADMIN_CHAT_ID = -5308446621
 
 # Список ID администраторов (сюда можешь добавить свой ID и ID товарища через запятую)
-ADMIN_IDS = [1044338073] 
+ADMIN_IDS = [1044338073, 602535191] 
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
