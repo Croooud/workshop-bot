@@ -176,7 +176,7 @@
         .checkbox-wrapper {
             width: 24px;
             height: 24px;
-            border-radius: 50%;
+            border-radius: 6px; /* Превратили в квадрат со скругленными углами */
             border: 2px solid var(--text-secondary);
             display: flex;
             align-items: center;
@@ -206,6 +206,15 @@
         .card.selected .check-icon {
             opacity: 1;
             transform: scale(1);
+        }
+
+        .footnote {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 20px;
+            padding: 0 16px;
+            line-height: 1.4;
         }
 
         .contact-card {
@@ -377,7 +386,11 @@
         </header>
 
         <div class="list-group" id="services-container">
-            </div>
+            <!-- JS генерирует карточки -->
+        </div>
+
+        <!-- Добавлена пояснительная сноска -->
+        <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
 
     <main id="view-contacts" class="view">
@@ -428,7 +441,8 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    </div>
+                    <!-- JS генерирует список -->
+                </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -454,6 +468,7 @@
         </div>
     </main>
 
+    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -464,6 +479,7 @@
         </div>
     </div>
 
+    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -504,7 +520,6 @@
             let inputNumbersValue = e.target.value.replace(/\D/g, '');
             let formattedInputValue = '';
             
-            // Убираем красную рамку ошибки, если пользователь начал исправлять номер
             phoneInput.style.borderColor = 'var(--border-color)';
             document.getElementById('phone-error').style.display = 'none';
 
@@ -513,7 +528,6 @@
             }
             
             if (['7', '8', '9'].indexOf(inputNumbersValue[0]) > -1) {
-                // Если пользователь начал вводить с 9, подставляем 7
                 if (inputNumbersValue[0] === '9') inputNumbersValue = '7' + inputNumbersValue;
                 
                 formattedInputValue = '+7 ';
@@ -534,7 +548,6 @@
             }
             e.target.value = formattedInputValue;
         });
-        // --------------------------
 
         function renderServices() {
             const container = document.getElementById('services-container');
@@ -667,17 +680,15 @@
                 return;
             }
 
-            // Валидация номера телефона (считаем только цифры)
             const phoneInput = document.getElementById('client-phone');
             const phoneDigits = phoneInput.value.replace(/\D/g, '');
             
             if (phoneDigits.length !== 11) {
                 tg.showAlert("Пожалуйста, введите корректный номер телефона (11 цифр).");
-                phoneInput.style.borderColor = '#ff3b30'; // Красная рамка
+                phoneInput.style.borderColor = '#ff3b30';
                 document.getElementById('phone-error').style.display = 'block';
-                // Вибрация об ошибке
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                return; // Блокируем дальнейшую отправку
+                return; 
             }
 
             const deviceType = document.getElementById('device-type').value;
@@ -696,7 +707,7 @@
                 total: total,
                 device: deviceType,
                 problem: problemDesc || "Не указано",
-                phone: phoneInput.value // Отправляем красиво отформатированный номер
+                phone: phoneInput.value 
             };
 
             tg.MainButton.showProgress();
@@ -735,4 +746,3 @@
     </script>
 </body>
 </html>
-
