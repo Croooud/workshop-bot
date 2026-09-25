@@ -29,7 +29,7 @@ TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 # ID вашего общего рабочего чата (группы)
 ADMIN_CHAT_ID = -5308446621
 
-# Список ID администраторов (сюда можешь добавить свой ID и ID товарища через запятую)
+# Список ID администраторов (твой и товарища)
 ADMIN_IDS = [1044338073, 602535191] 
 
 bot = Bot(token=TOKEN)
@@ -192,7 +192,7 @@ async def api_order(order: OrderRequest):
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
-# Обработчик нажатия на кнопки статусов в рабочем чате
+# Обработчик нажатия на кнопки статусов в рабочем чате (с сохранением кнопок для повторного переключения)
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -223,10 +223,27 @@ async def process_status_change(callback: CallbackQuery):
         return
 
     master_name = callback.from_user.full_name
-    updated_text = callback.message.text + f"\n\n📌 **Статус изменен ({master_name}): {new_status}**"
+    
+    # Сохраняем клавиатуру, чтобы статус можно было менять повторно
+    updated_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🛠 В работу", callback_data=f"status:in_progress:{order_id}"),
+            InlineKeyboardButton(text="✅ Готово", callback_data=f"status:done:{order_id}"),
+            InlineKeyboardButton(text="❌ Отменен", callback_data=f"status:cancelled:{order_id}")
+        ]
+    ])
+
+    # Аккуратно обновляем только строку со статусом в тексте сообщения
+    raw_text = callback.message.text
+    if "\n\n📌 **" in raw_text:
+        base_text = raw_text.split("\n\n📌 **")[0]
+    else:
+        base_text = raw_text
+
+    updated_text = base_text + f"\n\n📌 **Текущий статус: {new_status}** (изменил {master_name})"
     
     try:
-        await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=None)
+        await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=updated_kb)
     except Exception:
         pass
 
