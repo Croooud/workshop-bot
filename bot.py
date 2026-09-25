@@ -4,9 +4,9 @@ import os
 import random
 import sqlite3
 import json
-import base64
-import openai
-from aiogram import Bot, Dispatcher, types, F
+from google import genai
+from google.genai import types
+from aiogram import Bot, Dispatcher, types as aiogram_types, F
 from aiogram.filters import Command
 from aiogram.types import (
     InlineKeyboardButton, 
@@ -30,8 +30,9 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Инициализация OpenAI (ключ берется из переменных окружения Render)
-openai.api_key = os.getenv("OPENAI_API_KEY", "")
+# Инициализация клиента Gemini (ключ берется из переменных окружения Render)
+gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
 
 # ID вашего общего рабочего чата (группы)
 ADMIN_CHAT_ID = -5308446621
@@ -126,38 +127,32 @@ async def get_user_orders(chat_id: int):
         return {"success": False, "orders": [], "error": str(e)}
 
 async def analyze_device_photo(file_bytes: bytes) -> str:
-    """Анализирует фото с помощью OpenAI Vision API"""
-    if not openai.api_key:
+    """Анализирует фото с помощью Gemini API"""
+    if not gemini_client:
         return "Фото принято, точную стоимость назовет мастер после осмотра."
     
     try:
-        base64_image = base64.b64encode(file_bytes).decode('utf-8')
-        
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Ты профессиональный мастер по ремонту компьютеров и ноутбуков. Проанализируй фото повреждения или проблемы. Выдай короткий предварительный вердикт на русском языке: какая это поломка и примерный диапазон стоимости ремонта в рублях. Если фото размытое, не имеет отношения к технике или поломку невозможно определить, строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Оцени поломку по этому фото:"},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=150
+        prompt = (
+            "Ты профессиональный мастер по ремонту компьютеров и ноутбуков. "
+            "Проанализируй фото повреждения или проблемы. Выдай короткий предварительный вердикт на русском языке: "
+            "какая это поломка и примерный диапазон стоимости ремонта в рублях. "
+            "Если фото размытое, не имеет отношения к технике или поломку невозможно определить, "
+            "строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
         )
-        return response.choices[0].message.content.strip()
+        
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                types.Part.from_bytes(
+                    data=file_bytes,
+                    mime_type='image/jpeg',
+                ),
+                prompt
+            ]
+        )
+        return response.text.strip()
     except Exception as e:
-        logging.error(f"OpenAI Vision API Error: {e}")
+        logging.error(f"Gemini API Vision Error: {e}")
         return "Фото принято, точную стоимость назовет мастер после осмотра."
 
 @app.post("/api/order")
@@ -211,7 +206,7 @@ async def api_order(
         f"📱 Телефон: `{phone}`\n"
         f"💻 Тип устройства: {device}\n"
         f"⚠️ Проблема: {problem}\n"
-        f"🤖 **AI-оценка по фото:** {ai_analysis_text}\n\n"
+        f"🤖 **AI-оценка по фото (Gemini):** {ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
         f"💳 **Сумма: {total_str}**"
     )
@@ -256,7 +251,7 @@ async def api_order(
         return {"success": False, "error": str(e)}
 
 @dp.message(Command("stats"))
-async def cmd_stats(message: types.Message):
+async def cmd_stats(message: aiogram_types.Message):
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("У вас нет прав для просмотра статистики.")
         return
@@ -436,7 +431,7 @@ async def process_status_change(callback: CallbackQuery):
     await callback.answer(f"Статус изменен на «{new_status}»!")
 
 @dp.message(Command("start", "restart"))
-async def cmd_start(message: types.Message):
+async def cmd_start(message: aiogram_types.Message):
     user = message.from_user
     username = user.username or ""
     profile_link = f"https://t.me/{username}" if username else f"tg://user?id={user.id}"
@@ -512,7 +507,7 @@ async def process_back(callback: CallbackQuery):
         "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
         "Профессиональный ремонт и обслуживание компьютерной техники."
     )
-    await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
+    await callback.message.edit_text(welcome_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
 async def set_bot_commands(bot: Bot):
