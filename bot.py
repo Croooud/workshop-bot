@@ -11,15 +11,17 @@ from aiogram.types import (
     WebAppInfo, 
     CallbackQuery, 
     BotCommand, 
-    MenuButtonWebApp
+    MenuButtonWebApp,
+    BufferedInputFile
 )
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from pydantic import BaseModel
 from typing import List
+import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -122,31 +124,32 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
-class OrderItem(BaseModel):
-    name: str
-    price: int
-
-class OrderRequest(BaseModel):
-    chat_id: int
-    items: List[OrderItem]
-    total: int
-    device: str
-    problem: str
-    phone: str
-
-# Обработка отправки заявки
+# Обработка отправки заявки с поддержкой фото и FormData
 @app.post("/api/order")
-async def api_order(order: OrderRequest):
+async def api_order(
+    chat_id: int = Form(...),
+    items: str = Form(...),
+    total: int = Form(...),
+    device: str = Form(...),
+    problem: str = Form(...),
+    phone: str = Form(...),
+    photo: UploadFile = File(None)
+):
     order_id = f"#{random.randint(10000, 99999)}"
-    client_link = f"tg://user?id={order.chat_id}"
+    client_link = f"tg://user?id={chat_id}"
     
+    try:
+        items_list = json.loads(items)
+    except:
+        items_list = []
+
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
-        items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
+        items_str = ", ".join([f"{item['name']} ({item['price']}₽)" for item in items_list])
         cursor.execute(
             "INSERT INTO orders (order_id, user_id, client_link, items, total) VALUES (?, ?, ?, ?, ?)",
-            (order_id, order.chat_id, client_link, items_str, order.total)
+            (order_id, chat_id, client_link, items_str, total)
         )
         conn.commit()
         conn.close()
@@ -154,23 +157,22 @@ async def api_order(order: OrderRequest):
         logging.error(f"DB Error: {e}")
 
     items_list_str = ""
-    for item in order.items:
-        p_str = "Бесплатно" if item.price == 0 else f"{item.price:,} ₽".replace(',', ' ')
-        items_list_str += f"▫️ {item.name} — *{p_str}*\n"
+    for item in items_list:
+        p_str = "Бесплатно" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
+        items_list_str += f"▫️ {item['name']} — *{p_str}*\n"
     
-    total_str = f"{order.total:,} ₽".replace(',', ' ')
+    total_str = f"{total:,} ₽".replace(',', ' ')
 
     admin_receipt = (
         f"🔔 **НОВЫЙ ЗАКАЗ {order_id}**\n\n"
-        f"👤 Клиент: [ID {order.chat_id}]({client_link})\n"
-        f"📱 Телефон: `{order.phone}`\n"
-        f"💻 Тип устройства: {order.device}\n"
-        f"⚠️ Проблема: {order.problem}\n\n"
+        f"👤 Клиент: [ID {chat_id}]({client_link})\n"
+        f"📱 Телефон: `{phone}`\n"
+        f"💻 Тип устройства: {device}\n"
+        f"⚠️ Проблема: {problem}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
         f"💳 **Сумма: {total_str}**"
     )
     
-    # Инлайн-кнопки для управления статусом в рабочем чате
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🛠 В работу", callback_data=f"status:in_progress:{order_id}"),
@@ -180,19 +182,33 @@ async def api_order(order: OrderRequest):
     ])
     
     try:
-        # Отправляем в общий рабочий чат мастеров
-        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_receipt, reply_markup=admin_kb, parse_mode="HTML")
+        if photo:
+            file_bytes = await photo.read()
+            photo_file = BufferedInputFile(file_bytes, filename=photo.filename or "problem.jpg")
+            await bot.send_photo(
+                chat_id=ADMIN_CHAT_ID,
+                photo=photo_file,
+                caption=admin_receipt,
+                reply_markup=admin_kb,
+                parse_mode="HTML"
+            )
+        else:
+            await bot.send_message(
+                chat_id=ADMIN_CHAT_ID,
+                text=admin_receipt,
+                reply_markup=admin_kb,
+                parse_mode="HTML"
+            )
         
-        # Уведомляем клиента
         reply_text = "✅ Ваша заявка принята! Вы можете отслеживать её статус в «Личном кабинете» внутри мини-приложения."
-        await bot.send_message(chat_id=order.chat_id, text=reply_text, parse_mode="HTML")
+        await bot.send_message(chat_id=chat_id, text=reply_text, parse_mode="HTML")
         
         return {"success": True}
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
-# Обработчик нажатия на кнопки статусов в рабочем чате
+# Обработчик нажатия на кнопки статусов в рабочем чате с отправкой ЛС клиенту
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -211,7 +227,6 @@ async def process_status_change(callback: CallbackQuery):
     
     new_status = status_map.get(action, "Новый")
 
-    # Обновляем статус в БД и находим chat_id клиента для отправки личного сообщения
     client_chat_id = None
     try:
         conn = sqlite3.connect("database.db")
@@ -240,7 +255,12 @@ async def process_status_change(callback: CallbackQuery):
         ]
     ])
 
-    raw_text = callback.message.text
+    # Поддержка работы как с текстовыми сообщениями, так и с подписями к фото
+    if callback.message.text:
+        raw_text = callback.message.text
+    else:
+        raw_text = callback.message.caption or ""
+
     if "\n\n📌 **" in raw_text:
         base_text = raw_text.split("\n\n📌 **")[0]
     else:
@@ -249,11 +269,14 @@ async def process_status_change(callback: CallbackQuery):
     updated_text = base_text + f"\n\n📌 **Текущий статус: {new_status}** (изменил {master_name})"
     
     try:
-        await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=updated_kb)
+        if callback.message.photo:
+            await callback.message.edit_caption(caption=updated_text, parse_mode="HTML", reply_markup=updated_kb)
+        else:
+            await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=updated_kb)
     except Exception:
         pass
 
-    # Отправляем прямое сообщение клиенту в ЛС
+    # Отправка персонального уведомления клиенту в ЛС
     if client_chat_id:
         try:
             if action == "in_progress":
