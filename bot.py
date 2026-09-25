@@ -107,18 +107,18 @@ async def api_order(order: OrderRequest):
     items_list_str = ""
     for item in order.items:
         p_str = "Бесплатно" if item.price == 0 else f"{item.price:,} ₽".replace(',', ' ')
-        items_list_str += f"▫️ {item.name} — <i>{p_str}</i>\n"
+        items_list_str += f"▫️ {item.name} — *{p_str}*\n"
     
     total_str = f"{order.total:,} ₽".replace(',', ' ')
 
     admin_receipt = (
-        f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
-        f"👤 Клиент: <a href='{client_link}'>ID {order.chat_id}</a>\n"
-        f"📱 Телефон: <code>{order.phone}</code>\n"
+        f"🔔 **НОВЫЙ ЗАКАЗ {order_id}**\n\n"
+        f"👤 Клиент: [ID {order.chat_id}]({client_link})\n"
+        f"📱 Телефон: `{order.phone}`\n"
         f"💻 Тип устройства: {order.device}\n"
         f"⚠️ Проблема: {order.problem}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
-        f"💳 <b>Сумма: {total_str}</b>"
+        f"💳 **Сумма: {total_str}**"
     )
     
     try:
@@ -165,23 +165,32 @@ async def cmd_start(message: types.Message):
         ]
     )
     welcome_text = (
-        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
+        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
         "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 <i>Бесплатная диагностика</i>\n"
-        "🔸 <i>Прозрачные цены</i>\n"
-        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
+        "🔸 *Бесплатная диагностика*\n"
+        "🔸 *Прозрачные цены*\n"
+        "🔸 *Выезд на дом по договоренности*\n\n"
         "Выберите нужное действие в меню ниже 👇"
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
+# --- НОВЫЙ ХЭНДЛЕР ДЛЯ КОНТАКТА ---
+@dp.message(F.contact)
+async def process_contact_message(message: types.Message):
+    text = (
+        "✅ **Контакт успешно получен!**\n\n"
+        "Пожалуйста, вернитесь в открытое окно заявки и нажмите большую синюю кнопку **«ОФОРМИТЬ ЗАЯВКУ»** в самом низу, чтобы мы получили список выбранных вами услуг."
+    )
+    await message.answer(text, parse_mode="HTML")
+
 @dp.callback_query(F.data == "show_contacts")
 async def process_contacts(callback: CallbackQuery):
     text = (
-        "📍 <b>НАШИ КОНТАКТЫ</b>\n\n"
-        "<b>Адрес:</b> ПГТ Ручейк, ул., д. 1\n"
-        "<b>Телефон / WhatsApp:</b> <code>+7 (991) 888-60-17</code>\n"
-        "<b>Telegram:</b> @IvanMiroshnichenkoo\n\n"
-        "<i>Работаем по предварительной записи. Возможен выезд на дом.</i>"
+        "📍 **НАШИ КОНТАКТЫ**\n\n"
+        "**Адрес:** ПГТ Ручейк, ул., д. 1\n"
+        "**Телефон / WhatsApp:** `+7 (991) 888-60-17`\n"
+        "**Telegram:** @IvanMiroshnichenkoo\n\n"
+        "*Работаем по предварительной записи. Возможен выезд на дом.*"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -192,12 +201,12 @@ async def process_contacts(callback: CallbackQuery):
 @dp.callback_query(F.data == "show_faq")
 async def process_faq(callback: CallbackQuery):
     text = (
-        "❓ <b>ЧАСТЫЕ ВОПРОСЫ</b>\n\n"
-        "<b>— Сколько длится диагностика?</b>\n"
+        "❓ **ЧАСТЫЕ ВОПРОСЫ**\n\n"
+        "**— Сколько длится диагностика?**\n"
         "Обычно от 1 до 3 часов в зависимости от сложности.\n\n"
-        "<b>— Можно ли со своими запчастями?</b>\n"
+        "**— Можно ли со своими запчастями?**\n"
         "Да, мы соберем ПК из ваших комплектующих.\n\n"
-        "<b>— Даете ли гарантию?</b>\n"
+        "**— Даете ли гарантию?**\n"
         "Да, на все виды работ предоставляется техническая гарантия."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -217,11 +226,11 @@ async def process_back(callback: CallbackQuery):
         ]
     )
     welcome_text = (
-        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
+        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
         "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 <i>Бесплатная диагностика</i>\n"
-        "🔸 <i>Прозрачные цены</i>\n"
-        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
+        "🔸 *Бесплатная диагностика*\n"
+        "🔸 *Прозрачные цены*\n"
+        "🔸 *Выезд на дом по договоренности*\n\n"
         "Выберите нужное действие в меню ниже 👇"
     )
     await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
@@ -244,4 +253,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
