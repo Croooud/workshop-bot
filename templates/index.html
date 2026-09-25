@@ -377,8 +377,7 @@
         </header>
 
         <div class="list-group" id="services-container">
-            <!-- JS генерирует карточки -->
-        </div>
+            </div>
     </main>
 
     <main id="view-contacts" class="view">
@@ -429,11 +428,9 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    <!-- JS генерирует список -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Форма опросника -->
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                 <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип устройства:</label>
                 <select id="device-type" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px;">
@@ -456,7 +453,6 @@
         </div>
     </main>
 
-    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -467,7 +463,6 @@
         </div>
     </div>
 
-    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -667,19 +662,26 @@
                 },
                 body: JSON.stringify(orderData)
             })
-            .then(response => response.json())
+            .then(async response => {
+                const data = await response.json().catch(() => null);
+                if (!response.ok) {
+                    let errDetail = (data && data.detail) ? JSON.stringify(data.detail) : response.statusText;
+                    throw new Error(`HTTP ${response.status}: ${errDetail}`);
+                }
+                return data;
+            })
             .then(data => {
                 tg.MainButton.hideProgress();
-                if (data.success) {
+                if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     tg.close();
                 } else {
-                    tg.showAlert("Ошибка сервера: " + (data.error || "Неизвестная ошибка"));
+                    tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
                 }
             })
             .catch(error => {
                 tg.MainButton.hideProgress();
-                tg.showAlert("Сетевая ошибка: " + error.message);
+                tg.showAlert("Сбой при отправке: " + error.message);
             });
         }
 
@@ -687,3 +689,4 @@
     </script>
 </body>
 </html>
+
