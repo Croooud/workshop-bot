@@ -192,7 +192,7 @@ async def api_order(order: OrderRequest):
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
-# Обработчик нажатия на кнопки статусов в рабочем чате (с сохранением кнопок для повторного переключения)
+# Обработчик нажатия на кнопки статусов в рабочем чате
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -211,9 +211,17 @@ async def process_status_change(callback: CallbackQuery):
     
     new_status = status_map.get(action, "Новый")
 
+    # Обновляем статус в БД и находим chat_id клиента для отправки личного сообщения
+    client_chat_id = None
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
+        
+        cursor.execute("SELECT user_id FROM orders WHERE order_id = ?", (order_id,))
+        row = cursor.fetchone()
+        if row:
+            client_chat_id = row[0]
+
         cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, order_id))
         conn.commit()
         conn.close()
@@ -224,7 +232,6 @@ async def process_status_change(callback: CallbackQuery):
 
     master_name = callback.from_user.full_name
     
-    # Сохраняем клавиатуру, чтобы статус можно было менять повторно
     updated_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🛠 В работу", callback_data=f"status:in_progress:{order_id}"),
@@ -233,7 +240,6 @@ async def process_status_change(callback: CallbackQuery):
         ]
     ])
 
-    # Аккуратно обновляем только строку со статусом в тексте сообщения
     raw_text = callback.message.text
     if "\n\n📌 **" in raw_text:
         base_text = raw_text.split("\n\n📌 **")[0]
@@ -246,6 +252,22 @@ async def process_status_change(callback: CallbackQuery):
         await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=updated_kb)
     except Exception:
         pass
+
+    # Отправляем прямое сообщение клиенту в ЛС
+    if client_chat_id:
+        try:
+            if action == "in_progress":
+                client_msg = f"👨‍🔧 Ваш заказ **{order_id}** взят в работу мастером."
+            elif action == "done":
+                client_msg = f"✅ **Готово!** Ваш заказ **{order_id}** выполнен и ждет вас."
+            elif action == "cancelled":
+                client_msg = f"❌ Статус вашего заказа **{order_id}** изменен на: **Отменен**."
+            else:
+                client_msg = f"📌 Статус вашего заказа **{order_id}** обновлен: {new_status}."
+
+            await bot.send_message(chat_id=client_chat_id, text=client_msg, parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Failed to send direct message to client {client_chat_id}: {e}")
 
     await callback.answer(f"Статус заказа {order_id} изменен на «{new_status}»!")
 
