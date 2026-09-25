@@ -65,6 +65,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Таблица для сохранения клиентских оценок
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id TEXT,
+            user_id INTEGER,
+            rating INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -250,6 +260,87 @@ async def cmd_stats(message: types.Message):
         logging.error(f"Stats calculation error: {e}")
         await message.answer("⚠️ Ошибка при подсчете статистики из базы данных.")
 
+# Функция отложенного запроса отзыва через 24 часа
+async def schedule_review_request(client_chat_id: int, order_id: str):
+    await asyncio.sleep(86400) # 24 часа (для тестов можно временно изменить)
+
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT status FROM orders WHERE order_id = ?", (order_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row or row[0] != "Готово":
+            return
+
+        review_kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="⭐ 1", callback_data=f"review:1:{order_id}"),
+                InlineKeyboardButton(text="⭐ 2", callback_data=f"review:2:{order_id}"),
+                InlineKeyboardButton(text="⭐ 3", callback_data=f"review:3:{order_id}"),
+                InlineKeyboardButton(text="⭐ 4", callback_data=f"review:4:{order_id}"),
+                InlineKeyboardButton(text="⭐ 5", callback_data=f"review:5:{order_id}")
+            ]
+        ])
+
+        msg_text = (
+            f"👋 Привет! Прошли сутки с момента завершения ремонта в **«Мастерской Ручеёк»** (заказ **{order_id}**).\n\n"
+            f"Как работает техника? Оцените, пожалуйста, качество обслуживания от 1 до 5 звезд 👇"
+        )
+
+        await bot.send_message(chat_id=client_chat_id, text=msg_text, reply_markup=review_kb, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Error sending review request to {client_chat_id}: {e}")
+
+# Обработчик нажатия на звезды оценки от клиента
+@dp.callback_query(F.data.startswith("review:"))
+async def process_review_rating(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    rating = parts[1]
+    order_id = parts[2]
+    user_id = callback.from_user.id
+    user_name = callback.from_user.full_name
+    username = callback.from_user.username
+    user_link = f"https://t.me/{username}" if username else f"tg://user?id={user_id}"
+
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO reviews (order_id, user_id, rating) VALUES (?, ?, ?)",
+            (order_id, user_id, int(rating))
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"DB Review save error: {e}")
+
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    stars = "⭐" * int(rating)
+    await callback.answer("Спасибо за вашу оценку!", show_alert=True)
+    await callback.message.edit_text(
+        f"Спасибо за ваш отзыв! Вы поставили нам оценку: **{stars} ({rating}/5)**.\n"
+        f"Будем рады видеть вас снова!", 
+        parse_mode="HTML"
+    )
+
+    admin_review_notification = (
+        f"⭐ **НОВЫЙ ОТЗЫВ КЛИЕНТА**\n\n"
+        f"📦 Заказ: **{order_id}**\n"
+        f"👤 Клиент: [{user_name}]({user_link}) (ID: `{user_id}`)\n"
+        f"📊 Оценка: **{stars} ({rating} из 5)**"
+    )
+
+    try:
+        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_review_notification, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Failed to send review to admin chat: {e}")
+
 # Обработчик нажатия на кнопки статусов в рабочем чате с отправкой ЛС клиенту
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
@@ -286,6 +377,10 @@ async def process_status_change(callback: CallbackQuery):
         logging.error(f"DB Update Error: {e}")
         await callback.answer("Ошибка при обновлении базы данных.", show_alert=True)
         return
+
+    # Если статус изменен на "Готово", запускаем таймер сбора отзыва через 24 часа
+    if action == "done" and client_chat_id:
+        asyncio.create_task(schedule_review_request(client_chat_id, order_id))
 
     master_name = callback.from_user.full_name
     
