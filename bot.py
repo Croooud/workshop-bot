@@ -140,9 +140,9 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
             "строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
         )
         
-        # Используем асинхронный вызов .aio, динамический MIME-тип и модель gemini-2.5-flash
+        # Используем асинхронный вызов .aio, динамический MIME-тип и актуальную модель gemini-3.8-flash
         response = await gemini_client.aio.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=[
                 types.Part.from_bytes(
                     data=file_bytes,
