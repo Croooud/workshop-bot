@@ -459,8 +459,7 @@
         </header>
 
         <div class="list-group" id="services-container">
-            <!-- JS генерирует карточки -->
-        </div>
+            </div>
 
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
@@ -513,8 +512,7 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    <!-- JS генерирует список -->
-                </div>
+                    </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -548,38 +546,29 @@
         </div>
     </main>
 
-    <!-- Экран успешного оформления -->
     <main id="view-success" class="view">
         <div class="success-icon-wrap">
-            <svg viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
         <div class="success-title">Спасибо!<br>Ваша заявка принята</div>
         <div class="success-desc">Мы свяжемся с вами в ближайшее время.</div>
         <button class="btn-close" onclick="tg.close()">Отлично</button>
     </main>
 
-    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
             <span class="fb-total" id="fb-total">0 ₽</span>
         </div>
-        <div class="fb-action">
-            Продолжить <span>→</span>
-        </div>
+        <div class="fb-action">Продолжить <span>→</span></div>
     </div>
 
-    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
-            <span class="nav-icon">▤</span>
-            <span>Услуги</span>
+            <span class="nav-icon">▤</span><span>Услуги</span>
         </div>
         <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
-            <span class="nav-icon">●</span>
-            <span>Контакты</span>
+            <span class="nav-icon">●</span><span>Контакты</span>
         </div>
     </nav>
 
@@ -589,9 +578,7 @@
         tg.ready();
 
         document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
-        tg.onEvent('themeChanged', () => {
-            document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
-        });
+        tg.onEvent('themeChanged', () => { document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light'; });
 
         const servicesData = [
             { id: 1, name: "Диагностика компьютера", price: 0, label: "Бесплатно*" },
@@ -610,14 +597,13 @@
         const phoneInput = document.getElementById('client-phone');
         const btnTgContact = document.getElementById('btn-tg-contact');
 
-        // Проверяем, поддерживает ли текущая версия Telegram запрос контакта (начиная с 6.9)
         if (tg.isVersionAtLeast('6.9')) {
             btnTgContact.addEventListener('click', () => {
                 tg.requestContact((shared) => {
                     if (shared) {
                         isContactShared = true;
                         phoneInput.value = "Отправлен в чат с ботом";
-                        phoneInput.disabled = true; // Блокируем ручной ввод
+                        phoneInput.disabled = true;
                         phoneInput.style.borderColor = 'var(--accent-color)';
                         phoneInput.style.color = 'var(--accent-color)';
                         document.getElementById('phone-error').style.display = 'none';
@@ -626,65 +612,41 @@
                 });
             });
         } else {
-            btnTgContact.style.display = 'none'; // Скрываем кнопку у пользователей со старым ТГ
+            btnTgContact.style.display = 'none';
         }
 
         // --- МАСКА ДЛЯ ТЕЛЕФОНА ---
         phoneInput.addEventListener('input', function (e) {
             isContactShared = false;
-            
-            let inputNumbersValue = e.target.value.replace(/\D/g, '');
-            let formattedInputValue = '';
-            
+            let val = e.target.value.replace(/\D/g, '');
             phoneInput.style.borderColor = 'var(--border-color)';
             document.getElementById('phone-error').style.display = 'none';
-
-            if (!inputNumbersValue) {
-                return e.target.value = '';
-            }
+            if (!val) return e.target.value = '';
             
-            if (['7', '8', '9'].indexOf(inputNumbersValue[0]) > -1) {
-                if (inputNumbersValue[0] === '9') inputNumbersValue = '7' + inputNumbersValue;
-                
-                formattedInputValue = '+7 ';
-                if (inputNumbersValue.length > 1) {
-                    formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
-                }
-                if (inputNumbersValue.length >= 5) {
-                    formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
-                }
-                if (inputNumbersValue.length >= 8) {
-                    formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-                }
-                if (inputNumbersValue.length >= 10) {
-                    formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
-                }
+            if (['7', '8', '9'].indexOf(val[0]) > -1) {
+                if (val[0] === '9') val = '7' + val;
+                let fmt = '+7 ';
+                if (val.length > 1) fmt += '(' + val.substring(1, 4);
+                if (val.length >= 5) fmt += ') ' + val.substring(4, 7);
+                if (val.length >= 8) fmt += '-' + val.substring(7, 9);
+                if (val.length >= 10) fmt += '-' + val.substring(9, 11);
+                e.target.value = fmt;
             } else {
-                formattedInputValue = '+' + inputNumbersValue.substring(0, 15);
+                e.target.value = '+' + val.substring(0, 15);
             }
-            e.target.value = formattedInputValue;
         });
 
         function renderServices() {
             const container = document.getElementById('services-container');
             container.innerHTML = '';
-            
             servicesData.forEach(s => {
                 const isSelected = cart.has(s.id);
                 const card = document.createElement('div');
                 card.className = `card ${isSelected ? 'selected' : ''}`;
                 card.onclick = () => toggleService(card, s);
-                
                 card.innerHTML = `
-                    <div class="card-content">
-                        <div class="card-title">${s.name}</div>
-                        <div class="card-price">${s.label}</div>
-                    </div>
-                    <div class="checkbox-wrapper">
-                        <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </div>
+                    <div class="card-content"><div class="card-title">${s.name}</div><div class="card-price">${s.label}</div></div>
+                    <div class="checkbox-wrapper"><svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
                 `;
                 container.appendChild(card);
             });
@@ -692,14 +654,8 @@
 
         function toggleService(cardElement, service) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-            if (cart.has(service.id)) {
-                cart.delete(service.id);
-                cardElement.classList.remove('selected');
-            } else {
-                cart.set(service.id, service);
-                cardElement.classList.add('selected');
-            }
+            if (cart.has(service.id)) { cart.delete(service.id); cardElement.classList.remove('selected'); } 
+            else { cart.set(service.id, service); cardElement.classList.add('selected'); }
             updateCartState();
         }
 
@@ -707,18 +663,11 @@
             const bar = document.getElementById('floating-bar');
             if (cart.size > 0) {
                 let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
-                
-                let words = ['услуга', 'услуги', 'услуг'];
-                let n = cart.size % 100;
-                let n1 = n % 10;
-                let word = (n > 10 && n < 20) ? words[2] : (n1 > 1 && n1 < 5) ? words[1] : (n1 === 1) ? words[0] : words[2];
-                
-                document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
+                let w = ['услуга', 'услуги', 'услуг'];
+                let n = cart.size % 100, n1 = n % 10;
+                document.getElementById('fb-count').innerText = `${cart.size} ${(n > 10 && n < 20) ? w[2] : (n1 > 1 && n1 < 5) ? w[1] : (n1 === 1) ? w[0] : w[2]}`;
                 document.getElementById('fb-total').innerText = `${total.toLocaleString('ru-RU')} ₽`;
-                
-                if (currentView === 'services') {
-                    bar.classList.add('visible');
-                }
+                if (currentView === 'services') bar.classList.add('visible');
             } else {
                 bar.classList.remove('visible');
                 if (currentView === 'summary') navigate('services');
@@ -731,7 +680,6 @@
 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
-
             document.getElementById(`view-${viewName}`).classList.add('active');
             
             const navBtn = document.getElementById(`nav-${viewName}`);
@@ -745,70 +693,42 @@
                 floatingBar.classList.remove('visible');
                 tg.MainButton.hide();
                 return;
-            } else {
-                bottomNav.style.transform = 'translateY(0)'; 
-            }
+            } else { bottomNav.style.transform = 'translateY(0)'; }
 
             if (viewName === 'summary') {
                 floatingBar.classList.remove('visible');
                 renderSummary();
-                setupMainButton();
+                tg.MainButton.show();
             } else {
                 tg.MainButton.hide();
-                if (cart.size > 0 && viewName === 'services') {
-                    floatingBar.classList.add('visible');
-                } else {
-                    floatingBar.classList.remove('visible');
-                }
+                if (cart.size > 0 && viewName === 'services') floatingBar.classList.add('visible');
+                else floatingBar.classList.remove('visible');
             }
         }
 
         function renderSummary() {
             const container = document.getElementById('summary-list');
             container.innerHTML = '';
-            
             let total = 0;
             cart.forEach(item => {
                 total += item.price;
-                const priceStr = item.price === 0 ? "Бесплатно" : `${item.price.toLocaleString('ru-RU')} ₽`;
-                container.innerHTML += `
-                    <div class="summary-item">
-                        <span style="flex:1; padding-right:12px;">✓ ${item.name}</span>
-                        <span style="font-weight:600;">${priceStr}</span>
-                    </div>
-                `;
+                container.innerHTML += `<div class="summary-item"><span style="flex:1; padding-right:12px;">✓ ${item.name}</span><span style="font-weight:600;">${item.price === 0 ? "Бесплатно" : item.price.toLocaleString('ru-RU') + " ₽"}</span></div>`;
             });
-
-            container.innerHTML += `
-                <div class="summary-total">
-                    <span>Итого:</span>
-                    <span>${total.toLocaleString('ru-RU')} ₽</span>
-                </div>
-            `;
+            container.innerHTML += `<div class="summary-total"><span>Итого:</span><span>${total.toLocaleString('ru-RU')} ₽</span></div>`;
         }
 
-        function setupMainButton() {
-            tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
-            tg.MainButton.color = tg.themeParams.button_color || '#007aff';
-            tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
-            tg.MainButton.show();
-            
-            tg.MainButton.offClick(sendOrder);
-            tg.MainButton.onClick(sendOrder);
-        }
-
-        function sendOrder() {
+        // Привязываем событие один раз, чтобы избежать бага на Telegram Desktop
+        tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
+        tg.MainButton.color = tg.themeParams.button_color || '#007aff';
+        tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
+        tg.MainButton.onClick(() => {
             if (cart.size === 0) return;
 
             const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                tg.showAlert("Ошибка: невозможно определить ID пользователя. Откройте приложение через Telegram.");
-                return;
-            }
+            if (!user) { tg.showAlert("Ошибка: невозможно определить ID пользователя."); return; }
 
             if (!isContactShared) {
                 const phoneDigits = phoneInput.value.replace(/\D/g, '');
-                
                 if (phoneDigits.length !== 11) {
                     tg.showAlert("Пожалуйста, введите корректный номер телефона (11 цифр).");
                     phoneInput.style.borderColor = '#ff3b30';
@@ -818,62 +738,45 @@
                 }
             }
 
-            const deviceType = document.getElementById('device-type').value;
-            const problemDesc = document.getElementById('problem-desc').value.trim();
-
-            let total = 0;
-            const items = [];
-            cart.forEach(item => {
-                total += item.price;
-                items.push({ name: item.name, price: item.price });
-            });
-
             const orderData = {
                 chat_id: user.id,
-                items: items,
-                total: total,
-                device: deviceType,
-                problem: problemDesc || "Не указано",
+                items: Array.from(cart.values()).map(i => ({name: i.name, price: i.price})),
+                total: Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0),
+                device: document.getElementById('device-type').value,
+                problem: document.getElementById('problem-desc').value.trim() || "Не указано",
                 phone: isContactShared ? "Отправлен боту (см. историю чата)" : phoneInput.value 
             };
 
+            tg.MainButton.text = "ОТПРАВКА...";
             tg.MainButton.showProgress();
 
             fetch('/api/order', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
             })
             .then(async response => {
                 const data = await response.json().catch(() => null);
-                if (!response.ok) {
-                    let errDetail = (data && data.detail) ? JSON.stringify(data.detail) : response.statusText;
-                    throw new Error(`HTTP ${response.status}: ${errDetail}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${(data && data.detail) ? JSON.stringify(data.detail) : response.statusText}`);
                 return data;
             })
             .then(data => {
                 tg.MainButton.hideProgress();
                 if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    
                     navigate('success');
-                    
-                    setTimeout(() => {
-                        tg.close();
-                    }, 4000);
-
+                    setTimeout(() => { tg.close(); }, 4000);
                 } else {
+                    tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
                     tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
                 }
             })
             .catch(error => {
                 tg.MainButton.hideProgress();
+                tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
                 tg.showAlert("Сбой при отправке: " + error.message);
             });
-        }
+        });
 
         renderServices();
     </script>
