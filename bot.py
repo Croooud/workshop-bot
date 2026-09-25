@@ -83,7 +83,6 @@ async def download_database(key: str = ""):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
-# Эндпоинт для получения истории заказов пользователя в личный кабинет
 @app.get("/api/orders/{chat_id}")
 async def get_user_orders(chat_id: int):
     try:
@@ -124,7 +123,6 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
-# Обработка отправки заявки с поддержкой фото и FormData
 @app.post("/api/order")
 async def api_order(
     chat_id: int = Form(...),
@@ -208,7 +206,6 @@ async def api_order(
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
-# Обработчик нажатия на кнопки статусов в рабочем чате с отправкой ЛС клиенту
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -255,11 +252,7 @@ async def process_status_change(callback: CallbackQuery):
         ]
     ])
 
-    # Поддержка работы как с текстовыми сообщениями, так и с подписями к фото
-    if callback.message.text:
-        raw_text = callback.message.text
-    else:
-        raw_text = callback.message.caption or ""
+    raw_text = callback.message.text if callback.message.text else (callback.message.caption or "")
 
     if "\n\n📌 **" in raw_text:
         base_text = raw_text.split("\n\n📌 **")[0]
@@ -276,7 +269,6 @@ async def process_status_change(callback: CallbackQuery):
     except Exception:
         pass
 
-    # Отправка персонального уведомления клиенту в ЛС
     if client_chat_id:
         try:
             if action == "in_progress":
