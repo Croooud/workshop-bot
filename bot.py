@@ -241,14 +241,16 @@ async def set_bot_commands(bot: Bot):
     ]
     await bot.set_my_commands(commands)
 
-    # Настройка системной кнопки меню (слева от поля ввода в чате)
-    web_app_url = "https://workshop-bot-dcyv.onrender.com"
-    await bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(
+    # Безопасная настройка системной кнопки меню
+    try:
+        web_app_url = "https://workshop-bot-dcyv.onrender.com"
+        menu_button = MenuButtonWebApp(
             text="Прайс и Заказ",
             web_app=WebAppInfo(url=web_app_url)
         )
-    )
+        await bot.set_chat_menu_button(menu_button=menu_button)
+    except Exception as e:
+        logging.error(f"Menu button setup error: {e}")
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
