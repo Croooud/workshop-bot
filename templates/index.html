@@ -377,7 +377,8 @@
         </header>
 
         <div class="list-group" id="services-container">
-            </div>
+            <!-- JS генерирует карточки -->
+        </div>
     </main>
 
     <main id="view-contacts" class="view">
@@ -428,9 +429,11 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    </div>
+                    <!-- JS генерирует список -->
+                </div>
             </div>
 
+            <!-- Форма опросника -->
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                 <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип устройства:</label>
                 <select id="device-type" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px;">
@@ -453,6 +456,7 @@
         </div>
     </main>
 
+    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -463,6 +467,7 @@
         </div>
     </div>
 
+    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -622,6 +627,12 @@
         function sendOrder() {
             if (cart.size === 0) return;
 
+            const user = tg.initDataUnsafe?.user;
+            if (!user) {
+                tg.showAlert("Ошибка: невозможно определить ID пользователя. Откройте приложение через Telegram.");
+                return;
+            }
+
             const deviceType = document.getElementById('device-type').value;
             const problemDesc = document.getElementById('problem-desc').value.trim();
             const clientPhone = document.getElementById('client-phone').value.trim();
@@ -639,6 +650,7 @@
             });
 
             const orderData = {
+                chat_id: user.id,
                 items: items,
                 total: total,
                 device: deviceType,
@@ -646,7 +658,29 @@
                 phone: clientPhone
             };
 
-            tg.sendData(JSON.stringify(orderData));
+            tg.MainButton.showProgress();
+
+            fetch('/api/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                tg.MainButton.hideProgress();
+                if (data.success) {
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    tg.close();
+                } else {
+                    tg.showAlert("Ошибка сервера: " + (data.error || "Неизвестная ошибка"));
+                }
+            })
+            .catch(error => {
+                tg.MainButton.hideProgress();
+                tg.showAlert("Сетевая ошибка: " + error.message);
+            });
         }
 
         renderServices();
