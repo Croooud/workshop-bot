@@ -16,6 +16,7 @@
             --border-color: rgba(0, 0, 0, 0.08);
             --nav-bg: rgba(255, 255, 255, 0.85);
             --success-color: #34c759;
+            --danger-color: #ff3b30;
             
             --radius-sm: 12px;
             --radius-md: 16px;
@@ -287,7 +288,6 @@
             font-weight: 700;
         }
 
-        /* --- Стили для загрузки фото --- */
         .file-upload-container {
             display: flex;
             flex-direction: column;
@@ -344,7 +344,7 @@
             text-overflow: ellipsis;
         }
         .btn-remove-photo {
-            background: #ff3b30;
+            background: var(--danger-color);
             color: white;
             border: none;
             width: 28px;
@@ -384,6 +384,10 @@
             font-size: 12px;
             background: var(--accent-bg);
             color: var(--accent-color);
+        }
+        .order-status.cancelled {
+            background: rgba(255, 59, 48, 0.12);
+            color: var(--danger-color);
         }
         .order-body {
             font-size: 14px;
@@ -465,9 +469,13 @@
             font-weight: 500;
         }
         .timeline-step.cancelled .timeline-bullet {
-            background-color: #ff3b30;
-            border-color: #ff3b30;
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
             color: #fff;
+        }
+        .timeline-step.cancelled .timeline-label {
+            color: var(--danger-color);
+            font-weight: 600;
         }
 
         .empty-cabinet {
@@ -572,7 +580,6 @@
             margin-bottom: 2px;
         }
 
-        /* --- Стили экрана успеха --- */
         #view-success {
             display: none;
             opacity: 0;
@@ -657,8 +664,7 @@
             <p class="desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
         </header>
 
-        <div class="list-group" id="services-container">
-            </div>
+        <div class="list-group" id="services-container"></div>
 
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
@@ -725,8 +731,7 @@
 
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
-                <div id="summary-list" style="width: 100%;">
-                    </div>
+                <div id="summary-list" style="width: 100%;"></div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -764,9 +769,9 @@
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Ваш номер телефона: <span style="color: #ff3b30;">*</span></label>
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Ваш номер телефона: <span style="color: var(--danger-color);">*</span></label>
                 <input type="tel" id="client-phone" placeholder="+7 (___) ___-__-__" maxlength="18" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; transition: border-color 0.2s;">
-                <span id="phone-error" style="color: #ff3b30; font-size: 12px; display: none; margin-top: -4px;">Введите корректный номер (11 цифр)</span>
+                <span id="phone-error" style="color: var(--danger-color); font-size: 12px; display: none; margin-top: -4px;">Введите корректный номер (11 цифр)</span>
             </div>
         </div>
     </main>
@@ -864,26 +869,16 @@
             phoneInput.style.borderColor = 'var(--border-color)';
             document.getElementById('phone-error').style.display = 'none';
 
-            if (!inputNumbersValue) {
-                return e.target.value = '';
-            }
+            if (!inputNumbersValue) return e.target.value = '';
             
             if (['7', '8', '9'].indexOf(inputNumbersValue[0]) > -1) {
                 if (inputNumbersValue[0] === '9') inputNumbersValue = '7' + inputNumbersValue;
                 
                 formattedInputValue = '+7 ';
-                if (inputNumbersValue.length > 1) {
-                    formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
-                }
-                if (inputNumbersValue.length >= 5) {
-                    formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
-                }
-                if (inputNumbersValue.length >= 8) {
-                    formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-                }
-                if (inputNumbersValue.length >= 10) {
-                    formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
-                }
+                if (inputNumbersValue.length > 1) formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
+                if (inputNumbersValue.length >= 5) formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
+                if (inputNumbersValue.length >= 8) formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
+                if (inputNumbersValue.length >= 10) formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
             } else {
                 formattedInputValue = '+' + inputNumbersValue.substring(0, 15);
             }
@@ -944,9 +939,7 @@
                 document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
                 document.getElementById('fb-total').innerText = `${total.toLocaleString('ru-RU')} ₽`;
                 
-                if (currentView === 'services') {
-                    bar.classList.add('visible');
-                }
+                if (currentView === 'services') bar.classList.add('visible');
             } else {
                 bar.classList.remove('visible');
                 if (currentView === 'summary') navigate('services');
@@ -977,9 +970,7 @@
                 bottomNav.style.transform = 'translateY(0)'; 
             }
 
-            if (viewName === 'cabinet') {
-                loadUserOrders();
-            }
+            if (viewName === 'cabinet') loadUserOrders();
 
             if (viewName === 'summary') {
                 floatingBar.classList.remove('visible');
@@ -995,23 +986,27 @@
             }
         }
 
-        // --- ФУНКЦИЯ ГЕНЕРАЦИИ ТАЙМЛАЙНА ---
+        // --- УЛУЧШЕННАЯ ЛОГИКА ТАЙМЛАЙНА (ВКЛЮЧАЯ СТАТУС «ОТМЕНЕН / ОТКАЗ») ---
         function getTimelineHtml(statusText) {
-            // Определяем индекс текущего активного шага
-            // Этапы: 1. Создан -> 2. В работе -> 3. Диагностика/Ремонт -> 4. Готов к выдаче
             let activeStep = 1; 
+            const s = statusText.toLowerCase();
 
-            if (statusText.includes("В работе")) activeStep = 2;
-            else if (statusText.includes("Диагностика") || statusText.includes("Ремонт")) activeStep = 3;
-            else if (statusText.includes("Готово")) activeStep = 4;
-            else if (statusText.includes("Отменен")) activeStep = -1; // Особый случай
+            if (s.includes("отмен") || s.includes("отказ")) {
+                activeStep = -1;
+            } else if (s.includes("в работе")) {
+                activeStep = 2;
+            } else if (s.includes("диагностик") || s.includes("ремонт")) {
+                activeStep = 3;
+            } else if (s.includes("готов") || s.includes("выдан")) {
+                activeStep = 4;
+            }
 
             if (activeStep === -1) {
                 return `
                     <div class="timeline">
                         <div class="timeline-step cancelled" style="flex: 1;">
                             <div class="timeline-bullet">✕</div>
-                            <div class="timeline-label">Отменен</div>
+                            <div class="timeline-label">Отменен / Отказ</div>
                         </div>
                     </div>
                 `;
@@ -1063,11 +1058,13 @@
                         container.innerHTML = '';
                         data.orders.forEach(order => {
                             const timelineHtml = getTimelineHtml(order.status);
+                            const isCancelled = order.status.toLowerCase().includes("отмен") || order.status.toLowerCase().includes("отказ");
+                            
                             container.innerHTML += `
                                 <div class="order-card">
                                     <div class="order-header">
                                         <span>Заказ ${order.order_id}</span>
-                                        <span class="order-status">${order.status}</span>
+                                        <span class="order-status ${isCancelled ? 'cancelled' : ''}">${order.status}</span>
                                     </div>
                                     <div class="order-body">
                                         <b>Состав:</b> ${order.items}
@@ -1128,7 +1125,7 @@
             const phoneDigits = phoneInput.value.replace(/\D/g, '');
             if (phoneDigits.length !== 11) {
                 tg.showAlert("Пожалуйста, введите корректный номер телефона (11 цифр).");
-                phoneInput.style.borderColor = '#ff3b30';
+                phoneInput.style.borderColor = 'var(--danger-color)';
                 document.getElementById('phone-error').style.display = 'block';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 return; 
@@ -1152,9 +1149,7 @@
             formData.append('problem', problemDesc || "Не указано");
             formData.append('phone', phoneInput.value);
 
-            if (selectedFile) {
-                formData.append('photo', selectedFile);
-            }
+            if (selectedFile) formData.append('photo', selectedFile);
 
             tg.MainButton.text = "ОТПРАВКА...";
             tg.MainButton.showProgress();
@@ -1175,13 +1170,8 @@
                 tg.MainButton.hideProgress();
                 if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    
                     navigate('success');
-                    
-                    setTimeout(() => {
-                        tg.close();
-                    }, 4000);
-
+                    setTimeout(() => { tg.close(); }, 4000);
                 } else {
                     tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
                     tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
