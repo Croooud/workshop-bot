@@ -162,11 +162,19 @@
             margin-bottom: 4px;
             line-height: 1.2;
         }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            line-height: 1.3;
+        }
         
         .card-price {
             font-size: 14px;
             font-weight: 500;
             color: var(--text-secondary);
+            white-space: nowrap;
         }
         
         .card.selected .card-price {
@@ -586,13 +594,16 @@
         });
 
         const servicesData = [
-            { id: 1, name: "Диагностика компьютера", price: 0, label: "Бесплатно*" },
-            { id: 2, name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "1 500 ₽" },
-            { id: 3, name: "Чистка ноутбука от пыли и устранение перегрева", price: 2000, label: "2 000 ₽" },
-            { id: 4, name: "Установка Windows (с активацией)", price: 1500, label: "1 500 ₽" },
-            { id: 5, name: "Установка пакета Microsoft Office", price: 500, label: "500 ₽" },
-            { id: 6, name: "Сборка ПК из ваших комплектующих", price: 2500, label: "2 500 ₽" },
-            { id: 7, name: "Оптимизация и чистка от вирусов", price: 1000, label: "1 000 ₽" }
+            { id: 1, name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
+            { id: 2, name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
+            { id: 3, name: "Чистка ноутбука от пыли и перегрева", price: 2000, label: "от 2 000 ₽", subtitle: "С разбором корпуса и заменой пасты" },
+            { id: 4, name: "Установка Windows (с активацией)", price: 1500, label: "от 1 500 ₽", subtitle: "Включая базовые драйверы" },
+            { id: 5, name: "Установка пакета Microsoft Office", price: 500, label: "от 500 ₽", subtitle: "Word, Excel, PowerPoint" },
+            { id: 6, name: "Сборка ПК из комплектующих", price: 2500, label: "от 2 500 ₽", subtitle: "Аккуратный кабель-менеджмент" },
+            { id: 7, name: "Оптимизация и чистка от вирусов", price: 1000, label: "от 1 000 ₽", subtitle: "Ускорение работы системы" },
+            { id: 8, name: "Замена матрицы / экрана", price: 2500, label: "от 2 500 ₽", subtitle: "Цена детали рассчитывается отдельно" },
+            { id: 9, name: "Ремонт после залития", price: 2000, label: "от 2 000 ₽", subtitle: "Ультразвуковая чистка платы" },
+            { id: 10, name: "Восстановление данных", price: 1000, label: "от 1 000 ₽", subtitle: "С поврежденных HDD / SSD / флешек" }
         ];
 
         let cart = new Map();
@@ -646,12 +657,15 @@
                 card.innerHTML = `
                     <div class="card-content">
                         <div class="card-title">${s.name}</div>
-                        <div class="card-price">${s.label}</div>
+                        <div class="card-subtitle">${s.subtitle}</div>
                     </div>
-                    <div class="checkbox-wrapper">
-                        <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-price">${s.label}</div>
+                        <div class="checkbox-wrapper">
+                            <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -755,7 +769,7 @@
             `;
         }
 
-        // Привязка нативной кнопки оформления (один раз для стабильности)
+        // Привязка нативной кнопки оформления
         tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
         tg.MainButton.color = tg.themeParams.button_color || '#007aff';
         tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
