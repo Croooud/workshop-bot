@@ -2,16 +2,17 @@ import asyncio
 import logging
 import os
 import random
-import json
 import sqlite3
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand, Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, CallbackQuery, BotCommand
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
+from pydantic import BaseModel
+from typing import List
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,12 +26,9 @@ dp = Dispatcher()
 
 app = FastAPI()
 
-# Подключаем папку со статическими файлами (твоими иконками)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 templates = Jinja2Templates(directory="templates")
 
-# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ---
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -72,69 +70,69 @@ async def download_database(key: str = ""):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
-# --- ОБРАБОТЧИК WEB APP DATA (ПРИЕМ ДАННЫХ ИЗ МИНИ-ПРИЛОЖЕНИЯ) ---
-@dp.message(F.web_app_data)
-async def process_web_app_data(message: Message):
+# Структуры данных для приёма JSON из опросника
+class OrderItem(BaseModel):
+    name: str
+    price: int
+
+class OrderRequest(BaseModel):
+    chat_id: int
+    items: List[OrderItem]
+    total: int
+    device: str
+    problem: str
+    phone: str
+
+# Обработка отправки заявки
+@app.post("/api/order")
+async def api_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
-    user = message.from_user
-    username = user.username or ""
-    client_link = f"https://t.me/{username}" if username else f"tg://user?id={user.id}"
+    client_link = f"tg://user?id={order.chat_id}"
     
+    # Сохраняем в БД
     try:
-        # Распарсиваем JSON-строку, отправленную из Mini App
-        data = json.loads(message.web_app_data.data)
-        items = data.get("items", [])
-        total = data.get("total", 0)
-        device = data.get("device", "Не указано")
-        problem = data.get("problem", "Не указано")
-        phone = data.get("phone", "Не указан")
-        
-        items_str = ", ".join([f"{item['name']} ({item['price']}₽)" for item in items])
-        
-        # Сохраняем заказ в базу данных
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
+        items_str = ", ".join([f"{item.name} ({item.price}₽)" for item in order.items])
         cursor.execute(
             "INSERT INTO orders (order_id, user_id, client_link, items, total) VALUES (?, ?, ?, ?, ?)",
-            (order_id, user.id, client_link, items_str, total)
+            (order_id, order.chat_id, client_link, items_str, order.total)
         )
         conn.commit()
         conn.close()
     except Exception as e:
-        logging.error(f"DB / Parsing Error: {e}")
-        items = []
-        total = 0
-        device = "Ошибка распарсивания"
-        problem = str(e)
-        phone = "Не указан"
-        items_str = "Ошибка данных"
+        logging.error(f"DB Error: {e}")
 
-    # Формируем отчет для администратора
+    # Формируем красивый чек для админа
     items_list_str = ""
-    for item in items:
-        p_str = "Бесплатно" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
-        items_list_str += f"▫️ {item['name']} — *{p_str}*\n"
+    for item in order.items:
+        p_str = "Бесплатно" if item.price == 0 else f"{item.price:,} ₽".replace(',', ' ')
+        items_list_str += f"▫️ {item.name} — <i>{p_str}</i>\n"
     
-    total_str = f"{total:,} ₽".replace(',', ' ')
+    total_str = f"{order.total:,} ₽".replace(',', ' ')
 
     admin_receipt = (
-        f"🔔 **НОВЫЙ ЗАКАЗ {order_id}**\n\n"
-        f"👤 Клиент: [{user.full_name}]({client_link}) (ID: `{user.id}`)\n"
-        f"📱 Телефон: `{phone}`\n"
-        f"💻 Тип устройства: {device}\n"
-        f"⚠️ Опросец / Проблема: {problem}\n\n"
+        f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
+        f"👤 Клиент: <a href='{client_link}'>ID {order.chat_id}</a>\n"
+        f"📱 Телефон: <code>{order.phone}</code>\n"
+        f"💻 Тип устройства: {order.device}\n"
+        f"⚠️ Проблема: {order.problem}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
-        f"💳 **Сумма: {total_str}**"
+        f"💳 <b>Сумма: {total_str}</b>"
     )
     
     try:
-        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML", disable_web_page_preview=True)
+        # Уведомляем админа
+        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
+        
+        # Благодарим клиента
+        reply_text = "✅ Ваша заявка принята! Если у вас есть фото поломки или ошибки на экране, просто отправьте их прямо сейчас в этот чат."
+        await bot.send_message(chat_id=order.chat_id, text=reply_text, parse_mode="HTML")
+        
+        return {"success": True}
     except Exception as e:
-        logging.error(f"Telegram API Error (Admin): {str(e)}")
-
-    # Ответное сообщение клиенту в чат бота
-    reply_text = "✅ Ваша заявка принята! Если у вас есть фото поломки или ошибки на экране, просто отправьте их прямо сейчас в этот чат."
-    await message.answer(reply_text, parse_mode="HTML")
+        logging.error(f"Error sending messages: {e}")
+        return {"success": False, "error": str(e)}
 
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
@@ -167,11 +165,11 @@ async def cmd_start(message: types.Message):
         ]
     )
     welcome_text = (
-        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
+        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
         "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 *Бесплатная диагностика*\n"
-        "🔸 *Прозрачные цены*\n"
-        "🔸 *Выезд на дом по договоренности*\n\n"
+        "🔸 <i>Бесплатная диагностика</i>\n"
+        "🔸 <i>Прозрачные цены</i>\n"
+        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
         "Выберите нужное действие в меню ниже 👇"
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
@@ -179,11 +177,11 @@ async def cmd_start(message: types.Message):
 @dp.callback_query(F.data == "show_contacts")
 async def process_contacts(callback: CallbackQuery):
     text = (
-        "📍 **НАШИ КОНТАКТЫ**\n\n"
-        "**Адрес:** ПГТ Ручейк, ул., д. 1\n"
-        "**Телефон / WhatsApp:** `+7 (991) 888-60-17`\n"
-        "**Telegram:** @IvanMiroshnichenkoo\n\n"
-        "*Работаем по предварительной записи. Возможен выезд на дом.*"
+        "📍 <b>НАШИ КОНТАКТЫ</b>\n\n"
+        "<b>Адрес:</b> ПГТ Ручейк, ул., д. 1\n"
+        "<b>Телефон / WhatsApp:</b> <code>+7 (991) 888-60-17</code>\n"
+        "<b>Telegram:</b> @IvanMiroshnichenkoo\n\n"
+        "<i>Работаем по предварительной записи. Возможен выезд на дом.</i>"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -194,12 +192,12 @@ async def process_contacts(callback: CallbackQuery):
 @dp.callback_query(F.data == "show_faq")
 async def process_faq(callback: CallbackQuery):
     text = (
-        "❓ **ЧАСТЫЕ ВОПРОСЫ**\n\n"
-        "**— Сколько длится диагностика?**\n"
+        "❓ <b>ЧАСТЫЕ ВОПРОСЫ</b>\n\n"
+        "<b>— Сколько длится диагностика?</b>\n"
         "Обычно от 1 до 3 часов в зависимости от сложности.\n\n"
-        "**— Можно ли со своими запчастями?**\n"
+        "<b>— Можно ли со своими запчастями?</b>\n"
         "Да, мы соберем ПК из ваших комплектующих.\n\n"
-        "**— Даете ли гарантию?**\n"
+        "<b>— Даете ли гарантию?</b>\n"
         "Да, на все виды работ предоставляется техническая гарантия."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -219,11 +217,11 @@ async def process_back(callback: CallbackQuery):
         ]
     )
     welcome_text = (
-        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
+        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
         "Мы занимаемся профессиональным ремонтом, обслуживанием и сборкой компьютерной техники.\n\n"
-        "🔸 *Бесплатная диагностика*\n"
-        "🔸 *Прозрачные цены*\n"
-        "🔸 *Выезд на дом по договоренности*\n\n"
+        "🔸 <i>Бесплатная диагностика</i>\n"
+        "🔸 <i>Прозрачные цены</i>\n"
+        "🔸 <i>Выезд на дом по договоренности</i>\n\n"
         "Выберите нужное действие в меню ниже 👇"
     )
     await callback.message.edit_text(welcome_text, reply_markup=keyboard, parse_mode="HTML")
@@ -246,3 +244,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
