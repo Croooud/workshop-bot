@@ -30,14 +30,11 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Инициализация клиента Gemini (ключ берется из переменных окружения Render)
+# Инициализация клиента Gemini
 gemini_api_key = os.getenv("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
 
-# ID вашего общего рабочего чата (группы)
 ADMIN_CHAT_ID = -5308446621
-
-# Список ID администраторов
 ADMIN_IDS = [1044338073, 602535191] 
 
 bot = Bot(token=TOKEN)
@@ -129,7 +126,7 @@ async def get_user_orders(chat_id: int):
 async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
     """Анализирует фото с помощью Gemini API"""
     if not gemini_client:
-        return "Фото принято, точную стоимость назовет мастер после осмотра. (Ключ API не найден)"
+        return "Фото принято, точную стоимость назовет мастер после осмотра."
     
     try:
         prompt = (
@@ -140,7 +137,6 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
             "строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
         )
         
-        # Используем асинхронный вызов .aio, динамический MIME-тип и актуальную модель gemini-3.8-flash
         response = await gemini_client.aio.models.generate_content(
             model='gemini-3.8-flash',
             contents=[
@@ -154,7 +150,7 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
         return response.text.strip()
     except Exception as e:
         logging.error(f"Gemini API Vision Error: {e}")
-        return f"Фото принято, точную стоимость назовет мастер после осмотра. (Ошибка ИИ: {e})"
+        return "Фото принято, точную стоимость назовет мастер после осмотра."
 
 @app.post("/api/order")
 async def api_order(
@@ -174,7 +170,7 @@ async def api_order(
     except:
         items_list = []
 
-    ai_analysis_text = "Фото не загружалось"
+    ai_analysis_text = "Без фото"
     file_bytes = None
 
     if photo:
@@ -202,13 +198,14 @@ async def api_order(
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
+    # Аналитика идет ТОЛЬКО админам в чат
     admin_receipt = (
         f"🔔 **НОВЫЙ ЗАКАЗ {order_id}**\n\n"
         f"👤 Клиент: [ID {chat_id}]({client_link})\n"
         f"📱 Телефон: `{phone}`\n"
         f"💻 Тип устройства: {device}\n"
         f"⚠️ Проблема: {problem}\n"
-        f"🤖 **AI-оценка по фото (Gemini):** {ai_analysis_text}\n\n"
+        f"🤖 **Скрытая AI-оценка:** {ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
         f"💳 **Сумма: {total_str}**"
     )
@@ -239,15 +236,14 @@ async def api_order(
                 parse_mode="HTML"
             )
         
+        # Ответ клиенту теперь чистый, без аналитики
         reply_text = (
             f"✅ Ваша заявка **{order_id}** принята!\n\n"
-            f"🤖 **Предварительный анализ вашей фотографии:**\n"
-            f"*{ai_analysis_text}*\n\n"
-            f"Вы можете отслеживать статус заказа в «Личном кабинете»."
+            f"Мастер скоро свяжется с вами. Вы можете отслеживать статус заказа в «Личном кабинете»."
         )
         await bot.send_message(chat_id=chat_id, text=reply_text, parse_mode="HTML")
         
-        return {"success": True, "ai_analysis": ai_analysis_text}
+        return {"success": True} # Убрали ai_analysis из ответа фронтенду
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
