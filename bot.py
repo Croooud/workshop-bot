@@ -26,7 +26,11 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-ADMIN_ID = 1044338073
+# ID вашего общего рабочего чата (группы)
+ADMIN_CHAT_ID = -5308446621
+
+# Список ID администраторов (сюда можешь добавить свой ID и ID товарища через запятую)
+ADMIN_IDS = [1044338073] 
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -100,6 +104,8 @@ async def get_user_orders(chat_id: int):
                 status_formatted = "🛠 В работе"
             elif status_text == "Готово":
                 status_formatted = "✅ Готово"
+            elif status_text == "Отменен":
+                status_formatted = "❌ Отменен"
             else:
                 status_formatted = f"📌 {status_text}"
 
@@ -116,7 +122,6 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
-# Структуры данных для приёма JSON из опросника
 class OrderItem(BaseModel):
     name: str
     price: int
@@ -135,7 +140,6 @@ async def api_order(order: OrderRequest):
     order_id = f"#{random.randint(10000, 99999)}"
     client_link = f"tg://user?id={order.chat_id}"
     
-    # Сохраняем в БД
     try:
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
@@ -149,7 +153,6 @@ async def api_order(order: OrderRequest):
     except Exception as e:
         logging.error(f"DB Error: {e}")
 
-    # Формируем красивый чек для админа
     items_list_str = ""
     for item in order.items:
         p_str = "Бесплатно" if item.price == 0 else f"{item.price:,} ₽".replace(',', ' ')
@@ -167,14 +170,67 @@ async def api_order(order: OrderRequest):
         f"💳 **Сумма: {total_str}**"
     )
     
+    # Инлайн-кнопки для управления статусом в рабочем чате
+    admin_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🛠 В работу", callback_data=f"status:in_progress:{order_id}"),
+            InlineKeyboardButton(text="✅ Готово", callback_data=f"status:done:{order_id}"),
+            InlineKeyboardButton(text="❌ Отменен", callback_data=f"status:cancelled:{order_id}")
+        ]
+    ])
+    
     try:
-        await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
+        # Отправляем в общий рабочий чат мастеров
+        await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_receipt, reply_markup=admin_kb, parse_mode="HTML")
+        
+        # Уведомляем клиента
         reply_text = "✅ Ваша заявка принята! Вы можете отслеживать её статус в «Личном кабинете» внутри мини-приложения."
         await bot.send_message(chat_id=order.chat_id, text=reply_text, parse_mode="HTML")
+        
         return {"success": True}
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
+
+# Обработчик нажатия на кнопки статусов в рабочем чате
+@dp.callback_query(F.data.startswith("status:"))
+async def process_status_change(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("У вас нет прав для изменения статуса.", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    action = parts[1]
+    order_id = parts[2]
+
+    status_map = {
+        "in_progress": "В работе",
+        "done": "Готово",
+        "cancelled": "Отменен"
+    }
+    
+    new_status = status_map.get(action, "Новый")
+
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, order_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"DB Update Error: {e}")
+        await callback.answer("Ошибка при обновлении базы данных.", show_alert=True)
+        return
+
+    master_name = callback.from_user.full_name
+    updated_text = callback.message.text + f"\n\n📌 **Статус изменен ({master_name}): {new_status}**"
+    
+    try:
+        await callback.message.edit_text(text=updated_text, parse_mode="HTML", reply_markup=None)
+    except Exception:
+        pass
+
+    await callback.answer(f"Статус заказа {order_id} изменен на «{new_status}»!")
 
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: types.Message):
