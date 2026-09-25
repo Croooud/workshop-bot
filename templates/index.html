@@ -781,13 +781,7 @@
             </svg>
         </div>
         <div class="success-title">Спасибо!<br>Ваша заявка принята</div>
-        
-        <div id="ai-result-box" style="display: none; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin: 16px 0; text-align: left; width: 100%;">
-            <div style="font-size: 13px; font-weight: 600; color: var(--accent-color); margin-bottom: 4px;">🤖 Предварительный анализ по фото:</div>
-            <div id="ai-result-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;"></div>
-        </div>
-
-        <div class="success-desc" style="margin-top: 12px;">Мы отправили детали заявки и результат анализа вам в чат.</div>
+        <div class="success-desc" style="margin-top: 12px;">Мы отправили детали заявки вам в чат.</div>
         <button class="btn-close" onclick="tg.close()">Закрыть</button>
     </main>
 
@@ -1173,12 +1167,6 @@
                 tg.MainButton.hideProgress();
                 if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    
-                    if (data.ai_analysis && data.ai_analysis !== "Фото не загружалось") {
-                        document.getElementById('ai-result-text').innerText = data.ai_analysis;
-                        document.getElementById('ai-result-box').style.display = 'block';
-                    }
-
                     navigate('success');
                 } else {
                     tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
@@ -1196,4 +1184,3 @@
     </script>
 </body>
 </html>
-
