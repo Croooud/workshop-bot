@@ -4,6 +4,7 @@ import os
 import random
 import sqlite3
 import json
+import re  # Добавлен модуль для работы с регулярными выражениями (убираем звездочки)
 from google import genai
 from google.genai import types
 from aiogram import Bot, Dispatcher, types as aiogram_types, F
@@ -126,7 +127,7 @@ async def get_user_orders(chat_id: int):
 async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
     """Анализирует фото с помощью Gemini API"""
     if not gemini_client:
-        return "Фото принято, точную стоимость назовет мастер после осмотра."
+        return "Ключ API не настроен."
     
     try:
         prompt = (
@@ -147,10 +148,17 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
                 prompt
             ]
         )
-        return response.text.strip()
+        
+        # Получаем сырой текст с Markdown
+        raw_text = response.text.strip()
+        
+        # Конвертируем **текст** в <b>текст</b> для красивого отображения в Telegram
+        html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_text, flags=re.DOTALL)
+        
+        return html_text
     except Exception as e:
         logging.error(f"Gemini API Vision Error: {e}")
-        return "Фото принято, точную стоимость назовет мастер после осмотра."
+        return f"❌ Техническая ошибка ИИ: {e}"
 
 @app.post("/api/order")
 async def api_order(
@@ -194,20 +202,20 @@ async def api_order(
     items_list_str = ""
     for item in items_list:
         p_str = "Бесплатно" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
-        items_list_str += f"▫️ {item['name']} — *{p_str}*\n"
+        items_list_str += f"▫️ {item['name']} — <i>{p_str}</i>\n"
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
     # Аналитика идет ТОЛЬКО админам в чат
     admin_receipt = (
-        f"🔔 **НОВЫЙ ЗАКАЗ {order_id}**\n\n"
-        f"👤 Клиент: [ID {chat_id}]({client_link})\n"
-        f"📱 Телефон: `{phone}`\n"
+        f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
+        f"👤 Клиент: <a href='{client_link}'>ID {chat_id}</a>\n"
+        f"📱 Телефон: <code>{phone}</code>\n"
         f"💻 Тип устройства: {device}\n"
         f"⚠️ Проблема: {problem}\n"
-        f"🤖 **Скрытая AI-оценка:** {ai_analysis_text}\n\n"
+        f"🤖 <b>Скрытая AI-оценка:</b>\n{ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
-        f"💳 **Сумма: {total_str}**"
+        f"💳 <b>Сумма: {total_str}</b>"
     )
     
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -236,14 +244,14 @@ async def api_order(
                 parse_mode="HTML"
             )
         
-        # Ответ клиенту теперь чистый, без аналитики
+        # Ответ клиенту чистый, без аналитики
         reply_text = (
-            f"✅ Ваша заявка **{order_id}** принята!\n\n"
+            f"✅ Ваша заявка <b>{order_id}</b> принята!\n\n"
             f"Мастер скоро свяжется с вами. Вы можете отслеживать статус заказа в «Личном кабинете»."
         )
         await bot.send_message(chat_id=chat_id, text=reply_text, parse_mode="HTML")
         
-        return {"success": True} # Убрали ai_analysis из ответа фронтенду
+        return {"success": True} 
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
@@ -276,11 +284,11 @@ async def cmd_stats(message: aiogram_types.Message):
         revenue_str = f"{total_revenue:,}".replace(',', ' ')
 
         stats_text = (
-            f"📊 **Аналитика мастерской «Ручеёк»**\n\n"
-            f"📦 Всего заказов создано: **{total_orders}**\n"
-            f"🛠 Сейчас в работе: **{in_progress_orders}**\n"
-            f"✅ Выполнено заказов: **{done_orders}**\n"
-            f"💰 Общая выручка: **{revenue_str} ₽**"
+            f"📊 <b>Аналитика мастерской «Ручеёк»</b>\n\n"
+            f"📦 Всего заказов создано: <b>{total_orders}</b>\n"
+            f"🛠 Сейчас в работе: <b>{in_progress_orders}</b>\n"
+            f"✅ Выполнено заказов: <b>{done_orders}</b>\n"
+            f"💰 Общая выручка: <b>{revenue_str} ₽</b>"
         )
 
         await message.answer(stats_text, parse_mode="HTML")
@@ -312,7 +320,7 @@ async def schedule_review_request(client_chat_id: int, order_id: str):
         ])
 
         msg_text = (
-            f"👋 Привет! Прошли сутки с момента завершения ремонта в **«Мастерской Ручеёк»** (заказ **{order_id}**).\n\n"
+            f"👋 Привет! Прошли сутки с момента завершения ремонта в <b>«Мастерской Ручеёк»</b> (заказ <b>{order_id}</b>).\n\n"
             f"Как работает техника? Оцените, пожалуйста, качество обслуживания от 1 до 5 звезд 👇"
         )
         await bot.send_message(chat_id=client_chat_id, text=msg_text, reply_markup=review_kb, parse_mode="HTML")
@@ -345,13 +353,13 @@ async def process_review_rating(callback: CallbackQuery):
 
     stars = "⭐" * int(rating)
     await callback.answer("Спасибо за вашу оценку!", show_alert=True)
-    await callback.message.edit_text(f"Спасибо за ваш отзыв! Вы поставили нам оценку: **{stars} ({rating}/5)**.", parse_mode="HTML")
+    await callback.message.edit_text(f"Спасибо за ваш отзыв! Вы поставили нам оценку: <b>{stars} ({rating}/5)</b>.", parse_mode="HTML")
 
     admin_notification = (
-        f"⭐ **НОВЫЙ ОТЗЫВ КЛИЕНТА**\n\n"
-        f"📦 Заказ: **{order_id}**\n"
-        f"👤 Клиент: [{user_name}]({user_link})\n"
-        f"📊 Оценка: **{stars} ({rating} из 5)**"
+        f"⭐ <b>НОВЫЙ ОТЗЫВ КЛИЕНТА</b>\n\n"
+        f"📦 Заказ: <b>{order_id}</b>\n"
+        f"👤 Клиент: <a href='{user_link}'>{user_name}</a>\n"
+        f"📊 Оценка: <b>{stars} ({rating} из 5)</b>"
     )
     await bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_notification, parse_mode="HTML")
 
@@ -400,8 +408,8 @@ async def process_status_change(callback: CallbackQuery):
     ])
 
     raw_text = callback.message.text if callback.message.text else (callback.message.caption or "")
-    base_text = raw_text.split("\n\n📌 **")[0] if "\n\n📌 **" in raw_text else raw_text
-    updated_text = base_text + f"\n\n📌 **Текущий статус: {new_status}** (изменил {master_name})"
+    base_text = raw_text.split("\n\n📌 <b>")[0] if "\n\n📌 <b>" in raw_text else raw_text
+    updated_text = base_text + f"\n\n📌 <b>Текущий статус: {new_status}</b> (изменил {master_name})"
 
     try:
         if callback.message.photo:
@@ -414,13 +422,13 @@ async def process_status_change(callback: CallbackQuery):
     if client_chat_id:
         try:
             if action == "in_progress":
-                client_msg = f"👨‍🔧 Ваш заказ **{order_id}** взят в работу мастером."
+                client_msg = f"👨‍🔧 Ваш заказ <b>{order_id}</b> взят в работу мастером."
             elif action == "done":
-                client_msg = f"✅ **Готово!** Ваш заказ **{order_id}** выполнен и ждет вас."
+                client_msg = f"✅ <b>Готово!</b> Ваш заказ <b>{order_id}</b> выполнен и ждет вас."
             elif action == "cancelled":
-                client_msg = f"❌ Статус вашего заказа **{order_id}** изменен на: **Отменен**."
+                client_msg = f"❌ Статус вашего заказа <b>{order_id}</b> изменен на: <b>Отменен</b>."
             else:
-                client_msg = f"📌 Статус заказа **{order_id}** обновлен: {new_status}."
+                client_msg = f"📌 Статус заказа <b>{order_id}</b> обновлен: {new_status}."
 
             await bot.send_message(chat_id=client_chat_id, text=client_msg, parse_mode="HTML")
         except Exception as e:
@@ -459,7 +467,7 @@ async def cmd_start(message: aiogram_types.Message):
         ]
     )
     welcome_text = (
-        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
+        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
         "Профессиональный ремонт и обслуживание компьютерной техники."
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
@@ -467,10 +475,10 @@ async def cmd_start(message: aiogram_types.Message):
 @dp.callback_query(F.data == "show_contacts")
 async def process_contacts(callback: CallbackQuery):
     text = (
-        "📍 **НАШИ КОНТАКТЫ**\n\n"
-        "**Адрес:** ПГТ Ручейк, ул., д. 1\n"
-        "**Телефон:** `+7 (991) 888-60-17`\n"
-        "**Telegram:** @IvanMiroshnichenkoo"
+        "📍 <b>НАШИ КОНТАКТЫ</b>\n\n"
+        "<b>Адрес:</b> ПГТ Ручейк, ул., д. 1\n"
+        "<b>Телефон:</b> <code>+7 (991) 888-60-17</code>\n"
+        "<b>Telegram:</b> @IvanMiroshnichenkoo"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -481,9 +489,9 @@ async def process_contacts(callback: CallbackQuery):
 @dp.callback_query(F.data == "show_faq")
 async def process_faq(callback: CallbackQuery):
     text = (
-        "❓ **ЧАСТЫЕ ВОПРОСЫ**\n\n"
-        "**— Диагностика платная?**\nБесплатно при последующем ремонте.\n\n"
-        "**— Даете гарантию?**\nДа, на все виды работ."
+        "❓ <b>ЧАСТЫЕ ВОПРОСЫ</b>\n\n"
+        "<b>— Диагностика платная?</b>\nБесплатно при последующем ремонте.\n\n"
+        "<b>— Даете гарантию?</b>\nДа, на все виды работ."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
@@ -502,7 +510,7 @@ async def process_back(callback: CallbackQuery):
         ]
     )
     welcome_text = (
-        "👋 **Добро пожаловать в «Мастерскую Ручеёк»!**\n\n"
+        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
         "Профессиональный ремонт и обслуживание компьютерной техники."
     )
     await callback.message.edit_text(welcome_text, reply_markup=kb, parse_mode="HTML")
