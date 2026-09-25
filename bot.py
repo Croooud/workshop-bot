@@ -126,10 +126,10 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
-async def analyze_device_photo(file_bytes: bytes) -> str:
+async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
     """Анализирует фото с помощью Gemini API"""
     if not gemini_client:
-        return "Фото принято, точную стоимость назовет мастер после осмотра."
+        return "Фото принято, точную стоимость назовет мастер после осмотра. (Ключ API не найден)"
     
     try:
         prompt = (
@@ -140,12 +140,13 @@ async def analyze_device_photo(file_bytes: bytes) -> str:
             "строго ответь: «Фото принято, точную стоимость назовет мастер после осмотра»."
         )
         
-        response = gemini_client.models.generate_content(
-            model='gemini-2.5-flash',
+        # Используем асинхронный вызов .aio и динамический MIME-тип
+        response = await gemini_client.aio.models.generate_content(
+            model='gemini-1.5-flash',
             contents=[
                 types.Part.from_bytes(
                     data=file_bytes,
-                    mime_type='image/jpeg',
+                    mime_type=mime_type,
                 ),
                 prompt
             ]
@@ -153,7 +154,7 @@ async def analyze_device_photo(file_bytes: bytes) -> str:
         return response.text.strip()
     except Exception as e:
         logging.error(f"Gemini API Vision Error: {e}")
-        return "Фото принято, точную стоимость назовет мастер после осмотра."
+        return f"Фото принято, точную стоимость назовет мастер после осмотра. (Ошибка ИИ: {e})"
 
 @app.post("/api/order")
 async def api_order(
@@ -178,7 +179,8 @@ async def api_order(
 
     if photo:
         file_bytes = await photo.read()
-        ai_analysis_text = await analyze_device_photo(file_bytes)
+        mime_type = photo.content_type or "image/jpeg"
+        ai_analysis_text = await analyze_device_photo(file_bytes, mime_type)
 
     try:
         conn = sqlite3.connect("database.db")
