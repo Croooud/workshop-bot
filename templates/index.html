@@ -15,6 +15,7 @@
             --accent-bg: rgba(0, 122, 255, 0.08);
             --border-color: rgba(0, 0, 0, 0.08);
             --nav-bg: rgba(255, 255, 255, 0.85);
+            --success-color: #34c759;
             
             --radius-sm: 12px;
             --radius-md: 16px;
@@ -364,7 +365,7 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         .order-header {
@@ -395,8 +396,80 @@
             align-items: center;
             font-size: 16px;
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 2px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
         }
+
+        /* --- Шкала прогресса (Таймлайн) --- */
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 8px 4px 4px 4px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+        .timeline-bullet {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: var(--surface-color);
+            border: 2px solid var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+        .timeline-step.completed .timeline-bullet {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: #fff;
+        }
+        .timeline-step.active .timeline-bullet {
+            background-color: var(--surface-color);
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        .timeline-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            text-align: center;
+            max-width: 65px;
+            line-height: 1.1;
+        }
+        .timeline-step.completed .timeline-label,
+        .timeline-step.active .timeline-label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .timeline-step.cancelled .timeline-bullet {
+            background-color: #ff3b30;
+            border-color: #ff3b30;
+            color: #fff;
+        }
+
         .empty-cabinet {
             text-align: center;
             color: var(--text-secondary);
@@ -522,7 +595,7 @@
         .success-icon-wrap {
             width: 80px;
             height: 80px;
-            background-color: #34c759;
+            background-color: var(--success-color);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -585,8 +658,7 @@
         </header>
 
         <div class="list-group" id="services-container">
-            <!-- JS генерирует карточки -->
-        </div>
+            </div>
 
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
@@ -654,8 +726,7 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    <!-- JS генерирует список -->
-                </div>
+                    </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -673,7 +744,6 @@
                 <textarea id="problem-desc" placeholder="Например: шумит, не включается..." rows="3" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; resize: none;"></textarea>
             </div>
 
-            <!-- Блок загрузки фотографии -->
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                 <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Фото проблемы <span style="font-weight: 400;">(необязательно)</span>:</label>
                 <div class="file-upload-container">
@@ -701,7 +771,6 @@
         </div>
     </main>
 
-    <!-- Экран успешного оформления -->
     <main id="view-success" class="view">
         <div class="success-icon-wrap">
             <svg viewBox="0 0 24 24">
@@ -713,7 +782,6 @@
         <button class="btn-close" onclick="tg.close()">Отлично</button>
     </main>
 
-    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -724,7 +792,6 @@
         </div>
     </div>
 
-    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -928,6 +995,56 @@
             }
         }
 
+        // --- ФУНКЦИЯ ГЕНЕРАЦИИ ТАЙМЛАЙНА ---
+        function getTimelineHtml(statusText) {
+            // Определяем индекс текущего активного шага
+            // Этапы: 1. Создан -> 2. В работе -> 3. Диагностика/Ремонт -> 4. Готов к выдаче
+            let activeStep = 1; 
+
+            if (statusText.includes("В работе")) activeStep = 2;
+            else if (statusText.includes("Диагностика") || statusText.includes("Ремонт")) activeStep = 3;
+            else if (statusText.includes("Готово")) activeStep = 4;
+            else if (statusText.includes("Отменен")) activeStep = -1; // Особый случай
+
+            if (activeStep === -1) {
+                return `
+                    <div class="timeline">
+                        <div class="timeline-step cancelled" style="flex: 1;">
+                            <div class="timeline-bullet">✕</div>
+                            <div class="timeline-label">Отменен</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const steps = [
+                "1. Создан",
+                "2. В работе",
+                "3. Ремонт",
+                "4. Готов"
+            ];
+
+            let html = '<div class="timeline">';
+            for (let i = 1; i <= 4; i++) {
+                let cls = '';
+                let content = i;
+                if (i < activeStep) {
+                    cls = 'completed';
+                    content = '✓';
+                } else if (i === activeStep) {
+                    cls = 'active';
+                }
+                html += `
+                    <div class="timeline-step ${cls}">
+                        <div class="timeline-bullet">${content}</div>
+                        <div class="timeline-label">${steps[i-1]}</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            return html;
+        }
+
         function loadUserOrders() {
             const container = document.getElementById('orders-container');
             const user = tg.initDataUnsafe?.user;
@@ -945,6 +1062,7 @@
                     if (data.success && data.orders.length > 0) {
                         container.innerHTML = '';
                         data.orders.forEach(order => {
+                            const timelineHtml = getTimelineHtml(order.status);
                             container.innerHTML += `
                                 <div class="order-card">
                                     <div class="order-header">
@@ -954,6 +1072,7 @@
                                     <div class="order-body">
                                         <b>Состав:</b> ${order.items}
                                     </div>
+                                    ${timelineHtml}
                                     <div class="order-footer">
                                         <span style="font-size: 13px; color: var(--text-secondary); font-weight: 400;">${order.created_at}</span>
                                         <span>${order.total.toLocaleString('ru-RU')} ₽</span>
