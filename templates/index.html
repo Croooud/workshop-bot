@@ -176,7 +176,7 @@
         .checkbox-wrapper {
             width: 24px;
             height: 24px;
-            border-radius: 6px; /* Превратили в квадрат со скругленными углами */
+            border-radius: 6px;
             border: 2px solid var(--text-secondary);
             display: flex;
             align-items: center;
@@ -348,6 +348,7 @@
             justify-content: space-around;
             padding-bottom: var(--safe-bottom);
             z-index: 100;
+            transition: transform 0.3s ease;
         }
         
         .nav-item {
@@ -371,6 +372,78 @@
             font-size: 22px;
             margin-bottom: 2px;
         }
+
+        /* --- Стили экрана успеха --- */
+        #view-success {
+            display: none;
+            opacity: 0;
+        }
+        #view-success.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 75vh;
+            animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .success-icon-wrap {
+            width: 80px;
+            height: 80px;
+            background-color: #34c759;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(52, 199, 89, 0.3);
+        }
+        
+        .success-icon-wrap svg {
+            width: 40px;
+            height: 40px;
+            stroke: #ffffff;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .success-desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .btn-close {
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 14px 32px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .btn-close:active {
+            background-color: var(--bg-color);
+        }
     </style>
 </head>
 <body>
@@ -386,10 +459,8 @@
         </header>
 
         <div class="list-group" id="services-container">
-            <!-- JS генерирует карточки -->
-        </div>
+            </div>
 
-        <!-- Добавлена пояснительная сноска -->
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
 
@@ -441,8 +512,7 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    <!-- JS генерирует список -->
-                </div>
+                    </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -468,7 +538,17 @@
         </div>
     </main>
 
-    <!-- Плавающая панель -->
+    <main id="view-success" class="view">
+        <div class="success-icon-wrap">
+            <svg viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+        <div class="success-title">Спасибо!<br>Ваша заявка принята</div>
+        <div class="success-desc">Мы свяжемся с вами в ближайшее время.</div>
+        <button class="btn-close" onclick="tg.close()">Отлично</button>
+    </main>
+
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -479,7 +559,6 @@
         </div>
     </div>
 
-    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -610,7 +689,7 @@
         }
 
         function navigate(viewName) {
-            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            if (tg.HapticFeedback && viewName !== 'success') tg.HapticFeedback.selectionChanged();
             currentView = viewName;
 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -622,7 +701,18 @@
             if(navBtn) navBtn.classList.add('active');
 
             const floatingBar = document.getElementById('floating-bar');
+            const bottomNav = document.querySelector('.bottom-nav');
             
+            // Если экран успеха — прячем нижнюю навигацию
+            if (viewName === 'success') {
+                bottomNav.style.transform = 'translateY(100%)'; // Убираем навигацию вниз
+                floatingBar.classList.remove('visible');
+                tg.MainButton.hide();
+                return;
+            } else {
+                bottomNav.style.transform = 'translateY(0)'; // Возвращаем навигацию
+            }
+
             if (viewName === 'summary') {
                 floatingBar.classList.remove('visible');
                 renderSummary();
@@ -671,6 +761,7 @@
             tg.MainButton.onClick(sendOrder);
         }
 
+        // --- ЛОГИКА ОТПРАВКИ И ЭКРАНА УСПЕХА ---
         function sendOrder() {
             if (cart.size === 0) return;
 
@@ -731,7 +822,15 @@
                 tg.MainButton.hideProgress();
                 if (data && data.success) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    tg.close();
+                    
+                    // Переключаемся на экран успеха
+                    navigate('success');
+                    
+                    // Автоматически закрываем Web App через 4 секунды
+                    setTimeout(() => {
+                        tg.close();
+                    }, 4000);
+
                 } else {
                     tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
                 }
@@ -746,3 +845,4 @@
     </script>
 </body>
 </html>
+
