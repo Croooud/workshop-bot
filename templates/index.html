@@ -585,7 +585,8 @@
         </header>
 
         <div class="list-group" id="services-container">
-            </div>
+            <!-- JS генерирует карточки -->
+        </div>
 
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
@@ -653,7 +654,8 @@
         <div class="list-group">
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;">
-                    </div>
+                    <!-- JS генерирует список -->
+                </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
@@ -671,6 +673,7 @@
                 <textarea id="problem-desc" placeholder="Например: шумит, не включается..." rows="3" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; resize: none;"></textarea>
             </div>
 
+            <!-- Блок загрузки фотографии -->
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                 <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Фото проблемы <span style="font-weight: 400;">(необязательно)</span>:</label>
                 <div class="file-upload-container">
@@ -698,6 +701,7 @@
         </div>
     </main>
 
+    <!-- Экран успешного оформления -->
     <main id="view-success" class="view">
         <div class="success-icon-wrap">
             <svg viewBox="0 0 24 24">
@@ -709,6 +713,7 @@
         <button class="btn-close" onclick="tg.close()">Отлично</button>
     </main>
 
+    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -719,6 +724,7 @@
         </div>
     </div>
 
+    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
