@@ -77,6 +77,45 @@ async def download_database(key: str = ""):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
+# Эндпоинт для получения истории заказов пользователя в личный кабинет
+@app.get("/api/orders/{chat_id}")
+async def get_user_orders(chat_id: int):
+    try:
+        conn = sqlite3.connect("database.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT order_id, items, total, status, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC",
+            (chat_id,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        orders = []
+        for row in rows:
+            status_text = row["status"]
+            if status_text == "Новый":
+                status_formatted = "🕒 В обработке"
+            elif status_text == "В работе":
+                status_formatted = "🛠 В работе"
+            elif status_text == "Готово":
+                status_formatted = "✅ Готово"
+            else:
+                status_formatted = f"📌 {status_text}"
+
+            orders.append({
+                "order_id": row["order_id"],
+                "items": row["items"],
+                "total": row["total"],
+                "status": status_formatted,
+                "created_at": row["created_at"]
+            })
+            
+        return {"success": True, "orders": orders}
+    except Exception as e:
+        logging.error(f"Error fetching orders: {e}")
+        return {"success": False, "orders": [], "error": str(e)}
+
 # Структуры данных для приёма JSON из опросника
 class OrderItem(BaseModel):
     name: str
@@ -129,13 +168,9 @@ async def api_order(order: OrderRequest):
     )
     
     try:
-        # Уведомляем админа
         await bot.send_message(chat_id=ADMIN_ID, text=admin_receipt, parse_mode="HTML")
-        
-        # Благодарим клиента
-        reply_text = "✅ Ваша заявка принята! Если у вас есть фото поломки или ошибки на экране, просто отправьте их прямо сейчас в этот чат."
+        reply_text = "✅ Ваша заявка принята! Вы можете отслеживать её статус в «Личном кабинете» внутри мини-приложения."
         await bot.send_message(chat_id=order.chat_id, text=reply_text, parse_mode="HTML")
-        
         return {"success": True}
     except Exception as e:
         logging.error(f"Error sending messages: {e}")
@@ -241,7 +276,6 @@ async def set_bot_commands(bot: Bot):
     ]
     await bot.set_my_commands(commands)
 
-    # Безопасная настройка системной кнопки меню
     try:
         web_app_url = "https://workshop-bot-dcyv.onrender.com"
         menu_button = MenuButtonWebApp(
