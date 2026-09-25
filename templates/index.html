@@ -286,6 +286,54 @@
             font-weight: 700;
         }
 
+        /* --- Карточка истории заказа в кабинете --- */
+        .order-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        .order-status {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            background: var(--accent-bg);
+            color: var(--accent-color);
+        }
+        .order-body {
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .empty-cabinet {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 16px;
+            font-size: 15px;
+        }
+
         .floating-bar {
             position: fixed;
             bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
@@ -473,6 +521,21 @@
         <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
     </main>
 
+    <main id="view-cabinet" class="view">
+        <header>
+            <div class="brand-subtitle">Профиль</div>
+            <h1>
+                <img src="/static/cart.jpg" alt="Кабинет">
+                Личный кабинет
+            </h1>
+            <p class="desc">История ваших заявок и их статусы.</p>
+        </header>
+
+        <div class="list-group" id="orders-container">
+            <div class="empty-cabinet">Загрузка истории заказов...</div>
+        </div>
+    </main>
+
     <main id="view-contacts" class="view">
         <header>
             <div class="brand-subtitle">Информация</div>
@@ -576,6 +639,10 @@
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
             <span>Услуги</span>
+        </div>
+        <div class="nav-item" onclick="navigate('cabinet')" id="nav-cabinet">
+            <span class="nav-icon">👤</span>
+            <span>Кабинет</span>
         </div>
         <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
             <span class="nav-icon">●</span>
@@ -731,6 +798,11 @@
                 bottomNav.style.transform = 'translateY(0)'; 
             }
 
+            // Загрузка заказов при переходе в личный кабинет
+            if (viewName === 'cabinet') {
+                loadUserOrders();
+            }
+
             if (viewName === 'summary') {
                 floatingBar.classList.remove('visible');
                 renderSummary();
@@ -743,6 +815,49 @@
                     floatingBar.classList.remove('visible');
                 }
             }
+        }
+
+        // --- ЗАГРУЗКА ИСТОРИИ ЗАКАЗОВ ---
+        function loadUserOrders() {
+            const container = document.getElementById('orders-container');
+            const user = tg.initDataUnsafe?.user;
+
+            if (!user) {
+                container.innerHTML = `<div class="empty-cabinet">Не удалось определить пользователя. Откройте приложение через Telegram.</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="empty-cabinet">Загрузка заказов...</div>`;
+
+            fetch(`/api/orders/${user.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.orders.length > 0) {
+                        container.innerHTML = '';
+                        data.orders.forEach(order => {
+                            container.innerHTML += `
+                                <div class="order-card">
+                                    <div class="order-header">
+                                        <span>Заказ ${order.order_id}</span>
+                                        <span class="order-status">${order.status}</span>
+                                    </div>
+                                    <div class="order-body">
+                                        <b>Состав:</b> ${order.items}
+                                    </div>
+                                    <div class="order-footer">
+                                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 400;">${order.created_at}</span>
+                                        <span>${order.total.toLocaleString('ru-RU')} ₽</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        container.innerHTML = `<div class="empty-cabinet">У вас пока нет активных или прошлых заказов.</div>`;
+                    }
+                })
+                .catch(err => {
+                    container.innerHTML = `<div class="empty-cabinet">Ошибка загрузки истории заказов.</div>`;
+                });
         }
 
         function renderSummary() {
