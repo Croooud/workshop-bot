@@ -377,8 +377,7 @@
         </header>
 
         <div class="list-group" id="services-container">
-            <!-- JS генерирует карточки -->
-        </div>
+            </div>
     </main>
 
     <main id="view-contacts" class="view">
@@ -423,17 +422,37 @@
                 <img src="/static/cart.jpg" alt="Заказ">
                 Ваш заказ
             </h1>
-            <p class="desc">Проверьте выбранные услуги перед отправкой заявки.</p>
+            <p class="desc">Проверьте выбранные услуги и укажите детали заявки.</p>
         </header>
 
-        <div class="card" style="cursor: default; transform: none; box-shadow: none;">
-            <div class="list-group" id="summary-list" style="width: 100%;">
-                <!-- JS генерирует список -->
+        <div class="list-group">
+            <div class="card" style="cursor: default; transform: none; box-shadow: none;">
+                <div id="summary-list" style="width: 100%;">
+                    </div>
+            </div>
+
+            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип устройства:</label>
+                <select id="device-type" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px;">
+                    <option value="Ноутбук">Ноутбук</option>
+                    <option value="Системный блок">Системный блок</option>
+                    <option value="Техника Apple">Техника Apple</option>
+                    <option value="Другое">Другое</option>
+                </select>
+            </div>
+
+            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Кратко опишите проблему:</label>
+                <textarea id="problem-desc" placeholder="Например: шумит, не включается..." rows="3" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; resize: none;"></textarea>
+            </div>
+
+            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Ваш номер телефона:</label>
+                <input type="tel" id="client-phone" placeholder="+7 (999) 000-00-00" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px;">
             </div>
         </div>
     </main>
 
-    <!-- Плавающая панель -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
@@ -444,7 +463,6 @@
         </div>
     </div>
 
-    <!-- Нижняя навигация -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
             <span class="nav-icon">▤</span>
@@ -602,51 +620,33 @@
         }
 
         function sendOrder() {
-            const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                tg.showAlert("Ошибка: невозможно определить ID пользователя.");
+            if (cart.size === 0) return;
+
+            const deviceType = document.getElementById('device-type').value;
+            const problemDesc = document.getElementById('problem-desc').value.trim();
+            const clientPhone = document.getElementById('client-phone').value.trim();
+
+            if (!clientPhone) {
+                tg.showAlert("Пожалуйста, укажите номер телефона для связи.");
                 return;
             }
 
-            const items = Array.from(cart.values()).map(item => ({
-                name: item.name,
-                price: item.price
-            }));
-            
-            const total = items.reduce((sum, item) => sum + item.price, 0);
-
-            tg.MainButton.showProgress();
-
-            fetch('/api/order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    chat_id: user.id,
-                    items: items,
-                    total: total
-                })
-            })
-            .then(async response => {
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                tg.MainButton.hideProgress();
-                if (data.success) {
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    tg.close();
-                } else {
-                    tg.showAlert("Ошибка сервера: " + data.error);
-                }
-            })
-            .catch(error => {
-                tg.MainButton.hideProgress();
-                tg.showAlert("Сетевая ошибка: " + error.message);
+            let total = 0;
+            const items = [];
+            cart.forEach(item => {
+                total += item.price;
+                items.push({ name: item.name, price: item.price });
             });
+
+            const orderData = {
+                items: items,
+                total: total,
+                device: deviceType,
+                problem: problemDesc || "Не указано",
+                phone: clientPhone
+            };
+
+            tg.sendData(JSON.stringify(orderData));
         }
 
         renderServices();
