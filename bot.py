@@ -83,6 +83,7 @@ async def download_database(key: str = ""):
         return FileResponse(db_path, media_type="application/octet-stream", filename="database.db")
     return {"error": "Database file not found"}
 
+# Эндпоинт для получения истории заказов пользователя в личный кабинет
 @app.get("/api/orders/{chat_id}")
 async def get_user_orders(chat_id: int):
     try:
@@ -123,6 +124,7 @@ async def get_user_orders(chat_id: int):
         logging.error(f"Error fetching orders: {e}")
         return {"success": False, "orders": [], "error": str(e)}
 
+# Обработка отправки заявки с поддержкой фото и FormData
 @app.post("/api/order")
 async def api_order(
     chat_id: int = Form(...),
@@ -206,6 +208,49 @@ async def api_order(
         logging.error(f"Error sending messages: {e}")
         return {"success": False, "error": str(e)}
 
+# Обработчик команды /stats для проверки аналитики мастерами
+@dp.message(Command("stats"))
+async def cmd_stats(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("У вас нет прав для просмотра статистики.")
+        return
+
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM orders")
+        total_orders = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'В работе'")
+        in_progress_orders = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'Готово'")
+        done_orders = cursor.fetchone()[0]
+
+        cursor.execute("SELECT SUM(total) FROM orders WHERE status = 'Готово'")
+        result_revenue = cursor.fetchone()[0]
+        total_revenue = result_revenue if result_revenue else 0
+
+        conn.close()
+
+        revenue_str = f"{total_revenue:,}".replace(',', ' ')
+
+        stats_text = (
+            f"📊 **Аналитика мастерской «Ручеёк»**\n\n"
+            f"📦 Всего заказов создано: **{total_orders}**\n"
+            f"🛠 Сейчас в работе: **{in_progress_orders}**\n"
+            f"✅ Выполнено заказов: **{done_orders}**\n"
+            f"💰 Общая выручка: **{revenue_str} ₽**"
+        )
+
+        await message.answer(stats_text, parse_mode="HTML")
+
+    except Exception as e:
+        logging.error(f"Stats calculation error: {e}")
+        await message.answer("⚠️ Ошибка при подсчете статистики из базы данных.")
+
+# Обработчик нажатия на кнопки статусов в рабочем чате с отправкой ЛС клиенту
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -382,7 +427,8 @@ async def process_back(callback: CallbackQuery):
 async def set_bot_commands(bot: Bot):
     commands = [
         BotCommand(command="start", description="Главное меню"),
-        BotCommand(command="restart", description="Перезапустить бота")
+        BotCommand(command="restart", description="Перезапустить бота"),
+        BotCommand(command="stats", description="Статистика и выручка (для мастеров)")
     ]
     await bot.set_my_commands(commands)
 
