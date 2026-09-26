@@ -137,7 +137,7 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
         )
         
         response = await gemini_client.aio.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-3.8-flash',
             contents=[
                 types.Part.from_bytes(
                     data=file_bytes,
@@ -193,7 +193,7 @@ async def api_upsell(items: str = Form(...)):
         )
         
         response = await gemini_client.aio.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-3.8-flash',
             contents=[prompt]
         )
         
