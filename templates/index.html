@@ -26,19 +26,7 @@
             --nav-height: 65px;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #000000;
-                --surface-color: #1c1c1e;
-                --text-primary: #f5f5f7;
-                --text-secondary: #98989d;
-                --accent-color: #0a84ff;
-                --accent-bg: rgba(10, 132, 255, 0.12);
-                --border-color: rgba(255, 255, 255, 0.1);
-                --nav-bg: rgba(28, 28, 30, 0.85);
-            }
-        }
-
+        /* Нативные темы Telegram */
         body.tg-dark {
             --bg-color: var(--tg-theme-bg-color, #000000);
             --surface-color: var(--tg-theme-secondary-bg-color, #1c1c1e);
@@ -57,6 +45,16 @@
             --accent-color: var(--tg-theme-button-color, #007aff);
             --border-color: rgba(0, 0, 0, 0.08);
             --nav-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Корпоративная тема B2B (Графит) */
+        body.theme-b2b.tg-light {
+            --accent-color: #2D2D2D;
+            --accent-bg: rgba(45, 45, 45, 0.08);
+        }
+        body.theme-b2b.tg-dark {
+            --accent-color: #9E9E9E; 
+            --accent-bg: rgba(158, 158, 158, 0.12);
         }
 
         * {
@@ -92,7 +90,7 @@
         }
 
         header {
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
         .brand-subtitle {
             font-size: 13px;
@@ -125,6 +123,50 @@
             line-height: 1.4;
         }
 
+        /* Стили переключателя B2C/B2B */
+        .segment-control-wrapper {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 20px;
+            display: flex;
+            position: relative;
+        }
+        .segment {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 2;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        .segment.active {
+            color: #ffffff;
+        }
+        body.tg-light .segment.active {
+            color: #ffffff;
+        }
+        body.tg-dark .segment.active {
+            color: #000000;
+        }
+        .segment-slider {
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            width: calc(50% - 3px);
+            background: var(--accent-color);
+            border-radius: 8px;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s ease;
+            z-index: 1;
+        }
+        body.theme-b2b .segment-slider {
+            transform: translateX(100%);
+        }
+
         .list-group {
             display: flex;
             flex-direction: column;
@@ -140,7 +182,7 @@
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
-            transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease;
+            transition: transform 0.15s ease, border-color 0.3s ease, background-color 0.3s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         
@@ -177,6 +219,7 @@
             font-weight: 500;
             color: var(--text-secondary);
             white-space: nowrap;
+            transition: color 0.3s ease;
         }
         
         .card.selected .card-price {
@@ -191,7 +234,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             flex-shrink: 0;
             opacity: 0.5;
         }
@@ -207,7 +250,7 @@
             transform: scale(0.5);
             transition: all 0.2s ease;
             fill: none;
-            stroke: #fff;
+            stroke: var(--surface-color);
             stroke-width: 3;
             stroke-linecap: round;
             stroke-linejoin: round;
@@ -255,6 +298,7 @@
             justify-content: center;
             font-size: 20px;
             margin-right: 16px;
+            transition: background-color 0.3s, color 0.3s;
         }
         
         .contact-info h3 {
@@ -302,7 +346,7 @@
             border-radius: var(--radius-sm);
             background: var(--bg-color);
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color 0.3s, background 0.3s;
         }
         .file-dropzone:hover {
             border-color: var(--accent-color);
@@ -310,6 +354,7 @@
         .file-dropzone-icon {
             font-size: 24px;
             color: var(--accent-color);
+            transition: color 0.3s;
         }
         .file-dropzone-text {
             font-size: 14px;
@@ -357,6 +402,21 @@
             justify-content: center;
         }
 
+        .input-base {
+            width: 100%;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        .input-base:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+        
         .order-card {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -404,78 +464,6 @@
             padding-top: 10px;
         }
 
-        .timeline {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-            margin: 8px 4px 4px 4px;
-        }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            height: 2px;
-            background: var(--border-color);
-            z-index: 1;
-        }
-        .timeline-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-            flex: 1;
-        }
-        .timeline-bullet {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background-color: var(--surface-color);
-            border: 2px solid var(--text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-        }
-        .timeline-step.completed .timeline-bullet {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-            color: #fff;
-        }
-        .timeline-step.active .timeline-bullet {
-            background-color: var(--surface-color);
-            border-color: var(--success-color);
-            box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
-            color: var(--success-color);
-            font-weight: bold;
-        }
-        .timeline-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            text-align: center;
-            max-width: 65px;
-            line-height: 1.1;
-        }
-        .timeline-step.completed .timeline-label,
-        .timeline-step.active .timeline-label {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-        .timeline-step.cancelled .timeline-bullet {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-            color: #fff;
-        }
-        .timeline-step.cancelled .timeline-label {
-            color: var(--danger-color);
-            font-weight: 600;
-        }
-
         .empty-cabinet {
             text-align: center;
             color: var(--text-secondary);
@@ -489,7 +477,7 @@
             left: 16px;
             right: 16px;
             background-color: var(--accent-color);
-            color: #ffffff;
+            color: var(--surface-color);
             border-radius: var(--radius-md);
             padding: 14px 20px;
             display: flex;
@@ -499,7 +487,7 @@
             transform: translateY(150px);
             opacity: 0;
             pointer-events: none;
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, background-color 0.3s;
             z-index: 95;
             cursor: pointer;
         }
@@ -566,7 +554,7 @@
             font-size: 11px;
             font-weight: 500;
             cursor: pointer;
-            transition: color 0.2s;
+            transition: color 0.3s;
         }
         
         .nav-item.active {
@@ -578,10 +566,6 @@
             margin-bottom: 2px;
         }
 
-        #view-success {
-            display: none;
-            opacity: 0;
-        }
         #view-success.active {
             display: flex;
             flex-direction: column;
@@ -659,12 +643,17 @@
                 <img src="/static/repair.jpg" alt="Мастерская">
                 Услуги
             </h1>
-            <p class="desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
+            <p class="desc" id="service-desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
         </header>
 
-        <div class="list-group" id="services-container"></div>
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ B2C / B2B -->
+        <div class="segment-control-wrapper">
+            <div class="segment-slider" id="segment-slider"></div>
+            <div class="segment active" id="tab-b2c" onclick="switchMode('b2c')">Частным клиентам</div>
+            <div class="segment" id="tab-b2b" onclick="switchMode('b2b')">Для бизнеса</div>
+        </div>
 
-        <p class="footnote">* Бесплатно при условии последующего ремонта.<br>При отказе от ремонта — 500 ₽</p>
+        <div class="list-group" id="services-container"></div>
     </main>
 
     <main id="view-cabinet" class="view">
@@ -676,7 +665,6 @@
             </h1>
             <p class="desc">История ваших заявок и их статусы.</p>
         </header>
-
         <div class="list-group" id="orders-container">
             <div class="empty-cabinet">Загрузка истории заказов...</div>
         </div>
@@ -699,7 +687,6 @@
                 <p>Телефон / WhatsApp</p>
             </div>
         </a>
-
         <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" class="contact-card">
             <div class="contact-icon">💬</div>
             <div class="contact-info">
@@ -707,20 +694,19 @@
                 <p>Написать в Telegram</p>
             </div>
         </a>
-
         <div class="contact-card">
             <div class="contact-icon">📍</div>
             <div class="contact-info">
                 <h3>ПГТ Ручейк, ул., д. 1</h3>
-                <p>Выезд на дом по договоренности</p>
+                <p>Выезд на дом и в офис по договоренности</p>
             </div>
         </div>
     </main>
 
     <main id="view-summary" class="view">
         <header>
-            <div class="brand-subtitle">Оформление</div>
-            <h1>
+            <div class="brand-subtitle" id="summary-subtitle">Оформление</div>
+            <h1 id="summary-title">
                 <img src="/static/cart.jpg" alt="Заказ">
                 Ваш заказ
             </h1>
@@ -729,10 +715,9 @@
 
         <div class="list-group">
             
-            <!-- БЛОК СОВЕТА (Без слова ИИ) -->
             <div class="card" id="ai-upsell-container" style="display: none; background: var(--accent-bg); border-color: var(--accent-color); flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="font-size: 13px; font-weight: 600; color: var(--accent-color);">💡 Совет от мастера:</div>
-                <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Анализируем ваш заказ... ⏳</div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--accent-color); transition: color 0.3s;">💡 Совет от мастера:</div>
+                <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Подбираем рекомендацию... ⏳</div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
@@ -740,42 +725,58 @@
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип устройства:</label>
-                <select id="device-type" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px;">
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип оборудования:</label>
+                <select id="device-type" class="input-base">
                     <option value="Ноутбук">Ноутбук</option>
                     <option value="Системный блок">Системный блок</option>
                     <option value="Техника Apple">Техника Apple</option>
-                    <option value="Другое">Другое</option>
+                    <option value="Серверное оборудование / Другое">Серверное оборудование / Другое</option>
                 </select>
             </div>
 
-            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Кратко опишите проблему <span style="font-weight: 400;">(необязательно)</span>:</label>
-                <textarea id="problem-desc" placeholder="Например: шумит, не включается..." rows="3" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; resize: none;"></textarea>
+            <!-- Блок полей для B2C (Частные клиенты) -->
+            <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                    <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Кратко опишите проблему <span style="font-weight: 400;">(необязательно)</span>:</label>
+                    <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" style="resize: none;"></textarea>
+                </div>
+
+                <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                    <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Фото проблемы <span style="font-weight: 400;">(необязательно)</span>:</label>
+                    <div class="file-upload-container">
+                        <label class="file-dropzone" id="dropzone-label">
+                            <span class="file-dropzone-icon">📷</span>
+                            <div>
+                                <div class="file-dropzone-text">Прикрепить фото проблемы</div>
+                                <div class="file-dropzone-subtext">Нажмите для выбора из галереи</div>
+                            </div>
+                            <input type="file" id="problem-photo" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                        </label>
+                        <div class="preview-wrapper" id="preview-wrapper">
+                            <img id="preview-img" class="preview-img" src="" alt="Превью">
+                            <span class="preview-name" id="preview-name">photo.jpg</span>
+                            <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Фото проблемы <span style="font-weight: 400;">(необязательно)</span>:</label>
-                <div class="file-upload-container">
-                    <label class="file-dropzone" id="dropzone-label">
-                        <span class="file-dropzone-icon">📷</span>
-                        <div>
-                            <div class="file-dropzone-text">Прикрепить фото проблемы</div>
-                            <div class="file-dropzone-subtext">Нажмите для выбора из галереи</div>
-                        </div>
-                        <input type="file" id="problem-photo" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-                    </label>
-                    <div class="preview-wrapper" id="preview-wrapper">
-                        <img id="preview-img" class="preview-img" src="" alt="Превью">
-                        <span class="preview-name" id="preview-name">photo.jpg</span>
-                        <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
-                    </div>
+            <!-- Блок полей для B2B (Бизнес) -->
+            <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 12px;">
+                <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                    <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Количество рабочих мест (шт.):</label>
+                    <input type="number" id="b2b-workplaces" class="input-base" placeholder="Например: 15" min="1">
+                </div>
+                
+                <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                    <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Адрес или площадь офиса (кв.м):</label>
+                    <input type="text" id="b2b-office" class="input-base" placeholder="Например: БЦ Ручейк, 100 кв.м">
                 </div>
             </div>
 
             <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                 <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Ваш номер телефона: <span style="color: var(--danger-color);">*</span></label>
-                <input type="tel" id="client-phone" placeholder="+7 (___) ___-__-__" maxlength="18" style="width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 15px; transition: border-color 0.2s;">
+                <input type="tel" id="client-phone" class="input-base" placeholder="+7 (___) ___-__-__" maxlength="18">
                 <span id="phone-error" style="color: var(--danger-color); font-size: 12px; display: none; margin-top: -4px;">Введите корректный номер (11 цифр)</span>
             </div>
         </div>
@@ -824,25 +825,80 @@
 
         document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
         tg.onEvent('themeChanged', () => {
-            document.body.className = tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light';
+            const modeClass = currentMode === 'b2b' ? 'theme-b2b' : '';
+            document.body.className = `${tg.colorScheme === 'dark' ? 'tg-dark' : 'tg-light'} ${modeClass}`;
+            updateButtonTheme();
         });
 
-        const servicesData = [
-            { id: 1, name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
-            { id: 2, name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
-            { id: 3, name: "Чистка ноутбука от пыли и перегрева", price: 2000, label: "от 2 000 ₽", subtitle: "С разбором корпуса и заменой пасты" },
-            { id: 4, name: "Установка Windows (с активацией)", price: 1500, label: "от 1 500 ₽", subtitle: "Включая базовые драйверы" },
-            { id: 5, name: "Установка пакета Microsoft Office", price: 500, label: "от 500 ₽", subtitle: "Word, Excel, PowerPoint" },
-            { id: 6, name: "Сборка ПК из комплектующих", price: 2500, label: "от 2 500 ₽", subtitle: "Аккуратный кабель-менеджмент" },
-            { id: 7, name: "Оптимизация и чистка от вирусов", price: 1000, label: "от 1 000 ₽", subtitle: "Ускорение работы системы" },
-            { id: 8, name: "Замена матрицы / экрана", price: 2500, label: "от 2 500 ₽", subtitle: "Цена детали рассчитывается отдельно" },
-            { id: 9, name: "Ремонт после залития", price: 2000, label: "от 2 000 ₽", subtitle: "Ультразвуковая чистка платы" },
-            { id: 10, name: "Восстановление данных", price: 1000, label: "от 1 000 ₽", subtitle: "С поврежденных HDD / SSD / флешек" }
+        // Данные услуг
+        const servicesDataB2C = [
+            { id: 'c1', name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
+            { id: 'c2', name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
+            { id: 'c3', name: "Чистка ноутбука от пыли и перегрева", price: 2000, label: "от 2 000 ₽", subtitle: "С разбором корпуса и заменой пасты" },
+            { id: 'c4', name: "Установка Windows (с активацией)", price: 1500, label: "от 1 500 ₽", subtitle: "Включая базовые драйверы" },
+            { id: 'c5', name: "Установка пакета Microsoft Office", price: 500, label: "от 500 ₽", subtitle: "Word, Excel, PowerPoint" },
+            { id: 'c6', name: "Сборка ПК из комплектующих", price: 2500, label: "от 2 500 ₽", subtitle: "Аккуратный кабель-менеджмент" },
+            { id: 'c7', name: "Оптимизация и чистка от вирусов", price: 1000, label: "от 1 000 ₽", subtitle: "Ускорение работы системы" },
+            { id: 'c8', name: "Замена матрицы / экрана", price: 2500, label: "от 2 500 ₽", subtitle: "Цена детали рассчитывается отдельно" },
+            { id: 'c9', name: "Ремонт после залития", price: 2000, label: "от 2 000 ₽", subtitle: "Ультразвуковая чистка платы" },
+            { id: 'c10', name: "Восстановление данных", price: 1000, label: "от 1 000 ₽", subtitle: "С поврежденных HDD / SSD / флешек" }
         ];
 
+        const servicesDataB2B = [
+            { id: 'b1', name: "Организация рабочего места под ключ", price: 3000, label: "от 3 000 ₽ / место", subtitle: "Сборка, ПО, настройка сети" },
+            { id: 'b2', name: "Настройка локальной сети и серверов", price: 10000, label: "от 10 000 ₽", subtitle: "Роутеры, NAS, Active Directory" },
+            { id: 'b3', name: "IT-аутсорсинг офиса", price: 0, label: "По договоренности", subtitle: "Регулярное обслуживание техники" },
+            { id: 'b4', name: "Легализация и установка корпоративного ПО", price: 2000, label: "от 2 000 ₽ / место", subtitle: "1C, CRM-системы, офисные пакеты" },
+            { id: 'b5', name: "Настройка систем резервного копирования", price: 5000, label: "от 5 000 ₽", subtitle: "Защита корпоративных данных" },
+            { id: 'b6', name: "Модернизация корпоративного парка ПК", price: 0, label: "Индивидуальный расчет", subtitle: "Аудит и апгрейд железа" }
+        ];
+
+        let currentMode = 'b2c'; 
         let cart = new Map();
         let currentView = 'services';
         let selectedFile = null;
+
+        // Переключение режимов B2C/B2B
+        function switchMode(mode) {
+            if (currentMode === mode) return;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            currentMode = mode;
+            cart.clear(); // Очищаем корзину при смене типа клиента
+            updateCartState();
+            
+            const tabB2C = document.getElementById('tab-b2c');
+            const tabB2B = document.getElementById('tab-b2b');
+            const desc = document.getElementById('service-desc');
+            
+            if (mode === 'b2b') {
+                tabB2C.classList.remove('active');
+                tabB2B.classList.add('active');
+                document.body.classList.add('theme-b2b');
+                desc.innerText = "Комплексные IT-решения и обслуживание для вашей компании.";
+            } else {
+                tabB2B.classList.remove('active');
+                tabB2C.classList.add('active');
+                document.body.classList.remove('theme-b2b');
+                desc.innerText = "Ремонт, обслуживание и настройка. Выберите необходимое.";
+            }
+
+            updateButtonTheme();
+            renderServices();
+        }
+
+        function updateButtonTheme() {
+            if (currentMode === 'b2b') {
+                // Графитовый корпоративный цвет
+                const isDark = tg.colorScheme === 'dark';
+                tg.MainButton.color = isDark ? '#5E5E5E' : '#2D2D2D';
+                tg.MainButton.textColor = '#ffffff';
+            } else {
+                // Нативный цвет Telegram
+                tg.MainButton.color = tg.themeParams.button_color || '#007aff';
+                tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
+            }
+        }
 
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -894,7 +950,9 @@
             const container = document.getElementById('services-container');
             container.innerHTML = '';
             
-            servicesData.forEach(s => {
+            const activeData = currentMode === 'b2b' ? servicesDataB2B : servicesDataB2C;
+            
+            activeData.forEach(s => {
                 const isSelected = cart.has(s.id);
                 const card = document.createElement('div');
                 card.className = `card ${isSelected ? 'selected' : ''}`;
@@ -942,7 +1000,7 @@
                 let word = (n > 10 && n < 20) ? words[2] : (n1 > 1 && n1 < 5) ? words[1] : (n1 === 1) ? words[0] : words[2];
                 
                 document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
-                document.getElementById('fb-total').innerText = `${total.toLocaleString('ru-RU')} ₽`;
+                document.getElementById('fb-total').innerText = total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : `Смета`;
                 
                 if (currentView === 'services') bar.classList.add('visible');
             } else {
@@ -979,7 +1037,10 @@
 
             if (viewName === 'summary') {
                 floatingBar.classList.remove('visible');
+                setupSummaryView();
                 renderSummary();
+                updateButtonTheme();
+                tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
                 tg.MainButton.show();
             } else {
                 tg.MainButton.hide();
@@ -991,6 +1052,24 @@
             }
         }
 
+        // Переключение полей формы в корзине в зависимости от режима
+        function setupSummaryView() {
+            const fieldsB2C = document.getElementById('form-fields-b2c');
+            const fieldsB2B = document.getElementById('form-fields-b2b');
+            const summarySubtitle = document.getElementById('summary-subtitle');
+            
+            if (currentMode === 'b2b') {
+                fieldsB2C.style.display = 'none';
+                fieldsB2B.style.display = 'flex';
+                summarySubtitle.innerText = 'Оформление (Бизнес)';
+            } else {
+                fieldsB2B.style.display = 'none';
+                fieldsB2C.style.display = 'flex';
+                summarySubtitle.innerText = 'Оформление';
+            }
+        }
+
+        // ... [Остальной код (loadUserOrders, getTimelineHtml) без изменений] ...
         function getTimelineHtml(statusText) {
             let activeStep = 1; 
             const s = statusText.toLowerCase();
@@ -1100,7 +1179,7 @@
             cart.forEach(item => {
                 total += item.price;
                 itemsArr.push({ name: item.name, price: item.price });
-                const priceStr = item.price === 0 ? "Бесплатно" : `${item.price.toLocaleString('ru-RU')} ₽`;
+                const priceStr = item.price === 0 ? "По договоренности" : `${item.price.toLocaleString('ru-RU')} ₽`;
                 container.innerHTML += `
                     <div class="summary-item">
                         <span style="flex:1; padding-right:12px;">✓ ${item.name}</span>
@@ -1112,7 +1191,7 @@
             container.innerHTML += `
                 <div class="summary-total">
                     <span>Итого:</span>
-                    <span>${total.toLocaleString('ru-RU')} ₽</span>
+                    <span>${total > 0 ? total.toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
                 </div>
             `;
             
@@ -1120,12 +1199,12 @@
             const upsellText = document.getElementById('ai-upsell-text');
             
             if (itemsArr.length > 0) {
-                // Блок больше не скрывается при ошибке, он всегда остается на виду
                 upsellContainer.style.display = 'flex';
                 upsellText.innerHTML = '<span style="color: var(--text-secondary);">Подбираем рекомендацию... ⏳</span>';
                 
                 const formData = new FormData();
                 formData.append('items', JSON.stringify(itemsArr));
+                formData.append('is_b2b', currentMode === 'b2b' ? "true" : "false");
                 
                 fetch('/api/upsell', {
                     method: 'POST',
@@ -1138,23 +1217,19 @@
                     } 
                 })
                 .catch(() => {
-                    // Если интернет моргнул, оставляем дефолтный текст
-                    upsellText.innerHTML = 'Не забывайте: регулярная профилактика продлевает срок службы техники!';
+                    upsellText.innerHTML = 'Своевременный аудит инфраструктуры снижает риски поломок.';
                 });
             } else {
                 upsellContainer.style.display = 'none';
             }
         }
 
-        tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
-        tg.MainButton.color = tg.themeParams.button_color || '#007aff';
-        tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
         tg.MainButton.onClick(() => {
             if (cart.size === 0) return;
 
             const user = tg.initDataUnsafe?.user;
             if (!user) {
-                tg.showAlert("Ошибка: невозможно определить ID пользователя. Откройте приложение через Telegram.");
+                tg.showAlert("Ошибка: невозможно определить пользователя.");
                 return;
             }
 
@@ -1168,7 +1243,6 @@
             }
 
             const deviceType = document.getElementById('device-type').value;
-            const problemDesc = document.getElementById('problem-desc').value.trim();
 
             let total = 0;
             const items = [];
@@ -1182,10 +1256,19 @@
             formData.append('items', JSON.stringify(items));
             formData.append('total', total);
             formData.append('device', deviceType);
-            formData.append('problem', problemDesc || "Не указано");
             formData.append('phone', phoneInput.value);
+            formData.append('is_b2b', currentMode === 'b2b' ? "true" : "false");
 
-            if (selectedFile) formData.append('photo', selectedFile);
+            if (currentMode === 'b2b') {
+                const workplaces = document.getElementById('b2b-workplaces').value;
+                const office = document.getElementById('b2b-office').value;
+                formData.append('workplaces', workplaces);
+                formData.append('office_info', office);
+            } else {
+                const problemDesc = document.getElementById('problem-desc').value.trim();
+                formData.append('problem', problemDesc);
+                if (selectedFile) formData.append('photo', selectedFile);
+            }
 
             tg.MainButton.text = "ОТПРАВКА...";
             tg.MainButton.showProgress();
@@ -1197,8 +1280,7 @@
             .then(async response => {
                 const data = await response.json().catch(() => null);
                 if (!response.ok) {
-                    let errDetail = (data && data.detail) ? JSON.stringify(data.detail) : response.statusText;
-                    throw new Error(`HTTP ${response.status}: ${errDetail}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 return data;
             })
@@ -1208,17 +1290,19 @@
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     navigate('success');
                 } else {
-                    tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
-                    tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ сервера"));
+                    tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
+                    tg.showAlert("Ошибка сервера: " + (data ? data.error : "Неизвестный ответ"));
                 }
             })
             .catch(error => {
                 tg.MainButton.hideProgress();
-                tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
+                tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
                 tg.showAlert("Сбой при отправке: " + error.message);
             });
         });
 
+        // Инициализация стартового состояния
+        updateButtonTheme();
         renderServices();
     </script>
 </body>
