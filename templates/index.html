@@ -26,7 +26,6 @@
             --nav-height: 65px;
         }
 
-        /* Нативные темы Telegram */
         body.tg-dark {
             --bg-color: var(--tg-theme-bg-color, #000000);
             --surface-color: var(--tg-theme-secondary-bg-color, #1c1c1e);
@@ -47,7 +46,6 @@
             --nav-bg: rgba(255, 255, 255, 0.9);
         }
 
-        /* Корпоративная тема B2B (Графит) */
         body.theme-b2b.tg-light {
             --accent-color: #2D2D2D;
             --accent-bg: rgba(45, 45, 45, 0.08);
@@ -123,7 +121,6 @@
             line-height: 1.4;
         }
 
-        /* Стили переключателя B2C/B2B */
         .segment-control-wrapper {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -314,10 +311,9 @@
 
         .summary-item {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             padding: 12px 0;
             border-bottom: 1px solid var(--border-color);
-            font-size: 15px;
         }
         
         .summary-item:last-child {
@@ -646,7 +642,6 @@
             <p class="desc" id="service-desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
         </header>
 
-        <!-- ПЕРЕКЛЮЧАТЕЛЬ B2C / B2B -->
         <div class="segment-control-wrapper">
             <div class="segment-slider" id="segment-slider"></div>
             <div class="segment active" id="tab-b2c" onclick="switchMode('b2c')">Частным клиентам</div>
@@ -724,18 +719,17 @@
                 <div id="summary-list" style="width: 100%;"></div>
             </div>
 
-            <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-                <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип оборудования:</label>
-                <select id="device-type" class="input-base">
-                    <option value="Ноутбук">Ноутбук</option>
-                    <option value="Системный блок">Системный блок</option>
-                    <option value="Техника Apple">Техника Apple</option>
-                    <option value="Серверное оборудование / Другое">Серверное оборудование / Другое</option>
-                </select>
-            </div>
-
-            <!-- Блок полей для B2C (Частные клиенты) -->
             <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+                    <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Тип устройства:</label>
+                    <select id="device-type" class="input-base">
+                        <option value="Ноутбук">Ноутбук</option>
+                        <option value="Системный блок">Системный блок</option>
+                        <option value="Техника Apple">Техника Apple</option>
+                        <option value="Другое">Другое</option>
+                    </select>
+                </div>
+
                 <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                     <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Кратко опишите проблему <span style="font-weight: 400;">(необязательно)</span>:</label>
                     <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" style="resize: none;"></textarea>
@@ -761,7 +755,6 @@
                 </div>
             </div>
 
-            <!-- Блок полей для B2B (Бизнес) -->
             <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 12px;">
                 <div class="card" style="cursor: default; transform: none; box-shadow: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
                     <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Количество рабочих мест (шт.):</label>
@@ -830,7 +823,6 @@
             updateButtonTheme();
         });
 
-        // Данные услуг
         const servicesDataB2C = [
             { id: 'c1', name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
             { id: 'c2', name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
@@ -845,12 +837,12 @@
         ];
 
         const servicesDataB2B = [
-            { id: 'b1', name: "Организация рабочего места под ключ", price: 3000, label: "от 3 000 ₽ / место", subtitle: "Сборка, ПО, настройка сети" },
-            { id: 'b2', name: "Настройка локальной сети и серверов", price: 10000, label: "от 10 000 ₽", subtitle: "Роутеры, NAS, Active Directory" },
-            { id: 'b3', name: "IT-аутсорсинг офиса", price: 0, label: "По договоренности", subtitle: "Регулярное обслуживание техники" },
-            { id: 'b4', name: "Легализация и установка корпоративного ПО", price: 2000, label: "от 2 000 ₽ / место", subtitle: "1C, CRM-системы, офисные пакеты" },
-            { id: 'b5', name: "Настройка систем резервного копирования", price: 5000, label: "от 5 000 ₽", subtitle: "Защита корпоративных данных" },
-            { id: 'b6', name: "Модернизация корпоративного парка ПК", price: 0, label: "Индивидуальный расчет", subtitle: "Аудит и апгрейд железа" }
+            { id: 'b1', name: "Организация рабочего места под ключ", price: 3000, label: "от 3 000 ₽ / место", subtitle: "Сборка, ПО, настройка сети", details: "Включает: распаковку и расстановку техники, кабель-менеджмент, базовую настройку ОС, подключение к офисной сети и принтерам." },
+            { id: 'b2', name: "Настройка локальной сети и серверов", price: 10000, label: "от 10 000 ₽", subtitle: "Роутеры, NAS, Active Directory", details: "Включает: аудит сети, настройку роутеров/коммутаторов, развертывание файловых хранилищ (NAS) и распределение прав доступа." },
+            { id: 'b3', name: "IT-аутсорсинг офиса", price: 0, label: "По договоренности", subtitle: "Регулярное обслуживание техники", details: "Комплексная поддержка: плановые выезды, удаленная помощь сотрудникам (Helpdesk), мониторинг серверов 24/7." },
+            { id: 'b4', name: "Легализация и установка корпоративного ПО", price: 2000, label: "от 2 000 ₽ / ПК", subtitle: "1C, CRM-системы, офисные пакеты", details: "Аудит текущего софта, подбор корпоративных лицензий, централизованная установка 1С и офисных пакетов." },
+            { id: 'b5', name: "Настройка систем резервного копирования", price: 5000, label: "от 5 000 ₽", subtitle: "Защита корпоративных данных", details: "Настройка автоматического защищенного бэкапа критически важных баз данных и документов на локальные или облачные серверы." },
+            { id: 'b6', name: "Модернизация корпоративного парка ПК", price: 0, label: "Индивидуальный расчет", subtitle: "Аудит и апгрейд железа", details: "Инвентаризация оборудования, подбор и закупка комплектующих (SSD, RAM), бережная установка с сохранением всех данных." }
         ];
 
         let currentMode = 'b2c'; 
@@ -858,13 +850,12 @@
         let currentView = 'services';
         let selectedFile = null;
 
-        // Переключение режимов B2C/B2B
         function switchMode(mode) {
             if (currentMode === mode) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             
             currentMode = mode;
-            cart.clear(); // Очищаем корзину при смене типа клиента
+            cart.clear(); 
             updateCartState();
             
             const tabB2C = document.getElementById('tab-b2c');
@@ -889,12 +880,10 @@
 
         function updateButtonTheme() {
             if (currentMode === 'b2b') {
-                // Графитовый корпоративный цвет
                 const isDark = tg.colorScheme === 'dark';
                 tg.MainButton.color = isDark ? '#5E5E5E' : '#2D2D2D';
                 tg.MainButton.textColor = '#ffffff';
             } else {
-                // Нативный цвет Telegram
                 tg.MainButton.color = tg.themeParams.button_color || '#007aff';
                 tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
             }
@@ -1052,7 +1041,6 @@
             }
         }
 
-        // Переключение полей формы в корзине в зависимости от режима
         function setupSummaryView() {
             const fieldsB2C = document.getElementById('form-fields-b2c');
             const fieldsB2B = document.getElementById('form-fields-b2b');
@@ -1069,7 +1057,6 @@
             }
         }
 
-        // ... [Остальной код (loadUserOrders, getTimelineHtml) без изменений] ...
         function getTimelineHtml(statusText) {
             let activeStep = 1; 
             const s = statusText.toLowerCase();
@@ -1180,10 +1167,19 @@
                 total += item.price;
                 itemsArr.push({ name: item.name, price: item.price });
                 const priceStr = item.price === 0 ? "По договоренности" : `${item.price.toLocaleString('ru-RU')} ₽`;
+                
+                let detailsHtml = '';
+                if (currentMode === 'b2b' && item.details) {
+                    detailsHtml = `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.3;">${item.details}</div>`;
+                }
+
                 container.innerHTML += `
                     <div class="summary-item">
-                        <span style="flex:1; padding-right:12px;">✓ ${item.name}</span>
-                        <span style="font-weight:600;">${priceStr}</span>
+                        <div style="display: flex; justify-content: space-between; width: 100%;">
+                            <span style="flex:1; padding-right:12px; font-weight: 500;">✓ ${item.name}</span>
+                            <span style="font-weight:600; white-space: nowrap;">${priceStr}</span>
+                        </div>
+                        ${detailsHtml}
                     </div>
                 `;
             });
@@ -1242,8 +1238,6 @@
                 return; 
             }
 
-            const deviceType = document.getElementById('device-type').value;
-
             let total = 0;
             const items = [];
             cart.forEach(item => {
@@ -1255,7 +1249,6 @@
             formData.append('chat_id', user.id);
             formData.append('items', JSON.stringify(items));
             formData.append('total', total);
-            formData.append('device', deviceType);
             formData.append('phone', phoneInput.value);
             formData.append('is_b2b', currentMode === 'b2b' ? "true" : "false");
 
@@ -1264,8 +1257,11 @@
                 const office = document.getElementById('b2b-office').value;
                 formData.append('workplaces', workplaces);
                 formData.append('office_info', office);
+                formData.append('device', "Корпоративная инфраструктура"); 
             } else {
+                const deviceType = document.getElementById('device-type').value;
                 const problemDesc = document.getElementById('problem-desc').value.trim();
+                formData.append('device', deviceType);
                 formData.append('problem', problemDesc);
                 if (selectedFile) formData.append('photo', selectedFile);
             }
@@ -1301,7 +1297,6 @@
             });
         });
 
-        // Инициализация стартового состояния
         updateButtonTheme();
         renderServices();
     </script>
