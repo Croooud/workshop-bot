@@ -729,9 +729,9 @@
 
         <div class="list-group">
             
-            <!-- БЛОК ДОПРОДАЖ ИИ (AI UPSELL) -->
+            <!-- БЛОК СОВЕТА (Без слова ИИ) -->
             <div class="card" id="ai-upsell-container" style="display: none; background: var(--accent-bg); border-color: var(--accent-color); flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="font-size: 13px; font-weight: 600; color: var(--accent-color);">🤖 Совет от мастера (ИИ):</div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--accent-color);">💡 Совет от мастера:</div>
                 <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Анализируем ваш заказ... ⏳</div>
             </div>
 
@@ -1116,13 +1116,13 @@
                 </div>
             `;
             
-            // ЗАПРОС К ИИ ДЛЯ АПСЕЙЛА
             const upsellContainer = document.getElementById('ai-upsell-container');
             const upsellText = document.getElementById('ai-upsell-text');
             
             if (itemsArr.length > 0) {
+                // Блок больше не скрывается при ошибке, он всегда остается на виду
                 upsellContainer.style.display = 'flex';
-                upsellText.innerHTML = '<span style="color: var(--text-secondary);">Анализируем ваш заказ... ⏳</span>';
+                upsellText.innerHTML = '<span style="color: var(--text-secondary);">Подбираем рекомендацию... ⏳</span>';
                 
                 const formData = new FormData();
                 formData.append('items', JSON.stringify(itemsArr));
@@ -1135,12 +1135,11 @@
                 .then(data => {
                     if (data.success && data.recommendation) {
                         upsellText.innerHTML = data.recommendation;
-                    } else {
-                        upsellContainer.style.display = 'none';
-                    }
+                    } 
                 })
                 .catch(() => {
-                    upsellContainer.style.display = 'none';
+                    // Если интернет моргнул, оставляем дефолтный текст
+                    upsellText.innerHTML = 'Не забывайте: регулярная профилактика продлевает срок службы техники!';
                 });
             } else {
                 upsellContainer.style.display = 'none';
