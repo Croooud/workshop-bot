@@ -223,8 +223,8 @@ async def api_order(
     chat_id: int = Form(...),
     items: str = Form(...),
     total: int = Form(...),
-    device: str = Form(...),
     phone: str = Form(...),
+    device: str = Form(None), # Сделали необязательным для B2B
     photo: UploadFile = File(None),
     is_b2b: str = Form("false"),
     problem: str = Form(None),
@@ -267,19 +267,21 @@ async def api_order(
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
-    # Маршрутизация B2B / B2C
+    # Умная маршрутизация формата сообщения
     if is_b2b == "true":
         header = f"💼 <b>НОВЫЙ КОРПОРАТИВНЫЙ ЗАКАЗ {order_id}</b>"
+        device_block = "" # Бизнесу не нужно поле "Тип устройства"
         problem_block = f"🏢 Рабочих мест: <b>{workplaces or 'Не указано'}</b>\n📍 Офис/Площадь: <b>{office_info or 'Не указано'}</b>"
     else:
         header = f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>"
+        device_block = f"💻 Тип устройства: {device or 'Не указано'}\n"
         problem_block = f"⚠️ Проблема: {problem or 'Не указано'}"
 
     admin_receipt = (
         f"{header}\n\n"
         f"👤 Клиент: <a href='{client_link}'>ID {chat_id}</a>\n"
         f"📱 Телефон: <code>{phone}</code>\n"
-        f"💻 Тип устройства: {device}\n"
+        f"{device_block}"
         f"{problem_block}\n"
         f"🤖 <b>Скрытая AI-оценка:</b>\n{ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
