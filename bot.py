@@ -154,9 +154,8 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
         return f"❌ Техническая ошибка ИИ: {e}"
 
 @app.post("/api/upsell")
-async def api_upsell(items: str = Form(...)):
-    # Дефолтный совет, если ИИ упадет с ошибкой (чтобы блок не пропадал)
-    fallback_rec = "<b>Регулярная профилактика</b> продлевает срок службы вашей техники на годы. Не забывайте о чистке!"
+async def api_upsell(items: str = Form(...), is_b2b: str = Form("false")):
+    fallback_rec = "<b>Регулярное обслуживание</b> продлевает срок службы техники. Обращайтесь к профессионалам!"
     
     if not gemini_client:
         return {"success": True, "recommendation": fallback_rec}
@@ -169,7 +168,7 @@ async def api_upsell(items: str = Form(...)):
         cart_names = [item['name'] for item in items_list]
         cart_str = ", ".join(cart_names)
         
-        price_list = """
+        price_list_b2c = """
         1. Диагностика компьютера
         2. Комплексная чистка ПК + замена термопасты
         3. Чистка ноутбука от пыли и перегрева
@@ -181,13 +180,24 @@ async def api_upsell(items: str = Form(...)):
         9. Ремонт после залития
         10. Восстановление данных
         """
+
+        price_list_b2b = """
+        1. Организация рабочего места под ключ
+        2. Настройка локальной сети и серверов
+        3. IT-аутсорсинг офиса
+        4. Легализация и установка корпоративного ПО
+        5. Настройка систем резервного копирования
+        6. Модернизация корпоративного парка ПК
+        """
+
+        active_price = price_list_b2b if is_b2b == "true" else price_list_b2c
+        client_type = "Бизнес-клиент" if is_b2b == "true" else "Частный клиент"
         
         prompt = (
-            f"Клиент компьютерной мастерской добавил в корзину: {cart_str}.\n"
-            f"Наш полный прайс-лист:\n{price_list}\n"
-            "Выступи в роли опытного заботливого мастера. Посоветуй ТОЛЬКО ОДНУ дополнительную услугу из прайса, "
-            "которая логично дополнит этот заказ (например, к сборке ПК — установку Windows, к залитию — чистку). "
-            "НЕ предлагай то, что уже есть в корзине.\n"
+            f"{client_type} добавил в корзину: {cart_str}.\n"
+            f"Наш актуальный прайс-лист:\n{active_price}\n"
+            "Выступи в роли опытного ИТ-инженера. Посоветуй ТОЛЬКО ОДНУ дополнительную услугу из прайса, "
+            "которая логично дополнит этот заказ. НЕ предлагай то, что уже есть в корзине.\n"
             "Напиши коротко (1-2 предложения). "
             "Начни сразу с текста. Выдели название предлагаемой услуги жирным шрифтом с помощью Markdown (**)."
         )
@@ -200,14 +210,12 @@ async def api_upsell(items: str = Form(...)):
         raw_text = response.text.strip()
         html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_text, flags=re.DOTALL)
         
-        # Если ИИ выдал пустую строку, возвращаем дефолтную
         if not html_text:
             html_text = fallback_rec
             
         return {"success": True, "recommendation": html_text}
     except Exception as e:
         logging.error(f"Upsell Error: {e}")
-        # Возвращаем True и дефолтный текст, чтобы блок не исчезал
         return {"success": True, "recommendation": fallback_rec}
 
 @app.post("/api/order")
@@ -216,9 +224,12 @@ async def api_order(
     items: str = Form(...),
     total: int = Form(...),
     device: str = Form(...),
-    problem: str = Form(...),
     phone: str = Form(...),
-    photo: UploadFile = File(None)
+    photo: UploadFile = File(None),
+    is_b2b: str = Form("false"),
+    problem: str = Form(None),
+    workplaces: str = Form(None),
+    office_info: str = Form(None)
 ):
     order_id = f"#{random.randint(10000, 99999)}"
     client_link = f"tg://user?id={chat_id}"
@@ -251,17 +262,25 @@ async def api_order(
 
     items_list_str = ""
     for item in items_list:
-        p_str = "Бесплатно" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
+        p_str = "По договоренности" if item['price'] == 0 else f"{item['price']:,} ₽".replace(',', ' ')
         items_list_str += f"▫️ {item['name']} — <i>{p_str}</i>\n"
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
+    # Маршрутизация B2B / B2C
+    if is_b2b == "true":
+        header = f"💼 <b>НОВЫЙ КОРПОРАТИВНЫЙ ЗАКАЗ {order_id}</b>"
+        problem_block = f"🏢 Рабочих мест: <b>{workplaces or 'Не указано'}</b>\n📍 Офис/Площадь: <b>{office_info or 'Не указано'}</b>"
+    else:
+        header = f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>"
+        problem_block = f"⚠️ Проблема: {problem or 'Не указано'}"
+
     admin_receipt = (
-        f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
+        f"{header}\n\n"
         f"👤 Клиент: <a href='{client_link}'>ID {chat_id}</a>\n"
         f"📱 Телефон: <code>{phone}</code>\n"
         f"💻 Тип устройства: {device}\n"
-        f"⚠️ Проблема: {problem}\n"
+        f"{problem_block}\n"
         f"🤖 <b>Скрытая AI-оценка:</b>\n{ai_analysis_text}\n\n"
         f"🛒 Состав заказа:\n{items_list_str}\n"
         f"💳 <b>Сумма: {total_str}</b>"
@@ -516,7 +535,7 @@ async def cmd_start(message: aiogram_types.Message):
     )
     welcome_text = (
         "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
-        "Профессиональный ремонт и обслуживание компьютерной техники."
+        "Профессиональный ремонт и обслуживание компьютерной техники для дома и бизнеса."
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
@@ -559,7 +578,7 @@ async def process_back(callback: CallbackQuery):
     )
     welcome_text = (
         "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
-        "Профессиональный ремонт и обслуживание компьютерной техники."
+        "Профессиональный ремонт и обслуживание компьютерной техники для дома и бизнеса."
     )
     await callback.message.edit_text(welcome_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
