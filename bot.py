@@ -153,15 +153,18 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
         logging.error(f"Gemini API Vision Error: {e}")
         return f"❌ Техническая ошибка ИИ: {e}"
 
-# НОВЫЙ ЭНДПОИНТ: Апсейл (допродажи)
 @app.post("/api/upsell")
 async def api_upsell(items: str = Form(...)):
+    # Дефолтный совет, если ИИ упадет с ошибкой (чтобы блок не пропадал)
+    fallback_rec = "<b>Регулярная профилактика</b> продлевает срок службы вашей техники на годы. Не забывайте о чистке!"
+    
     if not gemini_client:
-        return {"success": False}
+        return {"success": True, "recommendation": fallback_rec}
+        
     try:
         items_list = json.loads(items)
         if not items_list:
-            return {"success": False}
+            return {"success": True, "recommendation": fallback_rec}
             
         cart_names = [item['name'] for item in items_list]
         cart_str = ", ".join(cart_names)
@@ -186,7 +189,7 @@ async def api_upsell(items: str = Form(...)):
             "которая логично дополнит этот заказ (например, к сборке ПК — установку Windows, к залитию — чистку). "
             "НЕ предлагай то, что уже есть в корзине.\n"
             "Напиши коротко (1-2 предложения). "
-            "Начни с эмодзи 💡 и выдели название предлагаемой услуги жирным шрифтом с помощью HTML тегов <b>."
+            "Начни сразу с текста. Выдели название предлагаемой услуги жирным шрифтом с помощью Markdown (**)."
         )
         
         response = await gemini_client.aio.models.generate_content(
@@ -197,10 +200,15 @@ async def api_upsell(items: str = Form(...)):
         raw_text = response.text.strip()
         html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_text, flags=re.DOTALL)
         
+        # Если ИИ выдал пустую строку, возвращаем дефолтную
+        if not html_text:
+            html_text = fallback_rec
+            
         return {"success": True, "recommendation": html_text}
     except Exception as e:
         logging.error(f"Upsell Error: {e}")
-        return {"success": False}
+        # Возвращаем True и дефолтный текст, чтобы блок не исчезал
+        return {"success": True, "recommendation": fallback_rec}
 
 @app.post("/api/order")
 async def api_order(
