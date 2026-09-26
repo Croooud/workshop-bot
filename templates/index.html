@@ -728,6 +728,13 @@
         </header>
 
         <div class="list-group">
+            
+            <!-- БЛОК ДОПРОДАЖ ИИ (AI UPSELL) -->
+            <div class="card" id="ai-upsell-container" style="display: none; background: var(--accent-bg); border-color: var(--accent-color); flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div style="font-size: 13px; font-weight: 600; color: var(--accent-color);">🤖 Совет от мастера (ИИ):</div>
+                <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Анализируем ваш заказ... ⏳</div>
+            </div>
+
             <div class="card" style="cursor: default; transform: none; box-shadow: none;">
                 <div id="summary-list" style="width: 100%;"></div>
             </div>
@@ -1088,8 +1095,11 @@
             container.innerHTML = '';
             
             let total = 0;
+            const itemsArr = [];
+            
             cart.forEach(item => {
                 total += item.price;
+                itemsArr.push({ name: item.name, price: item.price });
                 const priceStr = item.price === 0 ? "Бесплатно" : `${item.price.toLocaleString('ru-RU')} ₽`;
                 container.innerHTML += `
                     <div class="summary-item">
@@ -1105,6 +1115,36 @@
                     <span>${total.toLocaleString('ru-RU')} ₽</span>
                 </div>
             `;
+            
+            // ЗАПРОС К ИИ ДЛЯ АПСЕЙЛА
+            const upsellContainer = document.getElementById('ai-upsell-container');
+            const upsellText = document.getElementById('ai-upsell-text');
+            
+            if (itemsArr.length > 0) {
+                upsellContainer.style.display = 'flex';
+                upsellText.innerHTML = '<span style="color: var(--text-secondary);">Анализируем ваш заказ... ⏳</span>';
+                
+                const formData = new FormData();
+                formData.append('items', JSON.stringify(itemsArr));
+                
+                fetch('/api/upsell', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.recommendation) {
+                        upsellText.innerHTML = data.recommendation;
+                    } else {
+                        upsellContainer.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    upsellContainer.style.display = 'none';
+                });
+            } else {
+                upsellContainer.style.display = 'none';
+            }
         }
 
         tg.MainButton.text = "ОФОРМИТЬ ЗАЯВКУ";
