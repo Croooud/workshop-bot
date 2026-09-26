@@ -4,7 +4,7 @@ import os
 import random
 import sqlite3
 import json
-import re  # Добавлен модуль для работы с регулярными выражениями (убираем звездочки)
+import re
 from google import genai
 from google.genai import types
 from aiogram import Bot, Dispatcher, types as aiogram_types, F
@@ -31,7 +31,6 @@ logging.basicConfig(level=logging.INFO)
 raw_token = os.getenv("TOKEN", "891195735:AAG2kmk_YGK1tmF6RfrfWAX1J85MVlQ0JhA")
 TOKEN = raw_token.replace('"', '').replace("'", "").strip()
 
-# Инициализация клиента Gemini
 gemini_api_key = os.getenv("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
 
@@ -125,7 +124,6 @@ async def get_user_orders(chat_id: int):
         return {"success": False, "orders": [], "error": str(e)}
 
 async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
-    """Анализирует фото с помощью Gemini API"""
     if not gemini_client:
         return "Ключ API не настроен."
     
@@ -139,7 +137,7 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
         )
         
         response = await gemini_client.aio.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-1.5-flash',
             contents=[
                 types.Part.from_bytes(
                     data=file_bytes,
@@ -148,17 +146,61 @@ async def analyze_device_photo(file_bytes: bytes, mime_type: str) -> str:
                 prompt
             ]
         )
-        
-        # Получаем сырой текст с Markdown
         raw_text = response.text.strip()
-        
-        # Конвертируем **текст** в <b>текст</b> для красивого отображения в Telegram
         html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_text, flags=re.DOTALL)
-        
         return html_text
     except Exception as e:
         logging.error(f"Gemini API Vision Error: {e}")
         return f"❌ Техническая ошибка ИИ: {e}"
+
+# НОВЫЙ ЭНДПОИНТ: Апсейл (допродажи)
+@app.post("/api/upsell")
+async def api_upsell(items: str = Form(...)):
+    if not gemini_client:
+        return {"success": False}
+    try:
+        items_list = json.loads(items)
+        if not items_list:
+            return {"success": False}
+            
+        cart_names = [item['name'] for item in items_list]
+        cart_str = ", ".join(cart_names)
+        
+        price_list = """
+        1. Диагностика компьютера
+        2. Комплексная чистка ПК + замена термопасты
+        3. Чистка ноутбука от пыли и перегрева
+        4. Установка Windows (с активацией)
+        5. Установка пакета Microsoft Office
+        6. Сборка ПК из комплектующих
+        7. Оптимизация и чистка от вирусов
+        8. Замена матрицы / экрана
+        9. Ремонт после залития
+        10. Восстановление данных
+        """
+        
+        prompt = (
+            f"Клиент компьютерной мастерской добавил в корзину: {cart_str}.\n"
+            f"Наш полный прайс-лист:\n{price_list}\n"
+            "Выступи в роли опытного заботливого мастера. Посоветуй ТОЛЬКО ОДНУ дополнительную услугу из прайса, "
+            "которая логично дополнит этот заказ (например, к сборке ПК — установку Windows, к залитию — чистку). "
+            "НЕ предлагай то, что уже есть в корзине.\n"
+            "Напиши коротко (1-2 предложения). "
+            "Начни с эмодзи 💡 и выдели название предлагаемой услуги жирным шрифтом с помощью HTML тегов <b>."
+        )
+        
+        response = await gemini_client.aio.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=[prompt]
+        )
+        
+        raw_text = response.text.strip()
+        html_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', raw_text, flags=re.DOTALL)
+        
+        return {"success": True, "recommendation": html_text}
+    except Exception as e:
+        logging.error(f"Upsell Error: {e}")
+        return {"success": False}
 
 @app.post("/api/order")
 async def api_order(
@@ -206,7 +248,6 @@ async def api_order(
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
-    # Аналитика идет ТОЛЬКО админам в чат
     admin_receipt = (
         f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>\n\n"
         f"👤 Клиент: <a href='{client_link}'>ID {chat_id}</a>\n"
@@ -244,7 +285,6 @@ async def api_order(
                 parse_mode="HTML"
             )
         
-        # Ответ клиенту чистый, без аналитики
         reply_text = (
             f"✅ Ваша заявка <b>{order_id}</b> принята!\n\n"
             f"Мастер скоро свяжется с вами. Вы можете отслеживать статус заказа в «Личном кабинете»."
@@ -297,7 +337,7 @@ async def cmd_stats(message: aiogram_types.Message):
         await message.answer("⚠️ Ошибка при подсчете статистики.")
 
 async def schedule_review_request(client_chat_id: int, order_id: str):
-    await asyncio.sleep(86400) # 24 часа
+    await asyncio.sleep(86400)
 
     try:
         conn = sqlite3.connect("database.db")
