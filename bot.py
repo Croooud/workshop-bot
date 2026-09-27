@@ -224,7 +224,7 @@ async def api_order(
     items: str = Form(...),
     total: int = Form(...),
     phone: str = Form(...),
-    device: str = Form(None), # Сделали необязательным для B2B
+    device: str = Form(None), 
     photo: UploadFile = File(None),
     is_b2b: str = Form("false"),
     problem: str = Form(None),
@@ -267,10 +267,9 @@ async def api_order(
     
     total_str = f"{total:,} ₽".replace(',', ' ')
 
-    # Умная маршрутизация формата сообщения
     if is_b2b == "true":
         header = f"💼 <b>НОВЫЙ КОРПОРАТИВНЫЙ ЗАКАЗ {order_id}</b>"
-        device_block = "" # Бизнесу не нужно поле "Тип устройства"
+        device_block = ""
         problem_block = f"🏢 Рабочих мест: <b>{workplaces or 'Не указано'}</b>\n📍 Офис/Площадь: <b>{office_info or 'Не указано'}</b>"
     else:
         header = f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>"
@@ -316,7 +315,7 @@ async def api_order(
         
         reply_text = (
             f"✅ Ваша заявка <b>{order_id}</b> принята!\n\n"
-            f"Мастер скоро свяжется с вами. Вы можете отслеживать статус заказа в «Личном кабинете»."
+            f"Система передала детали профильному специалисту."
         )
         await bot.send_message(chat_id=chat_id, text=reply_text, parse_mode="HTML")
         
@@ -328,7 +327,7 @@ async def api_order(
 @dp.message(Command("stats"))
 async def cmd_stats(message: aiogram_types.Message):
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("У вас нет прав для просмотра статистики.")
+        await message.answer("Отказано в доступе.")
         return
 
     try:
@@ -353,17 +352,17 @@ async def cmd_stats(message: aiogram_types.Message):
         revenue_str = f"{total_revenue:,}".replace(',', ' ')
 
         stats_text = (
-            f"📊 <b>Аналитика мастерской «Ручеёк»</b>\n\n"
-            f"📦 Всего заказов создано: <b>{total_orders}</b>\n"
+            f"📊 <b>Аналитика ВЕКТОР</b>\n\n"
+            f"📦 Всего заказов: <b>{total_orders}</b>\n"
             f"🛠 Сейчас в работе: <b>{in_progress_orders}</b>\n"
-            f"✅ Выполнено заказов: <b>{done_orders}</b>\n"
+            f"✅ Выполнено: <b>{done_orders}</b>\n"
             f"💰 Общая выручка: <b>{revenue_str} ₽</b>"
         )
 
         await message.answer(stats_text, parse_mode="HTML")
     except Exception as e:
         logging.error(f"Stats error: {e}")
-        await message.answer("⚠️ Ошибка при подсчете статистики.")
+        await message.answer("⚠️ Системная ошибка при подсчете статистики.")
 
 async def schedule_review_request(client_chat_id: int, order_id: str):
     await asyncio.sleep(86400)
@@ -389,8 +388,8 @@ async def schedule_review_request(client_chat_id: int, order_id: str):
         ])
 
         msg_text = (
-            f"👋 Привет! Прошли сутки с момента завершения ремонта в <b>«Мастерской Ручеёк»</b> (заказ <b>{order_id}</b>).\n\n"
-            f"Как работает техника? Оцените, пожалуйста, качество обслуживания от 1 до 5 звезд 👇"
+            f"СИСТЕМА: Заказ <b>{order_id}</b> завершен 24 часа назад.\n\n"
+            f"Пожалуйста, оцените качество работы специалистов ВЕКТОР."
         )
         await bot.send_message(chat_id=client_chat_id, text=msg_text, reply_markup=review_kb, parse_mode="HTML")
     except Exception as e:
@@ -421,11 +420,11 @@ async def process_review_rating(callback: CallbackQuery):
         pass
 
     stars = "⭐" * int(rating)
-    await callback.answer("Спасибо за вашу оценку!", show_alert=True)
-    await callback.message.edit_text(f"Спасибо за ваш отзыв! Вы поставили нам оценку: <b>{stars} ({rating}/5)</b>.", parse_mode="HTML")
+    await callback.answer("Оценка зафиксирована.", show_alert=True)
+    await callback.message.edit_text(f"Оценка сохранена в системе: <b>{stars} ({rating}/5)</b>.", parse_mode="HTML")
 
     admin_notification = (
-        f"⭐ <b>НОВЫЙ ОТЗЫВ КЛИЕНТА</b>\n\n"
+        f"⭐ <b>ОБНОВЛЕНИЕ РЕЙТИНГА</b>\n\n"
         f"📦 Заказ: <b>{order_id}</b>\n"
         f"👤 Клиент: <a href='{user_link}'>{user_name}</a>\n"
         f"📊 Оценка: <b>{stars} ({rating} из 5)</b>"
@@ -435,7 +434,7 @@ async def process_review_rating(callback: CallbackQuery):
 @dp.callback_query(F.data.startswith("status:"))
 async def process_status_change(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("У вас нет прав.", show_alert=True)
+        await callback.answer("Отказано в доступе.", show_alert=True)
         return
 
     parts = callback.data.split(":")
@@ -478,7 +477,7 @@ async def process_status_change(callback: CallbackQuery):
 
     raw_text = callback.message.text if callback.message.text else (callback.message.caption or "")
     base_text = raw_text.split("\n\n📌 <b>")[0] if "\n\n📌 <b>" in raw_text else raw_text
-    updated_text = base_text + f"\n\n📌 <b>Текущий статус: {new_status}</b> (изменил {master_name})"
+    updated_text = base_text + f"\n\n📌 <b>Статус: {new_status}</b> ({master_name})"
 
     try:
         if callback.message.photo:
@@ -491,19 +490,19 @@ async def process_status_change(callback: CallbackQuery):
     if client_chat_id:
         try:
             if action == "in_progress":
-                client_msg = f"👨‍🔧 Ваш заказ <b>{order_id}</b> взят в работу мастером."
+                client_msg = f"СИСТЕМА: Заказ <b>{order_id}</b> передан в работу."
             elif action == "done":
-                client_msg = f"✅ <b>Готово!</b> Ваш заказ <b>{order_id}</b> выполнен и ждет вас."
+                client_msg = f"СИСТЕМА: Заказ <b>{order_id}</b> успешно выполнен."
             elif action == "cancelled":
-                client_msg = f"❌ Статус вашего заказа <b>{order_id}</b> изменен на: <b>Отменен</b>."
+                client_msg = f"СИСТЕМА: Заказ <b>{order_id}</b> отменен."
             else:
-                client_msg = f"📌 Статус заказа <b>{order_id}</b> обновлен: {new_status}."
+                client_msg = f"СИСТЕМА: Статус заказа <b>{order_id}</b> изменен на: {new_status}."
 
             await bot.send_message(chat_id=client_chat_id, text=client_msg, parse_mode="HTML")
         except Exception as e:
             logging.error(f"DM error: {e}")
 
-    await callback.answer(f"Статус изменен на «{new_status}»!")
+    await callback.answer(f"Статус обновлен: {new_status}")
 
 @dp.message(Command("start", "restart"))
 async def cmd_start(message: aiogram_types.Message):
@@ -530,73 +529,26 @@ async def cmd_start(message: aiogram_types.Message):
     web_app_url = "https://workshop-bot-dcyv.onrender.com"
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
-            [InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
-             InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
+            [InlineKeyboardButton(text="ОТКРЫТЬ СИСТЕМУ", web_app=WebAppInfo(url=web_app_url))]
         ]
     )
     welcome_text = (
-        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
-        "Профессиональный ремонт и обслуживание компьютерной техники для дома и бизнеса."
+        "<b>ВЕКТОР. ИНЖЕНЕРНЫЙ СЕРВИС.</b>\n\n"
+        "Обслуживание ИТ-инфраструктуры и вычислительной техники."
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
 
-@dp.callback_query(F.data == "show_contacts")
-async def process_contacts(callback: CallbackQuery):
-    text = (
-        "📍 <b>НАШИ КОНТАКТЫ</b>\n\n"
-        "<b>Адрес:</b> ПГТ Ручейк, ул., д. 1\n"
-        "<b>Телефон:</b> <code>+7 (991) 888-60-17</code>\n"
-        "<b>Telegram:</b> @IvanMiroshnichenkoo"
-    )
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
-    ])
-    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
-    await callback.answer()
-
-@dp.callback_query(F.data == "show_faq")
-async def process_faq(callback: CallbackQuery):
-    text = (
-        "❓ <b>ЧАСТЫЕ ВОПРОСЫ</b>\n\n"
-        "<b>— Диагностика платная?</b>\nБесплатно при последующем ремонте.\n\n"
-        "<b>— Даете гарантию?</b>\nДа, на все виды работ."
-    )
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔙 Назад в меню", callback_data="back_to_main")]
-    ])
-    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
-    await callback.answer()
-
-@dp.callback_query(F.data == "back_to_main")
-async def process_back(callback: CallbackQuery):
-    web_app_url = "https://workshop-bot-dcyv.onrender.com"
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="⚡️ ОТКРЫТЬ ПРАЙС И ЗАКАЗАТЬ", web_app=WebAppInfo(url=web_app_url))],
-            [InlineKeyboardButton(text="📍 Контакты", callback_data="show_contacts"),
-             InlineKeyboardButton(text="❓ Частые вопросы", callback_data="show_faq")]
-        ]
-    )
-    welcome_text = (
-        "👋 <b>Добро пожаловать в «Мастерскую Ручеёк»!</b>\n\n"
-        "Профессиональный ремонт и обслуживание компьютерной техники для дома и бизнеса."
-    )
-    await callback.message.edit_text(welcome_text, reply_markup=kb, parse_mode="HTML")
-    await callback.answer()
-
 async def set_bot_commands(bot: Bot):
     commands = [
-        BotCommand(command="start", description="Главное меню"),
-        BotCommand(command="restart", description="Перезапустить бота"),
-        BotCommand(command="stats", description="Статистика и выручка (для мастеров)")
+        BotCommand(command="start", description="Запустить сервис"),
+        BotCommand(command="stats", description="Системная статистика")
     ]
     await bot.set_my_commands(commands)
 
     try:
         web_app_url = "https://workshop-bot-dcyv.onrender.com"
         menu_button = MenuButtonWebApp(
-            text="Прайс и Заказ",
+            text="СЕРВИС",
             web_app=WebAppInfo(url=web_app_url)
         )
         await bot.set_chat_menu_button(menu_button=menu_button)
