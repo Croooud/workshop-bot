@@ -1,1115 +1,260 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ЭЛИВЕЙТ</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+"""Применяет исправления к templates/index.html.
+Запуск из корня репозитория:  python patch_index.py templates/index.html
+Создаёт резервную копию index.html.bak. Если якорь не найден — падает с понятной ошибкой, файл не трогает.
+"""
+import shutil
+import sys
 
-        :root {
-            /* Премиальная темная палитра */
-            --bg-color: #000000;          /* Глубокий черный фон приложения */
-            --surface-color: #141414;     /* Фон карточек и полей ввода */
-            --surface-hover: #1A1A1A;     /* Подложка переключателя */
-            --accent-color: #007BFF;      /* Электрический синий */
-            --accent-bg: rgba(0, 123, 255, 0.08); /* Легкая подсветка */
-            
-            --text-primary: #FFFFFF;
-            --text-secondary: #8E8E93;    /* Цвет в стиле iOS */
-            --border-color: rgba(255, 255, 255, 0.05); /* Едва заметная граница */
-            --danger-color: #FF453A;
-            --success-color: #32D74B;
-            
-            /* Микро-скругления (Apple / Tesla style) */
-            --radius-sm: 6px;             /* Для чекбоксов, тегов */
-            --radius-md: 12px;            /* Для карточек, инпутов, кнопок */
-            --radius-lg: 14px;            /* Для подложки переключателя */
-            
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --nav-height: 65px;
-        }
+path = sys.argv[1] if len(sys.argv) > 1 else "templates/index.html"
+src = open(path, encoding="utf-8").read()
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
 
-        /* Принудительный Dark Mode */
-        body {
-            background-color: var(--bg-color) !important;
-            color: var(--text-primary) !important;
-            overscroll-behavior-y: none;
-            padding-bottom: calc(var(--nav-height) + 90px + var(--safe-bottom)); 
-            transition: background-color 0.3s ease;
-        }
+def sub(text, old, new, count=1):
+    assert text.count(old) == count, f"Якорь не найден (или найден не {count} раз): {old[:70]!r}"
+    return text.replace(old, new)
 
-        .view {
-            display: none;
-            opacity: 0;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            padding: 24px 16px;
-        }
-        
-        .view.active { display: block; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
 
-        /* Типографика */
-        header { margin-bottom: 24px; }
-        
-        .brand-subtitle {
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: var(--accent-color);
-            margin-bottom: 6px;
-        }
-        
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            line-height: 1.1;
-        }
-        
-        .desc {
-            font-size: 15px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
+def between(text, start, end, new, use_rfind_end=False):
+    i = text.index(start)
+    j = text.rfind(end) if use_rfind_end else text.index(end, i)
+    assert 0 <= i < j, f"Границы не найдены: {start[:40]!r} .. {end[:40]!r}"
+    return text[:i] + new + text[j:]
 
-        /* Премиальный сегментированный переключатель (iOS style) */
-        .segment-control-wrapper {
-            background: var(--surface-hover);
-            border-radius: var(--radius-lg);
-            padding: 4px;
-            margin-bottom: 24px;
-            display: flex;
-            position: relative;
-        }
-        .segment {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 2;
-            color: var(--text-secondary);
-            transition: color 0.3s ease;
-        }
-        .segment.active { color: #ffffff; }
-        
-        .segment-slider {
-            position: absolute;
-            top: 4px;
-            bottom: 4px;
-            left: 4px;
-            width: calc(50% - 4px);
-            background: var(--accent-color);
-            border-radius: 10px;
-            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 1;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-        }
-        body.theme-b2b .segment-slider {
-            transform: translateX(100%);
-        }
 
-        /* Карточки услуг с "воздухом" */
-        .list-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+s = src
+
+# 1. Разрешаем масштабирование (a11y)
+s = sub(s, "initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
+        "initial-scale=1.0, viewport-fit=cover")
+
+# 2. Шрифты: @import блокирует рендер -> preconnect + link
+s = sub(s, "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');", "")
+s = sub(s, "<title>ЭЛИВЕЙТ</title>",
+        "<title>ЭЛИВЕЙТ</title>\n"
+        '    <link rel="preconnect" href="https://fonts.googleapis.com">\n'
+        '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+        '    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">')
+
+# 3. CSS для отменённого шага таймлайна
+s = sub(s, "/* Окно успеха */",
+        ".timeline-step.cancelled .timeline-bullet { background-color: var(--danger-color); "
+        "border-color: var(--danger-color); color: #fff; }\n"
+        "        .timeline-step.cancelled .timeline-label { color: var(--danger-color); }\n"
+        "        /* Окно успеха */")
+
+# 4. Хелперы: экранирование, заголовок авторизации, формат даты
+s = sub(s, "const tg = window.Telegram.WebApp;", """const tg = window.Telegram.WebApp;
+
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const authHeaders = () => ({ 'X-Init-Data': tg.initData });
+        function fmtDate(v) {
+            const d = new Date(String(v).replace(' ', 'T') + 'Z');
+            return isNaN(d) ? esc(v) : d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
         }
-        
-        .card {
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 18px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: border-color 0.2s ease, transform 0.1s ease, background-color 0.2s ease;
-        }
-        
-        .card:active { transform: scale(0.98); }
-        
-        .card.selected {
-            border-color: var(--accent-color);
-            background-color: var(--accent-bg);
-        }
-        
-        .card-content {
-            flex: 1;
-            padding-right: 16px;
-        }
-        
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            line-height: 1.3;
-        }
+        let isSubmitting = false;
+        let upsellCtrl = null;""")
 
-        .card-subtitle {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
-        
-        .card-price {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            transition: color 0.2s;
-        }
-        
-        .card.selected .card-price { color: var(--accent-color); }
-
-        /* Кастомные чекбоксы 24x24 */
-        .checkbox-wrapper {
-            width: 24px;
-            height: 24px;
-            border-radius: var(--radius-sm);
-            border: 1px solid #555;
-            background: #2E2E2E;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            flex-shrink: 0;
-        }
-        
-        .card.selected .checkbox-wrapper {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        
-        .check-icon {
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-        
-        .card.selected .check-icon {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Поля ввода (Инпуты) */
-        .input-base {
-            width: 100%;
-            padding: 16px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            background: var(--surface-color);
-            color: var(--text-primary);
-            font-size: 16px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .input-base:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 1px var(--accent-color); 
-        }
-        .input-base::placeholder { color: var(--text-secondary); }
-
-        label {
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        /* Блок загрузки файла */
-        .file-upload-container { display: flex; flex-direction: column; gap: 8px; }
-        .file-dropzone {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 16px;
-            border: 1px dashed #555;
-            border-radius: var(--radius-md);
-            background: var(--surface-color);
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .file-dropzone:active { background: var(--surface-hover); }
-        .file-dropzone-icon { font-size: 24px; color: var(--accent-color); }
-        .file-dropzone-text { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-        .file-dropzone-subtext { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-
-        .preview-wrapper {
-            position: relative;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            padding: 10px;
-            background: var(--surface-hover);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-        }
-        .preview-img { width: 50px; height: 50px; border-radius: var(--radius-sm); object-fit: cover; }
-        .preview-name { font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .btn-remove-photo {
-            background: var(--danger-color);
-            color: white;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: var(--radius-sm);
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Контакты */
-        .contact-card {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            color: inherit;
-            margin-bottom: 12px;
-            transition: transform 0.1s;
-        }
-        .contact-card:active { transform: scale(0.98); }
-        .contact-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-sm);
-            background: var(--surface-hover);
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-right: 16px;
-        }
-        .contact-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
-        .contact-info p { font-size: 14px; color: var(--text-secondary); }
-
-        /* Оформление заказа */
-        .summary-item {
-            display: flex;
-            flex-direction: column;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .summary-item:last-child { border-bottom: none; }
-        .summary-total {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 16px;
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        /* Плавающая панель с ценой */
-        .floating-bar {
-            position: fixed;
-            bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
-            left: 16px;
-            right: 16px;
-            background-color: var(--accent-color);
-            color: #ffffff;
-            border-radius: var(--radius-md);
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transform: translateY(150px);
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-            z-index: 95;
-            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.25);
-        }
-        .floating-bar.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .floating-bar:active { transform: scale(0.98); }
-        .fb-info { display: flex; flex-direction: column; }
-        .fb-count { font-size: 13px; opacity: 0.9; font-weight: 500; }
-        .fb-total { font-size: 18px; font-weight: 700; margin-top: 2px; }
-        .fb-action { font-size: 16px; font-weight: 700; text-transform: uppercase; }
-
-        /* Нижнее меню навигации */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(var(--nav-height) + var(--safe-bottom));
-            background: rgba(10, 10, 10, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            padding-bottom: var(--safe-bottom);
-            z-index: 100;
-        }
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 10px;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .nav-item.active { color: var(--accent-color); }
-        .nav-icon { font-size: 22px; margin-bottom: 2px; }
-
-        /* Прочие элементы */
-        .order-card {
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-        .order-status {
-            padding: 4px 10px;
-            border-radius: var(--radius-sm);
-            font-size: 12px;
-            background: var(--accent-bg);
-            color: var(--accent-color);
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        .order-status.cancelled { background: rgba(255, 69, 58, 0.1); color: var(--danger-color); }
-        .order-body { font-size: 14px; line-height: 1.5; color: var(--text-primary); }
-        .order-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 16px;
-            font-weight: 700;
-            margin-top: 4px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 12px;
-        }
-        .empty-cabinet { text-align: center; color: var(--text-secondary); padding: 40px 16px; font-size: 15px; }
-
-        /* Таймлайн */
-        .timeline { display: flex; justify-content: space-between; position: relative; margin: 12px 4px 4px 4px; }
-        .timeline::before {
-            content: ''; position: absolute; top: 10px; left: 10px; right: 10px; height: 2px;
-            background: var(--surface-hover); z-index: 1;
-        }
-        .timeline-step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; flex: 1; }
-        .timeline-bullet {
-            width: 22px; height: 22px; border-radius: var(--radius-sm); background-color: var(--surface-color);
-            border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center;
-            font-size: 10px; color: var(--text-secondary);
-        }
-        .timeline-step.completed .timeline-bullet { background-color: var(--success-color); border-color: var(--success-color); color: #fff; }
-        .timeline-step.active .timeline-bullet { background-color: var(--surface-hover); border-color: var(--success-color); color: var(--success-color); font-weight: bold; }
-        .timeline-label { font-size: 10px; color: var(--text-secondary); margin-top: 8px; text-align: center; max-width: 65px; line-height: 1.2; font-weight: 600; }
-        .timeline-step.completed .timeline-label, .timeline-step.active .timeline-label { color: var(--text-primary); }
-
-        /* Окно успеха */
-        #view-success.active { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 75vh; }
-        .success-icon-wrap { width: 80px; height: 80px; background-color: var(--success-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(50, 215, 75, 0.2); }
-        .success-icon-wrap svg { width: 40px; height: 40px; stroke: #ffffff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-        .success-title { font-size: 24px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; line-height: 1.2; }
-        .success-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; }
-        .btn-close { background-color: var(--surface-hover); color: var(--text-primary); border: none; padding: 16px 36px; border-radius: var(--radius-md); font-size: 15px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: background-color 0.2s; }
-        .btn-close:active { background-color: #2A2A2A; }
-    </style>
-</head>
-<body>
-
-    <main id="view-services" class="view active">
-        <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ СЕРВИС</div>
-            <h1>УСЛУГИ</h1>
-            <p class="desc" id="service-desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
-        </header>
-
-        <div class="segment-control-wrapper">
-            <div class="segment-slider" id="segment-slider"></div>
-            <div class="segment active" id="tab-b2c" onclick="switchMode('b2c')">Частным клиентам</div>
-            <div class="segment" id="tab-b2b" onclick="switchMode('b2b')">Для бизнеса</div>
-        </div>
-
-        <div class="list-group" id="services-container"></div>
-    </main>
-
-    <main id="view-cabinet" class="view">
-        <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ ПРОФИЛЬ</div>
-            <h1>КАБИНЕТ</h1>
-            <p class="desc">История ваших заявок и их статусы.</p>
-        </header>
-        <div class="list-group" id="orders-container">
-            <div class="empty-cabinet">Загрузка истории заказов...</div>
-        </div>
-    </main>
-
-    <main id="view-contacts" class="view">
-        <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ ИНФО</div>
-            <h1>КОНТАКТЫ</h1>
-            <p class="desc">Свяжитесь с нами удобным способом.</p>
-        </header>
-
-        <a href="tel:+79918886017" class="contact-card">
-            <div class="contact-icon">📞</div>
-            <div class="contact-info">
-                <h3>+7 (991) 888-60-17</h3>
-                <p>Телефон / WhatsApp</p>
-            </div>
-        </a>
-        <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" class="contact-card">
-            <div class="contact-icon">💬</div>
-            <div class="contact-info">
-                <h3>@IvanMiroshnichenkoo</h3>
-                <p>Написать в Telegram</p>
-            </div>
-        </a>
-        <div class="contact-card">
-            <div class="contact-icon">📍</div>
-            <div class="contact-info">
-                <h3>Инженерный центр Эливэйт</h3>
-                <p>Выезд на дом и в офис по договоренности</p>
-            </div>
-        </div>
-    </main>
-
-    <main id="view-summary" class="view">
-        <header>
-            <div class="brand-subtitle" id="summary-subtitle">ОФОРМЛЕНИЕ</div>
-            <h1 id="summary-title">ВАШ ЗАКАЗ</h1>
-            <p class="desc">Проверьте выбранные услуги и укажите детали заявки.</p>
-        </header>
-
-        <div class="list-group">
-            
-            <div class="card" id="ai-upsell-container" style="display: none; background: var(--accent-bg); border-color: var(--accent-color); flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-color);">СИСТЕМНАЯ РЕКОМЕНДАЦИЯ:</div>
-                <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Анализ данных...</div>
-            </div>
-
-            <div class="card" style="cursor: default; transform: none; box-shadow: none;">
-                <div id="summary-list" style="width: 100%;"></div>
-            </div>
-
-            <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 12px;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>ТИП УСТРОЙСТВА:</label>
-                    <select id="device-type" class="input-base">
-                        <option value="Ноутбук">Ноутбук</option>
-                        <option value="Системный блок">Системный блок</option>
-                        <option value="Техника Apple">Техника Apple</option>
-                        <option value="Другое">Другое</option>
-                    </select>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>КРАТКО ОПИШИТЕ ПРОБЛЕМУ (НЕОБЯЗАТЕЛЬНО):</label>
-                    <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" style="resize: none;"></textarea>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>ФОТО ПРОБЛЕМЫ (НЕОБЯЗАТЕЛЬНО):</label>
-                    <div class="file-upload-container">
-                        <label class="file-dropzone" id="dropzone-label">
-                            <span class="file-dropzone-icon">📷</span>
-                            <div>
-                                <div class="file-dropzone-text">Прикрепить фото проблемы</div>
-                                <div class="file-dropzone-subtext">Нажмите для выбора из галереи</div>
-                            </div>
-                            <input type="file" id="problem-photo" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-                        </label>
-                        <div class="preview-wrapper" id="preview-wrapper">
-                            <img id="preview-img" class="preview-img" src="" alt="Превью">
-                            <span class="preview-name" id="preview-name">photo.jpg</span>
-                            <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 12px;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>КОЛИЧЕСТВО РАБОЧИХ МЕСТ (ШТ.):</label>
-                    <input type="number" id="b2b-workplaces" class="input-base" placeholder="Например: 15" min="1">
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>АДРЕС ИЛИ ПЛОЩАДЬ ОФИСА (КВ.М):</label>
-                    <input type="text" id="b2b-office" class="input-base" placeholder="Например: БЦ Эливэйт, 100 кв.м">
-                </div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
-                <label>ВАШ НОМЕР ТЕЛЕФОНА: <span style="color: var(--danger-color);">*</span></label>
-                <input type="tel" id="client-phone" class="input-base" placeholder="+7 (___) ___-__-__" maxlength="18">
-                <span id="phone-error" style="color: var(--danger-color); font-size: 12px; display: none;">Введите корректный номер (11 цифр)</span>
-            </div>
-        </div>
-    </main>
-
-    <main id="view-success" class="view">
-        <div class="success-icon-wrap">
-            <svg viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        </div>
-        <div class="success-title">СИСТЕМА:<br>ЗАЯВКА ПРИНЯТА</div>
-        <div class="success-desc" style="margin-top: 12px;">Детали переданы специалисту в чат.</div>
-        <button class="btn-close" onclick="tg.close()">ЗАКРЫТЬ</button>
-    </main>
-
-    <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
-        <div class="fb-info">
-            <span class="fb-count" id="fb-count">0 услуг</span>
-            <span class="fb-total" id="fb-total">0 ₽</span>
-        </div>
-        <div class="fb-action">
-            ДАЛЕЕ <span>→</span>
-        </div>
-    </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="navigate('services')" id="nav-services">
-            <span class="nav-icon">▤</span>
-            <span>Услуги</span>
-        </div>
-        <div class="nav-item" onclick="navigate('cabinet')" id="nav-cabinet">
-            <span class="nav-icon">👤</span>
-            <span>Кабинет</span>
-        </div>
-        <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
-            <span class="nav-icon">●</span>
-            <span>Контакты</span>
-        </div>
-    </nav>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
-
-        try {
-            tg.setHeaderColor('#000000');
-            tg.setBackgroundColor('#000000');
-        } catch (e) {
-            console.log("Telegram API color setting not supported in this version");
-        }
-
-        function updateButtonTheme() {
-            tg.MainButton.setParams({
-                color: '#007BFF',
-                text_color: '#FFFFFF'
+# 5. Сжатие фото на клиенте (до 1600px, JPEG 0.8; заодно конвертирует HEIC там, где браузер умеет его читать)
+s = sub(s, "selectedFile = file;",
+        "selectedFile = file;\n                compressImage(file).then(b => { if (b && selectedFile === file) selectedFile = b; });")
+s = sub(s, "function removePhoto() {", """function compressImage(file, maxSide = 1600) {
+            return new Promise(resolve => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(img.width * k);
+                    c.height = Math.round(img.height * k);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    URL.revokeObjectURL(url);
+                    c.toBlob(b => resolve(b), 'image/jpeg', 0.8);
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+                img.src = url;
             });
         }
 
-        const servicesDataB2C = [
-            { id: 'c1', name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
-            { id: 'c2', name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
-            { id: 'c3', name: "Чистка ноутбука от пыли и перегрева", price: 2000, label: "от 2 000 ₽", subtitle: "С разбором корпуса и заменой пасты" },
-            { id: 'c4', name: "Установка Windows (с активацией)", price: 1500, label: "от 1 500 ₽", subtitle: "Включая базовые драйверы" },
-            { id: 'c5', name: "Установка пакета Microsoft Office", price: 500, label: "от 500 ₽", subtitle: "Word, Excel, PowerPoint" },
-            { id: 'c6', name: "Сборка ПК из комплектующих", price: 2500, label: "от 2 500 ₽", subtitle: "Аккуратный кабель-менеджмент" },
-            { id: 'c7', name: "Оптимизация и чистка от вирусов", price: 1000, label: "от 1 000 ₽", subtitle: "Ускорение работы системы" },
-            { id: 'c8', name: "Замена матрицы / экрана", price: 2500, label: "от 2 500 ₽", subtitle: "Цена детали рассчитывается отдельно" },
-            { id: 'c9', name: "Ремонт после залития", price: 2000, label: "от 2 000 ₽", subtitle: "Ультразвуковая чистка платы" },
-            { id: 'c10', name: "Восстановление данных", price: 1000, label: "от 1 000 ₽", subtitle: "С поврежденных HDD / SSD / флешек" }
-        ];
+        function removePhoto() {""")
 
-        const servicesDataB2B = [
-            { id: 'b1', name: "Организация рабочего места под ключ", price: 3000, label: "от 3 000 ₽ / место", subtitle: "Сборка, ПО, настройка сети", details: "Включает: распаковку и расстановку техники, кабель-менеджмент, базовую настройку ОС, подключение к офисной сети и принтерам." },
-            { id: 'b2', name: "Настройка локальной сети и серверов", price: 10000, label: "от 10 000 ₽", subtitle: "Роутеры, NAS, Active Directory", details: "Включает: аудит сети, настройку роутеров/коммутаторов, развертывание файловых хранилищ (NAS) и распределение прав доступа." },
-            { id: 'b3', name: "IT-аутсорсинг офиса", price: 0, label: "По договоренности", subtitle: "Регулярное обслуживание техники", details: "Комплексная поддержка: плановые выезды, удаленная помощь сотрудникам (Helpdesk), мониторинг серверов 24/7." },
-            { id: 'b4', name: "Легализация и установка корпоративного ПО", price: 2000, label: "от 2 000 ₽ / ПК", subtitle: "1C, CRM-системы, офисные пакеты", details: "Аудит текущего софта, подбор корпоративных лицензий, централизованная установка 1С и офисных пакетов." },
-            { id: 'b5', name: "Настройка систем резервного копирования", price: 5000, label: "от 5 000 ₽", subtitle: "Защита корпоративных данных", details: "Настройка автоматического защищенного бэкапа критически важных баз данных и документов на локальные или облачные серверы." },
-            { id: 'b6', name: "Модернизация корпоративного парка ПК", price: 0, label: "Индивидуальный расчет", subtitle: "Аудит и апгрейд железа", details: "Инвентаризация оборудования, подбор и закупка комплектующих (SSD, RAM), бережная установка с сохранением всех данных." }
-        ];
+# 6. Таймлайн: убираем недостижимый шаг «РЕМОНТ» (в БД такого статуса нет)
+s = sub(s, "activeStep = 4;", "activeStep = 3;")
+s = sub(s, 'const steps = ["СОЗДАН", "В РАБОТЕ", "РЕМОНТ", "ГОТОВ"];', 'const steps = ["СОЗДАН", "В РАБОТЕ", "ГОТОВ"];')
+s = sub(s, "for (let i = 1; i <= 4; i++) {", "for (let i = 1; i <= 3; i++) {")
 
-        let currentMode = 'b2c'; 
-        let cart = new Map();
-        let currentView = 'services';
-        let selectedFile = null;
-
-        function switchMode(mode) {
-            if (currentMode === mode) return;
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            
-            currentMode = mode;
-            cart.clear(); 
-            updateCartState();
-            
-            const tabB2C = document.getElementById('tab-b2c');
-            const tabB2B = document.getElementById('tab-b2b');
-            const desc = document.getElementById('service-desc');
-            
-            if (mode === 'b2b') {
-                tabB2C.classList.remove('active');
-                tabB2B.classList.add('active');
-                document.body.classList.add('theme-b2b');
-                desc.innerText = "Комплексные IT-решения и обслуживание для вашей компании.";
-            } else {
-                tabB2B.classList.remove('active');
-                tabB2C.classList.add('active');
-                document.body.classList.remove('theme-b2b');
-                desc.innerText = "Ремонт, обслуживание и настройка. Выберите необходимое.";
-            }
-
-            updateButtonTheme();
-            renderServices();
-        }
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('preview-img').src = e.target.result;
-                    document.getElementById('preview-name').innerText = file.name;
-                    document.getElementById('dropzone-label').style.display = 'none';
-                    document.getElementById('preview-wrapper').style.display = 'flex';
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removePhoto() {
-            selectedFile = null;
-            document.getElementById('problem-photo').value = '';
-            document.getElementById('dropzone-label').style.display = 'flex';
-            document.getElementById('preview-wrapper').style.display = 'none';
-        }
-
-        const phoneInput = document.getElementById('client-phone');
-        phoneInput.addEventListener('input', function (e) {
-            let inputNumbersValue = e.target.value.replace(/\D/g, '');
-            let formattedInputValue = '';
-            
-            phoneInput.style.borderColor = 'var(--border-color)';
-            document.getElementById('phone-error').style.display = 'none';
-
-            if (!inputNumbersValue) return e.target.value = '';
-            
-            if (['7', '8', '9'].indexOf(inputNumbersValue[0]) > -1) {
-                if (inputNumbersValue[0] === '9') inputNumbersValue = '7' + inputNumbersValue;
-                
-                formattedInputValue = '+7 ';
-                if (inputNumbersValue.length > 1) formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
-                if (inputNumbersValue.length >= 5) formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
-                if (inputNumbersValue.length >= 8) formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-                if (inputNumbersValue.length >= 10) formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
-            } else {
-                formattedInputValue = '+' + inputNumbersValue.substring(0, 15);
-            }
-            e.target.value = formattedInputValue;
-        });
-
-        function renderServices() {
-            const container = document.getElementById('services-container');
-            container.innerHTML = '';
-            
-            const activeData = currentMode === 'b2b' ? servicesDataB2B : servicesDataB2C;
-            
-            activeData.forEach(s => {
-                const isSelected = cart.has(s.id);
-                const card = document.createElement('div');
-                card.className = `card ${isSelected ? 'selected' : ''}`;
-                card.onclick = () => toggleService(card, s);
-                
-                card.innerHTML = `
-                    <div class="card-content">
-                        <div class="card-title">${s.name}</div>
-                        <div class="card-subtitle">${s.subtitle}</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-price">${s.label}</div>
-                        <div class="checkbox-wrapper">
-                            <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function toggleService(cardElement, service) {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-            if (cart.has(service.id)) {
-                cart.delete(service.id);
-                cardElement.classList.remove('selected');
-            } else {
-                cart.set(service.id, service);
-                cardElement.classList.add('selected');
-            }
-            updateCartState();
-        }
-
-        function updateCartState() {
-            const bar = document.getElementById('floating-bar');
-            if (cart.size > 0) {
-                let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
-                
-                let words = ['услуга', 'услуги', 'услуг'];
-                let n = cart.size % 100;
-                let n1 = n % 10;
-                let word = (n > 10 && n < 20) ? words[2] : (n1 > 1 && n1 < 5) ? words[1] : (n1 === 1) ? words[0] : words[2];
-                
-                document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
-                document.getElementById('fb-total').innerText = total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : `Смета`;
-                
-                if (currentView === 'services') bar.classList.add('visible');
-            } else {
-                bar.classList.remove('visible');
-                if (currentView === 'summary') navigate('services');
-            }
-        }
-
-        function navigate(viewName) {
-            if (tg.HapticFeedback && viewName !== 'success') tg.HapticFeedback.selectionChanged();
-            currentView = viewName;
-
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
-
-            document.getElementById(`view-${viewName}`).classList.add('active');
-            
-            const navBtn = document.getElementById(`nav-${viewName}`);
-            if(navBtn) navBtn.classList.add('active');
-
-            const floatingBar = document.getElementById('floating-bar');
-            const bottomNav = document.querySelector('.bottom-nav');
-            
-            if (viewName === 'success') {
-                bottomNav.style.transform = 'translateY(100%)'; 
-                floatingBar.classList.remove('visible');
-                tg.MainButton.hide();
-                return;
-            } else {
-                bottomNav.style.transform = 'translateY(0)'; 
-            }
-
-            if (viewName === 'cabinet') loadUserOrders();
-
-            if (viewName === 'summary') {
-                floatingBar.classList.remove('visible');
-                setupSummaryView();
-                renderSummary();
-                updateButtonTheme();
-                tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-                if (cart.size > 0 && viewName === 'services') {
-                    floatingBar.classList.add('visible');
-                } else {
-                    floatingBar.classList.remove('visible');
-                }
-            }
-        }
-
-        function setupSummaryView() {
-            const fieldsB2C = document.getElementById('form-fields-b2c');
-            const fieldsB2B = document.getElementById('form-fields-b2b');
-            const summarySubtitle = document.getElementById('summary-subtitle');
-            
-            if (currentMode === 'b2b') {
-                fieldsB2C.style.display = 'none';
-                fieldsB2B.style.display = 'flex';
-                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ (БИЗНЕС)';
-            } else {
-                fieldsB2B.style.display = 'none';
-                fieldsB2C.style.display = 'flex';
-                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ';
-            }
-        }
-
-        function getTimelineHtml(statusText) {
-            let activeStep = 1; 
-            const s = statusText.toLowerCase();
-
-            if (s.includes("отмен") || s.includes("отказ")) {
-                activeStep = -1;
-            } else if (s.includes("в работе")) {
-                activeStep = 2;
-            } else if (s.includes("диагностик") || s.includes("ремонт")) {
-                activeStep = 3;
-            } else if (s.includes("готов") || s.includes("выдан")) {
-                activeStep = 4;
-            }
-
-            if (activeStep === -1) {
-                return `
-                    <div class="timeline">
-                        <div class="timeline-step cancelled" style="flex: 1;">
-                            <div class="timeline-bullet">✕</div>
-                            <div class="timeline-label">ОТМЕНЕН</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const steps = ["СОЗДАН", "В РАБОТЕ", "РЕМОНТ", "ГОТОВ"];
-
-            let html = '<div class="timeline">';
-            for (let i = 1; i <= 4; i++) {
-                let cls = '';
-                let content = i;
-                if (i < activeStep) {
-                    cls = 'completed';
-                    content = '✓';
-                } else if (i === activeStep) {
-                    cls = 'active';
-                }
-                html += `
-                    <div class="timeline-step ${cls}">
-                        <div class="timeline-bullet">${content}</div>
-                        <div class="timeline-label">${steps[i-1]}</div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            return html;
-        }
-
-        function loadUserOrders() {
+# 7. Кабинет: авторизация по initData, экранирование, один присвоенный innerHTML
+s = between(s, "function loadUserOrders() {", "function renderSummary() {", """function loadUserOrders() {
             const container = document.getElementById('orders-container');
-            const user = tg.initDataUnsafe?.user;
-
-            if (!user) {
-                container.innerHTML = `<div class="empty-cabinet">Не удалось определить пользователя. Откройте через Telegram.</div>`;
+            if (!tg.initData) {
+                container.innerHTML = '<div class="empty-cabinet">Не удалось определить пользователя. Откройте через Telegram.</div>';
                 return;
             }
+            container.innerHTML = '<div class="empty-cabinet">Загрузка данных...</div>';
 
-            container.innerHTML = `<div class="empty-cabinet">Загрузка данных...</div>`;
-
-            fetch(`/api/orders/${user.id}`)
-                .then(res => res.json())
+            fetch('/api/orders', { headers: authHeaders() })
+                .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
                 .then(data => {
-                    if (data.success && data.orders.length > 0) {
-                        container.innerHTML = '';
-                        data.orders.forEach(order => {
-                            const timelineHtml = getTimelineHtml(order.status);
-                            const isCancelled = order.status.toLowerCase().includes("отмен") || order.status.toLowerCase().includes("отказ");
-                            
-                            container.innerHTML += `
-                                <div class="order-card">
-                                    <div class="order-header">
-                                        <span>ЗАКАЗ ${order.order_id}</span>
-                                        <span class="order-status ${isCancelled ? 'cancelled' : ''}">${order.status}</span>
-                                    </div>
-                                    <div class="order-body">
-                                        <b>СОСТАВ:</b> ${order.items}
-                                    </div>
-                                    ${timelineHtml}
-                                    <div class="order-footer">
-                                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 400;">${order.created_at}</span>
-                                        <span>${order.total.toLocaleString('ru-RU')} ₽</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        container.innerHTML = `<div class="empty-cabinet">Нет активных или прошлых заказов.</div>`;
+                    if (!data.success || !data.orders.length) {
+                        container.innerHTML = '<div class="empty-cabinet">Нет активных или прошлых заказов.</div>';
+                        return;
                     }
+                    container.innerHTML = data.orders.map(order => {
+                        const st = String(order.status || '');
+                        const isCancelled = /отмен|отказ/i.test(st);
+                        return `
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <span>ЗАКАЗ ${esc(order.order_id)}</span>
+                                    <span class="order-status ${isCancelled ? 'cancelled' : ''}">${esc(st)}</span>
+                                </div>
+                                <div class="order-body"><b>СОСТАВ:</b> ${esc(order.items)}</div>
+                                ${getTimelineHtml(st)}
+                                <div class="order-footer">
+                                    <span style="font-size: 13px; color: var(--text-secondary); font-weight: 400;">${fmtDate(order.created_at)}</span>
+                                    <span>${Number(order.total).toLocaleString('ru-RU')} ₽</span>
+                                </div>
+                            </div>`;
+                    }).join('');
                 })
-                .catch(err => {
-                    container.innerHTML = `<div class="empty-cabinet">Ошибка системы загрузки.</div>`;
+                .catch(() => {
+                    container.innerHTML = '<div class="empty-cabinet">Не удалось загрузить историю. Попробуйте позже.</div>';
                 });
         }
 
-        function renderSummary() {
+        """)
+
+# 8. Корзина/оформление: id вместо цен, авторизация, AbortController, защита от двойной отправки
+s = between(s, "function renderSummary() {", "updateButtonTheme();", """function renderSummary() {
             const container = document.getElementById('summary-list');
-            container.innerHTML = '';
-            
             let total = 0;
-            const itemsArr = [];
-            
+            let html = '';
+
             cart.forEach(item => {
                 total += item.price;
-                itemsArr.push({ name: item.name, price: item.price });
-                const priceStr = item.price === 0 ? "По договоренности" : `${item.price.toLocaleString('ru-RU')} ₽`;
-                
-                let detailsHtml = '';
-                if (currentMode === 'b2b' && item.details) {
-                    detailsHtml = `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.3;">${item.details}</div>`;
-                }
-
-                container.innerHTML += `
+                const priceStr = item.price === 0 ? 'По договоренности' : `${item.price.toLocaleString('ru-RU')} ₽`;
+                const details = (currentMode === 'b2b' && item.details)
+                    ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.3;">${esc(item.details)}</div>` : '';
+                html += `
                     <div class="summary-item">
                         <div style="display: flex; justify-content: space-between; width: 100%;">
-                            <span style="flex:1; padding-right:12px; font-weight: 500;">✓ ${item.name}</span>
+                            <span style="flex:1; padding-right:12px; font-weight: 500;">✓ ${esc(item.name)}</span>
                             <span style="font-weight:600; white-space: nowrap;">${priceStr}</span>
                         </div>
-                        ${detailsHtml}
-                    </div>
-                `;
+                        ${details}
+                    </div>`;
             });
-
-            container.innerHTML += `
+            html += `
                 <div class="summary-total">
                     <span>ИТОГО:</span>
                     <span style="color: var(--accent-color);">${total > 0 ? total.toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
-                </div>
-            `;
-            
+                </div>`;
+            container.innerHTML = html;
+
             const upsellContainer = document.getElementById('ai-upsell-container');
             const upsellText = document.getElementById('ai-upsell-text');
-            
-            if (itemsArr.length > 0) {
-                upsellContainer.style.display = 'flex';
-                upsellText.innerHTML = '<span style="color: var(--text-secondary);">СИСТЕМНЫЙ АНАЛИЗ...</span>';
-                
-                const formData = new FormData();
-                formData.append('items', JSON.stringify(itemsArr));
-                formData.append('is_b2b', currentMode === 'b2b' ? "true" : "false");
-                
-                fetch('/api/upsell', {
-                    method: 'POST',
-                    body: formData
-                })
+            if (upsellCtrl) upsellCtrl.abort();
+
+            if (cart.size === 0) { upsellContainer.style.display = 'none'; return; }
+
+            upsellContainer.style.display = 'flex';
+            upsellText.innerHTML = '<span style="color: var(--text-secondary);">СИСТЕМНЫЙ АНАЛИЗ...</span>';
+
+            upsellCtrl = new AbortController();
+            const formData = new FormData();
+            formData.append('items', JSON.stringify([...cart.keys()]));
+            formData.append('is_b2b', currentMode === 'b2b' ? 'true' : 'false');
+
+            fetch('/api/upsell', { method: 'POST', headers: authHeaders(), body: formData, signal: upsellCtrl.signal })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success && data.recommendation) {
-                        upsellText.innerHTML = data.recommendation;
-                    } 
+                    // сервер экранирует текст и оставляет только <b>
+                    upsellText.innerHTML = (data && data.success && data.recommendation)
+                        ? data.recommendation
+                        : 'Своевременный аудит инфраструктуры снижает риски поломок.';
                 })
-                .catch(() => {
-                    upsellText.innerHTML = 'Своевременный аудит инфраструктуры снижает риски поломок.';
+                .catch(err => {
+                    if (err.name === 'AbortError') return;
+                    upsellText.textContent = 'Своевременный аудит инфраструктуры снижает риски поломок.';
                 });
-            } else {
-                upsellContainer.style.display = 'none';
-            }
+        }
+
+        function resetMainButton() {
+            isSubmitting = false;
+            tg.MainButton.hideProgress();
+            tg.MainButton.text = currentMode === 'b2b' ? 'ПОЛУЧИТЬ СМЕТУ' : 'ОФОРМИТЬ ЗАЯВКУ';
         }
 
         tg.MainButton.onClick(() => {
-            if (cart.size === 0) return;
+            if (cart.size === 0 || isSubmitting) return;
 
-            const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                tg.showAlert("СИСТЕМНАЯ ОШИБКА: Пользователь не идентифицирован.");
+            if (!tg.initData) {
+                tg.showAlert('Откройте приложение через Telegram.');
                 return;
             }
 
-            const phoneDigits = phoneInput.value.replace(/\D/g, '');
+            const phoneDigits = phoneInput.value.replace(/\\D/g, '');
             if (phoneDigits.length !== 11) {
-                tg.showAlert("ТРЕБУЕТСЯ: Корректный номер телефона (11 цифр).");
+                tg.showAlert('ТРЕБУЕТСЯ: Корректный номер телефона (11 цифр).');
                 phoneInput.style.borderColor = 'var(--danger-color)';
                 document.getElementById('phone-error').style.display = 'block';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                return; 
+                return;
             }
 
-            let total = 0;
-            const items = [];
-            cart.forEach(item => {
-                total += item.price;
-                items.push({ name: item.name, price: item.price });
-            });
+            if (selectedFile && selectedFile.size > 8 * 1024 * 1024) {
+                tg.showAlert('Фото слишком большое (максимум 8 МБ).');
+                return;
+            }
 
+            // Отправляем только id услуг: цены и итог сервер считает сам
             const formData = new FormData();
-            formData.append('chat_id', user.id);
-            formData.append('items', JSON.stringify(items));
-            formData.append('total', total);
+            formData.append('items', JSON.stringify([...cart.keys()]));
             formData.append('phone', phoneInput.value);
-            formData.append('is_b2b', currentMode === 'b2b' ? "true" : "false");
+            formData.append('is_b2b', currentMode === 'b2b' ? 'true' : 'false');
 
             if (currentMode === 'b2b') {
-                const workplaces = document.getElementById('b2b-workplaces').value;
-                const office = document.getElementById('b2b-office').value;
-                formData.append('workplaces', workplaces);
-                formData.append('office_info', office);
-                formData.append('device', "Корпоративная инфраструктура"); 
+                formData.append('workplaces', document.getElementById('b2b-workplaces').value);
+                formData.append('office_info', document.getElementById('b2b-office').value);
             } else {
-                const deviceType = document.getElementById('device-type').value;
-                const problemDesc = document.getElementById('problem-desc').value.trim();
-                formData.append('device', deviceType);
-                formData.append('problem', problemDesc);
-                if (selectedFile) formData.append('photo', selectedFile);
+                formData.append('device', document.getElementById('device-type').value);
+                formData.append('problem', document.getElementById('problem-desc').value.trim());
+                if (selectedFile) formData.append('photo', selectedFile, 'problem.jpg');
             }
 
-            tg.MainButton.text = "ОБРАБОТКА ДАННЫХ...";
+            isSubmitting = true;
+            tg.MainButton.text = 'ОБРАБОТКА ДАННЫХ...';
             tg.MainButton.showProgress();
 
-            fetch('/api/order', {
-                method: 'POST',
-                body: formData
-            })
-            .then(async response => {
-                const data = await response.json().catch(() => null);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return data;
-            })
-            .then(data => {
-                tg.MainButton.hideProgress();
-                if (data && data.success) {
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    navigate('success');
-                } else {
-                    tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
-                    tg.showAlert("СБОЙ СЕРВЕРА: " + (data ? data.error : "Неизвестный ответ"));
-                }
-            })
-            .catch(error => {
-                tg.MainButton.hideProgress();
-                tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
-                tg.showAlert("ОШИБКА ПЕРЕДАЧИ: " + error.message);
-            });
+            fetch('/api/order', { method: 'POST', headers: authHeaders(), body: formData })
+                .then(async response => {
+                    const data = await response.json().catch(() => null);
+                    if (!response.ok) {
+                        const msg = data && typeof data.detail === 'string' ? data.detail : 'Ошибка сервера, попробуйте позже.';
+                        throw new Error(msg);
+                    }
+                    return data;
+                })
+                .then(data => {
+                    if (data && data.success) {
+                        tg.MainButton.hideProgress();
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        cart.clear();
+                        renderServices();
+                        navigate('success');
+                        isSubmitting = false;
+                    } else {
+                        resetMainButton();
+                        tg.showAlert('Не удалось оформить заявку. Попробуйте позже.');
+                    }
+                })
+                .catch(error => {
+                    resetMainButton();
+                    tg.showAlert(error.message || 'Ошибка передачи данных.');
+                });
         });
 
-        updateButtonTheme();
-        renderServices();
-    </script>
-</body>
-</html>
+        """, use_rfind_end=True)
+
+shutil.copy(path, path + ".bak")
+open(path, "w", encoding="utf-8").write(s)
+print("OK: index.html обновлён, резервная копия:", path + ".bak")
