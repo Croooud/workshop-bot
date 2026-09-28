@@ -3,4 +3,4 @@ fastapi>=0.112.0,<1
 uvicorn>=0.30.0,<1
 jinja2>=3.1.0,<4
 python-multipart>=0.0.9
-google-genai>=1.0.0,<2
+google-genai>=1.0.0
