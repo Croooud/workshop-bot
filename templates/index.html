@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+    <meta name="format-detection" content="telephone=no">
     <title>ЭЛИВЕЙТ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,54 +13,61 @@
     <!-- Шрифты не блокируют отрисовку: если Google Fonts недоступен, остаются системные -->
     <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
     <style>
-        /* =========================================================
-           ЭЛИВЕЙТ — Design Tokens
-           ========================================================= */
+        /* =====================================================================
+           ЭЛИВЕЙТ — дизайн-токены
+           ===================================================================== */
         :root {
-            /* Палитра */
             --bg: #000000;
-            --surface: #141414;              /* Матовые панели */
-            --surface-2: #1A1A1A;            /* Hover / подложки */
-            --graphite: #2E2E2E;             /* Корпоративный графит */
+            --surface: #141414;
+            --surface-2: #1A1A1A;
+            --surface-3: #202022;
+            --graphite: #2E2E2E;
             --graphite-line: #3A3A3C;
 
             --accent: #007BFF;
-            --accent-hover: #1A8BFF;
-            --accent-bg: rgba(0, 123, 255, 0.08);
-            --accent-line: rgba(0, 123, 255, 0.45);
-            --accent-glow: 0 2px 8px rgba(0, 123, 255, 0.3);
-            --accent-glow-lg: 0 8px 28px rgba(0, 123, 255, 0.35);
+            --accent-rgb: 0, 123, 255;
+            --accent-bg: rgba(var(--accent-rgb), 0.08);
+            --accent-line: rgba(var(--accent-rgb), 0.45);
+            --accent-glow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+            --accent-glow-lg: 0 8px 28px rgba(var(--accent-rgb), 0.35);
 
             --text-primary: #FFFFFF;
             --text-secondary: #8E8E93;
-            --text-tertiary: #48484A;
+            --text-tertiary: #5A5A5E;
 
             --border: rgba(255, 255, 255, 0.05);
             --border-strong: rgba(255, 255, 255, 0.09);
-            --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);   /* Верхний блик панели */
+            --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
             --danger: #FF453A;
+            --danger-rgb: 255, 69, 58;
             --success: #32D74B;
+            --success-rgb: 50, 215, 75;
 
-            /* Глубина */
             --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.8);
+            --shadow-selected:
+                0 8px 32px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(var(--accent-rgb), 0.22),
+                0 6px 22px rgba(var(--accent-rgb), 0.16),
+                0 0 56px rgba(var(--accent-rgb), 0.08);
             --glass: rgba(10, 10, 10, 0.85);
             --blur: blur(12px) saturate(160%);
 
-            /* Микро-скругления */
             --radius-sm: 6px;
             --radius-md: 12px;
             --radius-lg: 14px;
 
-            /* Шрифты */
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-            --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
 
-            /* Моушн */
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
             --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --t-fast: 0.15s;
+            --t-base: 0.25s;
+            --t-slow: 0.45s;
 
-            /* Лейаут */
+            --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --nav-height: 64px;
             --gutter: 16px;
@@ -76,30 +85,57 @@
 
         body {
             font-family: var(--font-sans);
-            background-color: var(--bg) !important;
-            color: var(--text-primary) !important;
+            font-feature-settings: 'cv11', 'ss01';
+            background-color: var(--bg);
+            color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
             overscroll-behavior-y: none;
             min-height: 100vh;
+            min-height: 100dvh;
             padding-bottom: calc(var(--nav-height) + 96px + var(--safe-bottom));
         }
 
-        /* =========================================================
-           Атмосфера: синее свечение сверху + инженерная сетка
-           ========================================================= */
-        body::before,
-        body::after {
-            content: '';
+        button {
+            font: inherit;
+            color: inherit;
+            background: none;
+            border: 0;
+            text-align: left;
+            cursor: pointer;
+        }
+        button:disabled { cursor: default; }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* =====================================================================
+           Атмосфера: дрейфующее синее свечение + инженерная сетка
+           ===================================================================== */
+        .atmosphere {
             position: fixed;
             inset: 0;
-            pointer-events: none;
             z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
         }
-        body::before {
-            background: radial-gradient(ellipse 90% 45% at 50% -8%, rgba(0, 123, 255, 0.16), transparent 70%);
+        .atmosphere::before {
+            content: '';
+            position: absolute;
+            left: -20%;
+            right: -20%;
+            top: -35%;
+            height: 80%;
+            background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(var(--accent-rgb), 0.17), transparent 70%);
+            animation: aurora 18s ease-in-out infinite alternate;
         }
-        body::after {
+        .atmosphere::after {
+            content: '';
+            position: absolute;
+            inset: 0;
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
@@ -108,50 +144,60 @@
             -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
                     mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
         }
+        @keyframes aurora {
+            0%   { transform: translate3d(-6%, 0, 0) scale(1); }
+            100% { transform: translate3d(6%, 4%, 0) scale(1.12); }
+        }
 
-        /* =========================================================
+        /* =====================================================================
            Экраны
-           ========================================================= */
+           ===================================================================== */
         .view {
             display: none;
             position: relative;
             z-index: 1;
             max-width: var(--max-width);
             margin: 0 auto;
-            padding: 28px var(--gutter) 24px;
+            padding: calc(28px + var(--safe-top)) var(--gutter) 24px;
         }
         .view.active {
             display: block;
-            animation: viewIn 0.5s var(--ease-out) both;
+            animation: viewIn var(--t-slow) var(--ease-out) both;
         }
         @keyframes viewIn {
-            from { opacity: 0; translate: 0 10px; }
-            to   { opacity: 1; translate: 0 0; }
+            from { opacity: 0; transform: translate3d(0, 10px, 0); }
+            to   { opacity: 1; transform: none; }
         }
 
-        /* =========================================================
+        /* =====================================================================
            Типографика
-           ========================================================= */
-        header { margin-bottom: 28px; }
+           ===================================================================== */
+        .view-header { margin-bottom: 28px; }
+        .view-header-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
 
-        .brand-subtitle {
+        .kicker {
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            margin-bottom: 12px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 1.6px;
             text-transform: uppercase;
             color: var(--accent);
-            margin-bottom: 12px;
         }
-        .brand-dot {
+        .kicker-dot {
             width: 6px;
             height: 6px;
             border-radius: 2px;
             background: var(--accent);
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.9);
+            box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9);
             animation: pulse 2.4s ease-in-out infinite;
         }
         @keyframes pulse {
@@ -162,30 +208,32 @@
         h1 {
             font-size: 34px;
             font-weight: 700;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
-            line-height: 1.02;
-            margin-bottom: 10px;
+            line-height: 1.04;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-wrap: balance;
         }
 
         .desc {
+            max-width: 36ch;
             font-size: 15px;
+            line-height: 1.55;
+            letter-spacing: -0.1px;
             color: var(--text-secondary);
-            line-height: 1.45;
-            max-width: 34ch;
+            text-wrap: pretty;
         }
 
         .section-meta {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            margin: 4px 2px 12px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 500;
             letter-spacing: 1.2px;
             text-transform: uppercase;
             color: var(--text-tertiary);
-            margin: 4px 2px 12px;
         }
         .section-meta::after {
             content: '';
@@ -195,10 +243,10 @@
             background: linear-gradient(90deg, var(--border-strong), transparent);
         }
 
-        /* =========================================================
-           Сегментированный переключатель (iOS pill)
-           ========================================================= */
-        .segment-control-wrapper {
+        /* =====================================================================
+           Переключатель частные / бизнес (iOS pill)
+           ===================================================================== */
+        .segment-control {
             position: relative;
             display: flex;
             padding: 4px;
@@ -213,16 +261,17 @@
             z-index: 2;
             flex: 1;
             padding: 11px 0;
+            border-radius: 10px;
             text-align: center;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.2px;
             color: var(--text-secondary);
-            cursor: pointer;
             user-select: none;
-            transition: color 0.3s var(--ease-snap);
+            transition: color var(--t-base) var(--ease-snap), transform var(--t-fast) var(--ease-snap);
         }
-        .segment.active { color: #FFFFFF; }
+        .segment[aria-selected="true"] { color: #FFFFFF; }
+        .segment:active { transform: scale(0.97); }
 
         .segment-slider {
             position: absolute;
@@ -236,11 +285,11 @@
             box-shadow: var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
             transition: transform 0.4s var(--ease-snap);
         }
-        body.theme-b2b .segment-slider { transform: translateX(100%); }
+        .segment-control[data-mode="b2b"] .segment-slider { transform: translateX(100%); }
 
-        /* =========================================================
-           Панели и карточки
-           ========================================================= */
+        /* =====================================================================
+           Панели и карточки услуг
+           ===================================================================== */
         .list-group {
             display: flex;
             flex-direction: column;
@@ -255,28 +304,54 @@
         }
 
         .card {
+            --mx: 50%;
+            --my: 50%;
+            position: relative;
+            isolation: isolate;
             display: flex;
             align-items: center;
             gap: 14px;
+            width: 100%;
             padding: 18px 16px;
+            overflow: hidden;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-panel), var(--highlight);
-            cursor: pointer;
             user-select: none;
             transition:
-                background-color 0.25s var(--ease-snap),
-                border-color 0.25s var(--ease-snap),
-                box-shadow 0.25s var(--ease-snap),
-                transform 0.15s var(--ease-snap);
+                background-color var(--t-base) var(--ease-snap),
+                border-color var(--t-base) var(--ease-snap),
+                box-shadow var(--t-slow) var(--ease-snap),
+                transform var(--t-fast) var(--ease-snap);
         }
-        .card.card-enter {
-            animation: cardIn 0.5s var(--ease-out) both;
+        /* Световое пятно под пальцем/курсором */
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(220px circle at var(--mx) var(--my), rgba(var(--accent-rgb), 0.12), transparent 60%);
+            opacity: 0;
+            transition: opacity var(--t-base) var(--ease-snap);
         }
+        /* Неоновая кромка сверху у выбранной карточки */
+        .card::after {
+            content: '';
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            top: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.9), transparent);
+            opacity: 0;
+            transform: scaleX(0.3);
+            transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+        }
+        .card.card-enter { animation: cardIn 0.5s var(--ease-out) both; }
         @keyframes cardIn {
-            from { opacity: 0; translate: 0 12px; }
-            to   { opacity: 1; translate: 0 0; }
+            from { opacity: 0; transform: translate3d(0, 12px, 0); }
+            to   { opacity: 1; transform: none; }
         }
 
         @media (hover: hover) {
@@ -284,51 +359,48 @@
                 background: var(--surface-2);
                 border-color: var(--accent);
             }
+            .card:hover::before { opacity: 1; }
         }
         .card:active {
             background: var(--surface-2);
             border-color: var(--accent);
             transform: scale(0.98);
         }
+        .card:active::before { opacity: 1; }
 
-        .card.selected {
-            background:
-                linear-gradient(var(--accent-bg), var(--accent-bg)),
-                var(--surface-2);
+        .card[aria-checked="true"] {
+            background: linear-gradient(var(--accent-bg), var(--accent-bg)), var(--surface-2);
             border-color: var(--accent);
-            box-shadow:
-                var(--shadow-panel),
-                0 0 0 1px rgba(0, 123, 255, 0.15),
-                0 6px 24px rgba(0, 123, 255, 0.12),
-                var(--highlight);
+            box-shadow: var(--shadow-selected), var(--highlight);
         }
+        .card[aria-checked="true"]::after { opacity: 1; transform: scaleX(1); }
 
         .card-index {
             align-self: flex-start;
-            padding-top: 3px;
             min-width: 18px;
+            padding-top: 3px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 500;
             color: var(--text-tertiary);
-            transition: color 0.25s;
+            transition: color var(--t-base);
         }
-        .card.selected .card-index { color: var(--accent); }
+        .card[aria-checked="true"] .card-index { color: var(--accent); }
 
-        .card-content {
-            flex: 1;
-            min-width: 0;
-        }
+        .card-content { flex: 1; min-width: 0; }
         .card-title {
+            display: block;
+            margin-bottom: 5px;
             font-size: 16px;
             font-weight: 600;
             line-height: 1.3;
-            margin-bottom: 5px;
+            letter-spacing: -0.2px;
         }
         .card-subtitle {
+            display: block;
             font-size: 13px;
+            line-height: 1.45;
             color: var(--text-secondary);
-            line-height: 1.4;
         }
 
         .card-side {
@@ -342,13 +414,12 @@
             font-weight: 600;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
-            color: var(--text-primary);
-            transition: color 0.25s;
+            transition: color var(--t-base);
         }
-        .card.selected .card-price { color: var(--accent); }
+        .card[aria-checked="true"] .card-price { color: var(--accent); }
 
         /* Чекбокс 24×24 */
-        .checkbox-wrapper {
+        .checkbox {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -359,169 +430,231 @@
             border: 1px solid var(--graphite-line);
             border-radius: var(--radius-sm);
             transition:
-                background-color 0.25s var(--ease-snap),
-                border-color 0.25s var(--ease-snap),
-                box-shadow 0.25s var(--ease-snap),
-                transform 0.25s var(--ease-snap);
+                background-color var(--t-base) var(--ease-snap),
+                border-color var(--t-base) var(--ease-snap),
+                box-shadow var(--t-base) var(--ease-snap);
         }
-        .card.selected .checkbox-wrapper {
+        .card[aria-checked="true"] .checkbox {
             background: var(--accent);
             border-color: var(--accent);
             box-shadow: var(--accent-glow);
-            animation: checkPop 0.35s var(--ease-snap);
+            animation: checkPop 0.35s var(--ease-spring);
         }
         @keyframes checkPop {
             0%   { transform: scale(0.8); }
-            60%  { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        .check-icon {
-            fill: none;
+        .checkbox svg {
             stroke: #FFFFFF;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
             stroke-dasharray: 24;
             stroke-dashoffset: 24;
             transition: stroke-dashoffset 0.3s var(--ease-snap) 0.05s;
         }
-        .card.selected .check-icon { stroke-dashoffset: 0; }
+        .card[aria-checked="true"] .checkbox svg { stroke-dashoffset: 0; }
 
-        /* =========================================================
+        /* =====================================================================
            Формы
-           ========================================================= */
+           ===================================================================== */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .form-group[hidden] { display: none; }
+
         .field {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
         .field-label {
+            padding-left: 2px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 1px;
             text-transform: uppercase;
             color: var(--text-secondary);
-            padding-left: 2px;
         }
+        .field-label .opt { color: var(--text-tertiary); }
         .field-label .req { color: var(--danger); }
 
-        .input-base {
+        .input {
             width: 100%;
             padding: 16px;
             font-family: var(--font-sans);
             font-size: 16px;
+            line-height: 1.4;
             color: var(--text-primary);
             background: var(--surface);
             border: 1px solid var(--border-strong);
             border-radius: var(--radius-md);
             box-shadow: var(--highlight);
-            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            transition:
+                border-color var(--t-base) var(--ease-snap),
+                box-shadow var(--t-base) var(--ease-snap),
+                background-color var(--t-base) var(--ease-snap),
+                opacity var(--t-base);
             -webkit-appearance: none;
                     appearance: none;
         }
-        .input-base::placeholder { color: var(--text-tertiary); }
-        .input-base:focus {
+        .input::placeholder { color: var(--text-tertiary); }
+        .input:focus {
             outline: none;
             background: var(--surface-2);
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.18);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
         }
-        .input-base.is-error {
+        .input:disabled { opacity: 0.55; }
+        .input[aria-invalid="true"] {
             border-color: var(--danger);
-            box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.15);
+            box-shadow: 0 0 0 3px rgba(var(--danger-rgb), 0.15);
+            animation: shake 0.35s var(--ease-snap);
         }
-        textarea.input-base { resize: none; line-height: 1.45; }
-
-        select.input-base {
+        @keyframes shake {
+            0%, 100% { transform: none; }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        textarea.input { resize: none; line-height: 1.5; }
+        select.input {
             padding-right: 44px;
             cursor: pointer;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 16px center;
         }
-        select.input-base option { background: var(--surface); color: var(--text-primary); }
+        select.input option { background: var(--surface); color: var(--text-primary); }
 
+        .field-hint {
+            padding: 0 2px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-align: right;
+            color: var(--text-tertiary);
+        }
         .field-error {
-            display: none;
+            padding-left: 2px;
             font-size: 12px;
             color: var(--danger);
-            padding-left: 2px;
         }
+        .field-error[hidden] { display: none; }
 
         /* Загрузка фото */
-        .file-upload-container { display: flex; flex-direction: column; gap: 8px; }
-        .file-dropzone {
+        .dropzone {
             display: flex;
             align-items: center;
             gap: 14px;
+            width: 100%;
             padding: 16px;
             background: var(--surface);
             border: 1px dashed var(--graphite-line);
             border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+            transition:
+                border-color var(--t-base) var(--ease-snap),
+                background-color var(--t-base) var(--ease-snap),
+                transform var(--t-fast) var(--ease-snap);
         }
         @media (hover: hover) {
-            .file-dropzone:hover { border-color: var(--accent); background: var(--surface-2); }
+            .dropzone:hover { border-color: var(--accent); background: var(--surface-2); }
         }
-        .file-dropzone:active { transform: scale(0.98); background: var(--surface-2); border-color: var(--accent); }
-        .file-dropzone-icon {
+        .dropzone:active { transform: scale(0.98); border-color: var(--accent); background: var(--surface-2); }
+        .dropzone[hidden] { display: none; }
+        .dropzone-icon {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
             width: 40px;
             height: 40px;
-            flex-shrink: 0;
             color: var(--accent);
             background: var(--accent-bg);
             border-radius: var(--radius-sm);
         }
-        .file-dropzone-text { font-size: 15px; font-weight: 500; }
-        .file-dropzone-subtext { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .dropzone-title { display: block; font-size: 15px; font-weight: 500; }
+        .dropzone-sub { display: block; margin-top: 2px; font-size: 13px; color: var(--text-secondary); }
 
-        .preview-wrapper {
-            display: none;
+        .preview {
+            display: flex;
             align-items: center;
             gap: 12px;
             padding: 10px;
             background: var(--surface-2);
             border: 1px solid var(--border-strong);
             border-radius: var(--radius-md);
+            animation: cardIn 0.35s var(--ease-out) both;
         }
-        .preview-img { width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); }
-        .preview-name { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .btn-remove-photo {
+        .preview[hidden] { display: none; }
+        .preview-img {
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+            object-fit: cover;
+            background: var(--graphite);
+            border-radius: var(--radius-sm);
+        }
+        .preview-img:not([src]) { visibility: hidden; }
+        .preview-thumb { position: relative; width: 50px; height: 50px; flex-shrink: 0; }
+        .preview-thumb .skeleton { position: absolute; inset: 0; }
+        .preview-meta { flex: 1; min-width: 0; }
+        .preview-name {
+            overflow: hidden;
+            font-size: 14px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .preview-size {
+            margin-top: 2px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .icon-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            color: var(--danger);
-            background: rgba(255, 69, 58, 0.12);
-            border: 1px solid rgba(255, 69, 58, 0.25);
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
             border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: transform 0.15s;
+            transition: transform var(--t-fast) var(--ease-snap), background-color var(--t-base), border-color var(--t-base), color var(--t-base);
         }
-        .btn-remove-photo:active { transform: scale(0.92); }
+        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn--danger {
+            color: var(--danger);
+            background: rgba(var(--danger-rgb), 0.12);
+            border: 1px solid rgba(var(--danger-rgb), 0.25);
+        }
+        .icon-btn--ghost {
+            margin-top: 2px;
+            color: var(--text-secondary);
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
+        }
+        @media (hover: hover) {
+            .icon-btn--ghost:hover { color: var(--accent); border-color: var(--accent-line); }
+        }
+        .icon-btn.spinning svg { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* =========================================================
+        /* =====================================================================
            Контакты
-           ========================================================= */
+           ===================================================================== */
         .contact-card {
             display: flex;
             align-items: center;
             gap: 16px;
             padding: 18px 16px;
-            margin-bottom: 12px;
             color: inherit;
             text-decoration: none;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-panel), var(--highlight);
-            transition: background-color 0.25s, border-color 0.25s, transform 0.15s;
+            transition:
+                background-color var(--t-base) var(--ease-snap),
+                border-color var(--t-base) var(--ease-snap),
+                transform var(--t-fast) var(--ease-snap);
         }
         a.contact-card:active { transform: scale(0.98); background: var(--surface-2); border-color: var(--accent); }
         @media (hover: hover) {
@@ -536,46 +669,54 @@
             height: 44px;
             color: var(--accent);
             background: var(--accent-bg);
-            border: 1px solid rgba(0, 123, 255, 0.15);
+            border: 1px solid rgba(var(--accent-rgb), 0.15);
             border-radius: var(--radius-sm);
         }
         .contact-info { flex: 1; min-width: 0; }
-        .contact-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
-        .contact-info p { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
-        .contact-chevron { color: var(--text-tertiary); flex-shrink: 0; }
+        .contact-info h3 { margin-bottom: 3px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+        .contact-info p { font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+        .contact-chevron {
+            flex-shrink: 0;
+            color: var(--text-tertiary);
+            transition: transform var(--t-base) var(--ease-snap), color var(--t-base);
+        }
+        a.contact-card:active .contact-chevron { transform: translateX(3px); color: var(--accent); }
+        @media (hover: hover) {
+            a.contact-card:hover .contact-chevron { transform: translateX(3px); color: var(--accent); }
+        }
 
-        /* =========================================================
+        /* =====================================================================
            Оформление заказа
-           ========================================================= */
+           ===================================================================== */
         .summary-panel { padding: 6px 16px 18px; }
-
         .summary-item {
             padding: 14px 0;
             border-bottom: 1px solid var(--border);
+            animation: cardIn 0.4s var(--ease-out) both;
         }
         .summary-row {
             display: flex;
-            justify-content: space-between;
             align-items: baseline;
+            justify-content: space-between;
             gap: 12px;
         }
         .summary-name {
             display: flex;
-            gap: 10px;
             flex: 1;
+            gap: 10px;
             font-size: 15px;
             font-weight: 500;
-            line-height: 1.35;
+            line-height: 1.4;
         }
         .summary-name::before {
             content: '';
             flex-shrink: 0;
             width: 6px;
             height: 6px;
-            margin-top: 7px;
+            margin-top: 8px;
             border-radius: 2px;
             background: var(--accent);
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.7);
+            box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7);
         }
         .summary-price {
             font-size: 14px;
@@ -586,13 +727,13 @@
         .summary-details {
             margin: 8px 0 0 16px;
             font-size: 13px;
-            line-height: 1.4;
+            line-height: 1.5;
             color: var(--text-secondary);
         }
         .summary-total {
             display: flex;
-            justify-content: space-between;
             align-items: baseline;
+            justify-content: space-between;
             padding-top: 16px;
         }
         .summary-total-label {
@@ -605,24 +746,34 @@
         .summary-total-value {
             font-size: 24px;
             font-weight: 700;
+            letter-spacing: -0.3px;
             font-variant-numeric: tabular-nums;
             color: var(--accent);
-            text-shadow: 0 0 24px rgba(0, 123, 255, 0.35);
+            text-shadow: 0 0 16px rgba(var(--accent-rgb), 0.28);
+        }
+        .summary-note {
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-tertiary);
         }
 
         /* AI-рекомендация */
         .ai-panel {
-            display: none;
+            position: relative;
+            display: flex;
             flex-direction: column;
             gap: 10px;
             padding: 16px;
+            overflow: hidden;
             background:
-                linear-gradient(135deg, rgba(0, 123, 255, 0.12), rgba(0, 123, 255, 0.02) 60%),
+                linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.02) 60%),
                 var(--surface);
             border: 1px solid var(--accent-line);
             border-radius: var(--radius-md);
-            box-shadow: var(--shadow-panel), 0 0 24px rgba(0, 123, 255, 0.08), var(--highlight);
+            box-shadow: var(--shadow-panel), 0 0 24px rgba(var(--accent-rgb), 0.08), var(--highlight);
         }
+        .ai-panel[hidden] { display: none; }
         .ai-head {
             display: flex;
             align-items: center;
@@ -642,233 +793,188 @@
             border-radius: 4px;
             box-shadow: var(--accent-glow);
         }
-        .ai-text { font-size: 14px; line-height: 1.45; }
-        .ai-text b { color: var(--accent); font-weight: 600; }
+        .ai-text { font-size: 14px; line-height: 1.55; }
+        .ai-text b { font-weight: 600; color: var(--accent); }
+        .ai-text.reveal { animation: fadeIn 0.5s var(--ease-out) both; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .loading-text {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-        }
-        .loading-text::after {
-            content: '';
-            animation: dots 1.4s steps(4, end) infinite;
-        }
-        @keyframes dots {
-            0%   { content: ''; }
-            25%  { content: '.'; }
-            50%  { content: '..'; }
-            75%  { content: '...'; }
-        }
-
-        /* =========================================================
-           Плавающая панель заказа (glass)
-           ========================================================= */
-        .floating-bar {
-            position: fixed;
-            z-index: 95;
-            left: var(--gutter);
-            right: var(--gutter);
-            bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
-            max-width: calc(var(--max-width) - var(--gutter) * 2);
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 8px 8px 8px 18px;
-            background: var(--glass);
-            -webkit-backdrop-filter: var(--blur);
-                    backdrop-filter: var(--blur);
-            border: 1px solid var(--border-strong);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-panel), var(--highlight);
-            cursor: pointer;
-            opacity: 0;
-            transform: translateY(140%);
-            pointer-events: none;
-            transition: transform 0.45s var(--ease-out), opacity 0.3s ease;
-        }
-        .floating-bar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .floating-bar.visible:active { transform: scale(0.98); }
-
-        .fb-info { display: flex; flex-direction: column; }
-        .fb-count {
-            font-family: var(--font-mono);
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-        }
-        .fb-total {
-            margin-top: 2px;
-            font-size: 19px;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }
-        .fb-action {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 13px 18px;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            color: #FFFFFF;
-            background: var(--accent);
-            border-radius: 10px;
-            box-shadow: var(--accent-glow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-
-        /* =========================================================
-           Нижняя навигация (glass)
-           ========================================================= */
-        .bottom-nav {
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            justify-content: space-around;
-            height: calc(var(--nav-height) + var(--safe-bottom));
-            padding-bottom: var(--safe-bottom);
-            background: var(--glass);
-            -webkit-backdrop-filter: var(--blur);
-                    backdrop-filter: var(--blur);
-            border-top: 1px solid var(--border-strong);
-            transition: transform 0.4s var(--ease-out);
-        }
-        .nav-item {
+        /* =====================================================================
+           Скелетоны с шиммером
+           ===================================================================== */
+        .skeleton {
             position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            max-width: 160px;
-            font-family: var(--font-mono);
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            color: #636366;
-            cursor: pointer;
-            user-select: none;
-            transition: color 0.25s;
+            overflow: hidden;
+            background: var(--surface-3);
+            border-radius: var(--radius-sm);
         }
-        .nav-item::before {
+        .skeleton::after {
             content: '';
             position: absolute;
-            top: -1px;
-            left: 50%;
-            width: 28px;
-            height: 2px;
-            border-radius: 0 0 2px 2px;
-            background: var(--accent);
-            box-shadow: 0 0 12px rgba(0, 123, 255, 0.9);
-            transform: translateX(-50%) scaleX(0);
-            transition: transform 0.35s var(--ease-snap);
+            inset: 0;
+            background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.06) 45%, rgba(var(--accent-rgb), 0.1) 50%, rgba(255, 255, 255, 0.06) 55%, transparent 80%);
+            transform: translateX(-100%);
+            animation: shimmer 1.4s var(--ease-snap) infinite;
         }
-        .nav-item.active { color: var(--accent); }
-        .nav-item.active::before { transform: translateX(-50%) scaleX(1); }
-        .nav-item:active .nav-icon { transform: scale(0.88); }
-        .nav-icon { display: flex; transition: transform 0.15s; }
+        @keyframes shimmer { to { transform: translateX(100%); } }
+        .sk-line { height: 12px; }
+        .sk-line + .sk-line { margin-top: 10px; }
+        .sk-order { display: flex; flex-direction: column; gap: 16px; padding: 18px 16px; }
+        .sk-row { display: flex; justify-content: space-between; align-items: center; }
+        .sk-dots { display: flex; justify-content: space-between; padding: 0 12%; }
+        .sk-dot { width: 24px; height: 24px; }
 
-        /* =========================================================
+        /* =====================================================================
            Кабинет / заказы
-           ========================================================= */
+           ===================================================================== */
         .order-card {
             display: flex;
             flex-direction: column;
             gap: 14px;
             padding: 18px 16px;
+            animation: cardIn 0.45s var(--ease-out) both;
         }
         .order-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 12px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
         }
         .order-id {
+            min-width: 0;
+            overflow-wrap: anywhere;
             font-family: var(--font-mono);
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.5px;
             color: var(--text-secondary);
         }
-        .order-status {
+        .badge {
+            flex-shrink: 0;
+            max-width: 50%;
+            overflow: hidden;
+            text-overflow: ellipsis;
             padding: 4px 10px;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.6px;
             text-transform: uppercase;
+            white-space: nowrap;
             color: var(--accent);
             background: var(--accent-bg);
-            border: 1px solid rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
             border-radius: var(--radius-sm);
         }
-        .order-status.cancelled {
-            color: var(--danger);
-            background: rgba(255, 69, 58, 0.1);
-            border-color: rgba(255, 69, 58, 0.2);
-        }
-        .order-body { font-size: 14px; line-height: 1.5; }
-        .order-body-label {
+        .badge--done { color: var(--success); background: rgba(var(--success-rgb), 0.1); border-color: rgba(var(--success-rgb), 0.22); }
+        .badge--cancelled { color: var(--danger); background: rgba(var(--danger-rgb), 0.1); border-color: rgba(var(--danger-rgb), 0.2); }
+
+        .order-label {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 1px;
             color: var(--text-secondary);
         }
+        .order-items { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+        .order-items li {
+            display: flex;
+            overflow-wrap: anywhere;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        .order-items .price {
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-secondary);
+        }
         .order-footer {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             padding-top: 12px;
             border-top: 1px solid var(--border);
         }
         .order-date { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
         .order-total { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        .empty-cabinet {
-            padding: 48px 16px;
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 44px 20px;
             text-align: center;
             font-size: 15px;
+            line-height: 1.55;
             color: var(--text-secondary);
             background: var(--surface);
             border: 1px dashed var(--border-strong);
             border-radius: var(--radius-md);
+            animation: cardIn 0.4s var(--ease-out) both;
         }
+        .empty-state-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border: 1px solid rgba(var(--accent-rgb), 0.15);
+            border-radius: var(--radius-md);
+        }
+        .empty-state--error .empty-state-icon {
+            color: var(--danger);
+            background: rgba(var(--danger-rgb), 0.08);
+            border-color: rgba(var(--danger-rgb), 0.2);
+        }
+        .text-btn {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-align: center;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border: 1px solid rgba(var(--accent-rgb), 0.25);
+            border-radius: var(--radius-md);
+            transition: transform var(--t-fast) var(--ease-snap), background-color var(--t-base);
+        }
+        .text-btn:active { transform: scale(0.96); background: rgba(var(--accent-rgb), 0.16); }
 
-        /* Таймлайн */
+        /* Таймлайн статуса */
         .timeline {
             position: relative;
             display: flex;
             justify-content: space-between;
-            margin: 6px 0 2px;
+            margin: 4px 0 2px;
         }
-        .timeline::before {
-            content: '';
+        .timeline-track,
+        .timeline-fill {
             position: absolute;
-            z-index: 1;
             top: 11px;
-            left: 12%;
-            right: 12%;
+            left: 16.66%;
             height: 2px;
-            background: var(--graphite);
+            border-radius: 1px;
         }
-        .timeline:has(.cancelled)::before { display: none; }
+        .timeline-track { right: 16.66%; background: var(--graphite); }
+        .timeline-fill {
+            width: calc(66.66% * var(--progress, 0));
+            background: linear-gradient(90deg, var(--success), var(--accent));
+            box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+            transform-origin: left center;
+            animation: grow 0.9s var(--ease-out) 0.15s both;
+        }
+        @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        .timeline--cancelled { justify-content: center; }
         .timeline-step {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -888,24 +994,19 @@
             border: 2px solid var(--graphite);
             border-radius: var(--radius-sm);
         }
-        .timeline-step.completed .timeline-bullet {
-            color: #FFFFFF;
-            background: var(--success);
-            border-color: var(--success);
-        }
+        .timeline-step.completed .timeline-bullet { color: #FFFFFF; background: var(--success); border-color: var(--success); }
         .timeline-step.active .timeline-bullet {
             color: var(--accent);
             background: var(--surface-2);
             border-color: var(--accent);
-            box-shadow: 0 0 12px rgba(0, 123, 255, 0.5);
+            animation: beacon 2s ease-in-out infinite;
         }
-        .timeline-step.cancelled .timeline-bullet {
-            color: #FFFFFF;
-            background: var(--danger);
-            border-color: var(--danger);
+        @keyframes beacon {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55); }
+            50%      { box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0); }
         }
+        .timeline-step.cancelled .timeline-bullet { color: #FFFFFF; background: var(--danger); border-color: var(--danger); }
         .timeline-label {
-            max-width: 70px;
             margin-top: 8px;
             font-family: var(--font-mono);
             font-size: 9.5px;
@@ -919,799 +1020,1476 @@
         .timeline-step.active .timeline-label { color: var(--text-primary); }
         .timeline-step.cancelled .timeline-label { color: var(--danger); }
 
-        /* =========================================================
+        /* =====================================================================
            Экран успеха
-           ========================================================= */
+           ===================================================================== */
         #view-success.active {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 80vh;
+            min-height: 88vh;
+            min-height: 88dvh;
             text-align: center;
         }
-        .success-icon-wrap {
+        .success-emblem {
             position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 32px;
+        }
+        .success-core {
+            position: absolute;
+            inset: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 84px;
-            height: 84px;
-            margin-bottom: 28px;
-            background: var(--success);
-            border-radius: var(--radius-md);
-            box-shadow: 0 8px 32px rgba(50, 215, 75, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-            animation: successIn 0.6s var(--ease-snap) both;
+            background: radial-gradient(circle at 50% 30%, #1B2A3D, #0A0F16 70%);
+            border: 1px solid rgba(var(--accent-rgb), 0.5);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            animation: emblemIn 0.7s var(--ease-spring) both;
         }
-        .success-icon-wrap::after {
-            content: '';
-            position: absolute;
-            inset: -10px;
-            border: 1px solid rgba(50, 215, 75, 0.35);
-            border-radius: 18px;
-            animation: ring 2.2s ease-out infinite;
+        @keyframes emblemIn {
+            from { opacity: 0; transform: scale(0.5) rotate(-8deg); }
+            to   { opacity: 1; transform: none; }
         }
-        @keyframes successIn {
-            from { transform: scale(0.6); opacity: 0; }
-            to   { transform: scale(1); opacity: 1; }
-        }
-        @keyframes ring {
-            0%   { opacity: 0.9; transform: scale(0.92); }
-            100% { opacity: 0; transform: scale(1.25); }
-        }
-        .success-icon-wrap svg {
-            width: 40px;
-            height: 40px;
+        .success-check {
+            width: 44px;
+            height: 44px;
+            overflow: visible;
             fill: none;
             stroke: #FFFFFF;
             stroke-width: 3;
             stroke-linecap: round;
             stroke-linejoin: round;
+            stroke-dasharray: 30;
+            stroke-dashoffset: 30;
+            filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.95)) drop-shadow(0 0 14px rgba(var(--accent-rgb), 0.6));
+            animation: drawCheck 0.6s var(--ease-out) 0.45s forwards;
+        }
+        @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+        .success-ring {
+            position: absolute;
+            inset: 6px;
+            border: 1px solid rgba(var(--accent-rgb), 0.45);
+            border-radius: 26px;
+            opacity: 0;
+            animation: ring 2.4s ease-out 0.6s infinite;
+        }
+        .success-ring + .success-ring { animation-delay: 1.8s; }
+        @keyframes ring {
+            0%   { opacity: 0.9; transform: scale(0.9); }
+            100% { opacity: 0; transform: scale(1.35); }
+        }
+        .success-scan {
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            top: 18px;
+            height: 2px;
+            border-radius: 1px;
+            background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.95), transparent);
+            box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.9);
+            opacity: 0;
+            animation: scan 0.9s var(--ease-snap) 0.2s both;
+        }
+        @keyframes scan {
+            0%   { opacity: 0; transform: translateY(0); }
+            20%  { opacity: 1; }
+            100% { opacity: 0; transform: translateY(82px); }
+        }
+        .particle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: var(--s, 4px);
+            height: var(--s, 4px);
+            margin: calc(var(--s, 4px) / -2) 0 0 calc(var(--s, 4px) / -2);
+            border-radius: 1px;
+            background: var(--c, var(--accent));
+            box-shadow: 0 0 8px var(--c, var(--accent));
+            opacity: 0;
+            pointer-events: none;
+            animation: burst var(--d, 1s) var(--ease-out) var(--delay, 0.5s) forwards;
+        }
+        @keyframes burst {
+            0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+            100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.4); }
         }
         .success-kicker {
+            margin-bottom: 10px;
             font-family: var(--font-mono);
             font-size: 12px;
             font-weight: 600;
             letter-spacing: 2px;
             color: var(--accent);
-            margin-bottom: 8px;
+            animation: viewIn 0.5s var(--ease-out) 0.55s both;
         }
         .success-title {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            line-height: 1.1;
-            text-transform: uppercase;
             margin-bottom: 12px;
+            font-size: 28px;
+            line-height: 1.1;
+            animation: viewIn 0.5s var(--ease-out) 0.65s both;
         }
-        .success-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 36px; }
-        .btn-close {
-            padding: 16px 40px;
-            font-family: var(--font-sans);
+        .success-desc {
+            max-width: 30ch;
+            margin-bottom: 16px;
+            font-size: 15px;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            animation: viewIn 0.5s var(--ease-out) 0.75s both;
+        }
+        .success-id {
+            margin-bottom: 36px;
+            padding: 8px 14px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            animation: viewIn 0.5s var(--ease-out) 0.85s both;
+        }
+        .success-id[hidden] { display: none; }
+        .success-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 300px;
+            animation: viewIn 0.5s var(--ease-out) 0.95s both;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px 24px;
             font-size: 14px;
             font-weight: 700;
             letter-spacing: 0.8px;
             text-transform: uppercase;
-            color: var(--text-primary);
+            text-align: center;
+            border-radius: var(--radius-md);
+            transition: transform var(--t-fast) var(--ease-snap), background-color var(--t-base), border-color var(--t-base), box-shadow var(--t-base);
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn--primary {
+            color: #FFFFFF;
+            background: var(--accent);
+            box-shadow: var(--accent-glow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .btn--secondary {
             background: var(--surface-2);
             border: 1px solid var(--border-strong);
-            border-radius: var(--radius-md);
             box-shadow: var(--shadow-panel), var(--highlight);
-            cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
         }
-        .btn-close:active { transform: scale(0.97); background: var(--graphite); border-color: var(--accent); }
+        .btn--secondary:active { background: var(--graphite); border-color: var(--accent); }
 
-        /* Доступность */
+        /* =====================================================================
+           Плавающая панель заказа (glass)
+           ===================================================================== */
+        .floating-bar {
+            position: fixed;
+            z-index: 95;
+            left: var(--gutter);
+            right: var(--gutter);
+            bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+            max-width: calc(var(--max-width) - var(--gutter) * 2);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 8px 8px 18px;
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            opacity: 0;
+            transform: translateY(140%);
+            pointer-events: none;
+            visibility: hidden;
+            transition: transform var(--t-slow) var(--ease-out), opacity 0.3s ease, visibility 0s linear var(--t-slow);
+        }
+        .floating-bar.visible {
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+            visibility: visible;
+            transition: transform var(--t-slow) var(--ease-out), opacity 0.3s ease, visibility 0s;
+        }
+        .floating-bar.visible:active { transform: scale(0.98); }
+        .fb-info { display: flex; flex-direction: column; }
+        .fb-count {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .fb-total {
+            margin-top: 2px;
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            font-variant-numeric: tabular-nums;
+        }
+        .fb-total.tick { animation: tick 0.4s var(--ease-spring); }
+        @keyframes tick {
+            0%   { transform: translateY(0); }
+            40%  { transform: translateY(-3px); color: var(--accent); }
+            100% { transform: translateY(0); }
+        }
+        .fb-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            background: var(--accent);
+            border-radius: 10px;
+            box-shadow: var(--accent-glow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .fb-action svg { transition: transform var(--t-base) var(--ease-snap); }
+        .floating-bar:active .fb-action svg { transform: translateX(3px); }
+
+        /* =====================================================================
+           Нижняя навигация (glass)
+           ===================================================================== */
+        .bottom-nav {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: space-around;
+            height: calc(var(--nav-height) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+            border-top: 1px solid var(--border-strong);
+            transition: transform 0.4s var(--ease-out);
+        }
+        .bottom-nav.hidden { transform: translateY(100%); }
+        .nav-item {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            max-width: 160px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #636366;
+            user-select: none;
+            transition: color var(--t-base);
+        }
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            width: 28px;
+            height: 2px;
+            border-radius: 0 0 2px 2px;
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.9);
+            transform: translateX(-50%) scaleX(0);
+            transition: transform 0.35s var(--ease-snap);
+        }
+        .nav-item[aria-current="page"] { color: var(--accent); }
+        .nav-item[aria-current="page"]::before { transform: translateX(-50%) scaleX(1); }
+        .nav-item[aria-current="page"] .nav-icon { animation: navBounce 0.45s var(--ease-spring); }
+        @keyframes navBounce {
+            0%   { transform: scale(0.85); }
+            100% { transform: scale(1); }
+        }
+        .nav-icon { display: flex; transition: transform var(--t-fast); }
+        .nav-item:active .nav-icon { transform: scale(0.88); }
+
+        /* =====================================================================
+           Тост-уведомления
+           ===================================================================== */
+        .toast {
+            position: fixed;
+            z-index: 200;
+            top: calc(12px + var(--safe-top));
+            left: 50%;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            width: calc(100% - var(--gutter) * 2);
+            max-width: 420px;
+            padding: 14px 16px;
+            font-size: 14px;
+            line-height: 1.45;
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+            border: 1px solid rgba(var(--danger-rgb), 0.35);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), 0 0 24px rgba(var(--danger-rgb), 0.12);
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -20px);
+            pointer-events: none;
+            transition: opacity 0.3s var(--ease-out), transform 0.4s var(--ease-out), visibility 0s linear 0.4s;
+        }
+        .toast.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, 0);
+            transition: opacity 0.3s var(--ease-out), transform 0.4s var(--ease-out), visibility 0s;
+        }
+        .toast--info { border-color: var(--accent-line); box-shadow: var(--shadow-panel), 0 0 24px rgba(var(--accent-rgb), 0.12); }
+        .toast-icon { flex-shrink: 0; margin-top: 1px; color: var(--danger); }
+        .toast--info .toast-icon { color: var(--accent); }
+
+        /* =====================================================================
+           Доступность
+           ===================================================================== */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
+                animation-delay: 0s !important;
                 transition-duration: 0.01ms !important;
             }
+            .particle { display: none; }
         }
     </style>
 </head>
 <body>
+    <div class="atmosphere" aria-hidden="true"></div>
 
     <!-- ===================== УСЛУГИ ===================== -->
-    <main id="view-services" class="view active">
-        <header>
-            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / СЕРВИС</div>
-            <h1>Услуги</h1>
+    <main id="view-services" class="view active" aria-labelledby="services-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / СЕРВИС</div>
+            <h1 id="services-title">Услуги</h1>
             <p class="desc" id="service-desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
         </header>
 
-        <div class="segment-control-wrapper">
-            <div class="segment-slider" id="segment-slider"></div>
-            <div class="segment active" id="tab-b2c" onclick="switchMode('b2c')">Частным клиентам</div>
-            <div class="segment" id="tab-b2b" onclick="switchMode('b2b')">Для бизнеса</div>
+        <div class="segment-control" id="segment" data-mode="b2c" role="tablist" aria-label="Тип клиента">
+            <div class="segment-slider" aria-hidden="true"></div>
+            <button type="button" class="segment" role="tab" data-mode="b2c" aria-selected="true">Частным клиентам</button>
+            <button type="button" class="segment" role="tab" data-mode="b2b" aria-selected="false">Для бизнеса</button>
         </div>
 
         <div class="section-meta" id="services-meta">Каталог</div>
-        <div class="list-group" id="services-container"></div>
+        <div class="list-group" id="services-list"></div>
     </main>
 
     <!-- ===================== КАБИНЕТ ===================== -->
-    <main id="view-cabinet" class="view">
-        <header>
-            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / ПРОФИЛЬ</div>
-            <h1>Кабинет</h1>
+    <main id="view-cabinet" class="view" aria-labelledby="cabinet-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / ПРОФИЛЬ</div>
+            <div class="view-header-row">
+                <h1 id="cabinet-title">Кабинет</h1>
+                <button type="button" class="icon-btn icon-btn--ghost" id="orders-refresh" aria-label="Обновить список заявок">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+                </button>
+            </div>
             <p class="desc">История ваших заявок и их статусы.</p>
         </header>
-        <div class="list-group" id="orders-container">
-            <div class="empty-cabinet"><span class="loading-text">ЗАГРУЗКА ИСТОРИИ</span></div>
-        </div>
+        <div class="list-group" id="orders-list" aria-live="polite" aria-busy="false"></div>
     </main>
 
     <!-- ===================== КОНТАКТЫ ===================== -->
-    <main id="view-contacts" class="view">
-        <header>
-            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / ИНФО</div>
-            <h1>Контакты</h1>
+    <main id="view-contacts" class="view" aria-labelledby="contacts-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / ИНФО</div>
+            <h1 id="contacts-title">Контакты</h1>
             <p class="desc">Свяжитесь с нами удобным способом.</p>
         </header>
 
-        <a href="tel:+79918886017" class="contact-card">
-            <div class="contact-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            </div>
-            <div class="contact-info">
-                <h3>+7 (991) 888-60-17</h3>
-                <p>Телефон / WhatsApp</p>
-            </div>
-            <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-        <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" rel="noopener" class="contact-card">
-            <div class="contact-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
-            </div>
-            <div class="contact-info">
-                <h3>@IvanMiroshnichenkoo</h3>
-                <p>Написать в Telegram</p>
-            </div>
-            <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-        <div class="contact-card">
-            <div class="contact-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <div class="contact-info">
-                <h3>Инженерный центр Эливэйт</h3>
-                <p>Выезд на дом и в офис по договоренности</p>
+        <div class="list-group">
+            <a href="tel:+79918886017" class="contact-card" data-haptic>
+                <div class="contact-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="contact-info">
+                    <h3>+7 (991) 888-60-17</h3>
+                    <p>Телефон / WhatsApp</p>
+                </div>
+                <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" rel="noopener" class="contact-card" id="tg-contact" data-haptic>
+                <div class="contact-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+                </div>
+                <div class="contact-info">
+                    <h3>@IvanMiroshnichenkoo</h3>
+                    <p>Написать в Telegram</p>
+                </div>
+                <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <div class="contact-card">
+                <div class="contact-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="contact-info">
+                    <h3>Инженерный центр Эливэйт</h3>
+                    <p>Выезд на дом и в офис по договоренности</p>
+                </div>
             </div>
         </div>
     </main>
 
     <!-- ===================== ОФОРМЛЕНИЕ ===================== -->
-    <main id="view-summary" class="view">
-        <header>
-            <div class="brand-subtitle"><span class="brand-dot"></span><span id="summary-subtitle">ОФОРМЛЕНИЕ</span></div>
+    <main id="view-summary" class="view" aria-labelledby="summary-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span><span id="summary-kicker">ОФОРМЛЕНИЕ</span></div>
             <h1 id="summary-title">Ваш заказ</h1>
             <p class="desc">Проверьте выбранные услуги и укажите детали заявки.</p>
         </header>
 
         <div class="list-group">
-
-            <div class="ai-panel" id="ai-upsell-container">
+            <section class="ai-panel" id="ai-panel" hidden aria-live="polite">
                 <div class="ai-head"><span class="ai-tag">AI</span>Системная рекомендация</div>
-                <div class="ai-text" id="ai-upsell-text"><span class="loading-text">АНАЛИЗ ДАННЫХ</span></div>
-            </div>
+                <div class="ai-text" id="ai-text"></div>
+            </section>
 
-            <div class="panel summary-panel">
+            <section class="panel summary-panel" aria-label="Состав заказа">
                 <div id="summary-list"></div>
-            </div>
+                <div class="summary-total">
+                    <span class="summary-total-label">ИТОГО</span>
+                    <span class="summary-total-value" id="summary-total">0 ₽</span>
+                </div>
+                <p class="summary-note">Стоимость ориентировочная — точную сумму мастер назовёт после диагностики.</p>
+            </section>
 
             <div class="section-meta" style="margin-top: 12px;">Детали заявки</div>
 
-            <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 16px;">
-                <div class="field">
-                    <label class="field-label" for="device-type">Тип устройства</label>
-                    <select id="device-type" class="input-base">
-                        <option value="Ноутбук">Ноутбук</option>
-                        <option value="Системный блок">Системный блок</option>
-                        <option value="Техника Apple">Техника Apple</option>
-                        <option value="Другое">Другое</option>
-                    </select>
-                </div>
+            <form id="order-form" class="form-group" novalidate autocomplete="on">
+                <div class="form-group" id="fields-b2c">
+                    <div class="field">
+                        <label class="field-label" for="device-type">Тип устройства</label>
+                        <select id="device-type" name="device" class="input">
+                            <option value="Ноутбук">Ноутбук</option>
+                            <option value="Системный блок">Системный блок</option>
+                            <option value="Техника Apple">Техника Apple</option>
+                            <option value="Другое">Другое</option>
+                        </select>
+                    </div>
 
-                <div class="field">
-                    <label class="field-label" for="problem-desc">Кратко опишите проблему · необязательно</label>
-                    <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" maxlength="500"></textarea>
-                </div>
+                    <div class="field">
+                        <label class="field-label" for="problem-desc">Опишите проблему <span class="opt">· необязательно</span></label>
+                        <textarea id="problem-desc" name="problem" class="input" placeholder="Например: шумит, не включается..." rows="3" maxlength="500"></textarea>
+                        <div class="field-hint" id="problem-counter" aria-live="off">0 / 500</div>
+                    </div>
 
-                <div class="field">
-                    <span class="field-label">Фото проблемы · необязательно</span>
-                    <div class="file-upload-container">
-                        <label class="file-dropzone" id="dropzone-label">
-                            <span class="file-dropzone-icon">
+                    <div class="field">
+                        <span class="field-label" id="photo-label">Фото проблемы <span class="opt">· необязательно</span></span>
+                        <button type="button" class="dropzone" id="dropzone" aria-describedby="photo-label">
+                            <span class="dropzone-icon" aria-hidden="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                             </span>
-                            <div>
-                                <div class="file-dropzone-text">Прикрепить фото проблемы</div>
-                                <div class="file-dropzone-subtext">Нажмите для выбора из галереи</div>
+                            <span>
+                                <span class="dropzone-title">Прикрепить фото</span>
+                                <span class="dropzone-sub">JPEG, PNG или WebP · до 8 МБ</span>
+                            </span>
+                        </button>
+                        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" hidden>
+                        <div class="preview" id="preview" hidden>
+                            <div class="preview-thumb">
+                                <div class="skeleton" id="preview-skeleton"></div>
+                                <img id="preview-img" class="preview-img" alt="Превью фото">
                             </div>
-                            <input type="file" id="problem-photo" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-                        </label>
-                        <div class="preview-wrapper" id="preview-wrapper">
-                            <img id="preview-img" class="preview-img" src="" alt="Превью">
-                            <span class="preview-name" id="preview-name">photo.jpg</span>
-                            <button type="button" class="btn-remove-photo" onclick="removePhoto()" aria-label="Удалить фото">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <div class="preview-meta">
+                                <div class="preview-name" id="preview-name"></div>
+                                <div class="preview-size" id="preview-size"></div>
+                            </div>
+                            <button type="button" class="icon-btn icon-btn--danger" id="photo-remove" aria-label="Удалить фото">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 16px;">
-                <div class="field">
-                    <label class="field-label" for="b2b-workplaces">Количество рабочих мест, шт.</label>
-                    <input type="number" id="b2b-workplaces" class="input-base" placeholder="Например: 15" min="1" max="100000" inputmode="numeric">
+                <div class="form-group" id="fields-b2b" hidden>
+                    <div class="field">
+                        <label class="field-label" for="b2b-workplaces">Рабочих мест, шт. <span class="opt">· необязательно</span></label>
+                        <input type="text" id="b2b-workplaces" name="workplaces" class="input" placeholder="Например: 15" inputmode="numeric" maxlength="6" aria-describedby="workplaces-error">
+                        <span id="workplaces-error" class="field-error" hidden>Укажите число от 1 до 100 000</span>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="b2b-office">Адрес или площадь офиса <span class="opt">· необязательно</span></label>
+                        <input type="text" id="b2b-office" name="office_info" class="input" placeholder="Например: БЦ Эливэйт, 100 кв.м" maxlength="200" autocomplete="street-address">
+                    </div>
                 </div>
-                <div class="field">
-                    <label class="field-label" for="b2b-office">Адрес или площадь офиса, кв.м</label>
-                    <input type="text" id="b2b-office" class="input-base" placeholder="Например: БЦ Эливэйт, 100 кв.м" maxlength="200">
-                </div>
-            </div>
 
-            <div class="field" style="margin-top: 4px;">
-                <label class="field-label" for="client-phone">Ваш номер телефона <span class="req">*</span></label>
-                <input type="tel" id="client-phone" class="input-base" placeholder="+7 (___) ___-__-__" maxlength="18" inputmode="tel" autocomplete="tel">
-                <span id="phone-error" class="field-error">Введите корректный номер (11 цифр)</span>
-            </div>
+                <div class="field">
+                    <label class="field-label" for="client-phone">Ваш номер телефона <span class="req">*</span></label>
+                    <input type="tel" id="client-phone" name="phone" class="input" placeholder="+7 (___) ___-__-__" maxlength="18" inputmode="tel" autocomplete="tel" enterkeyhint="done" required aria-describedby="phone-error">
+                    <span id="phone-error" class="field-error" hidden>Введите номер полностью: +7 и 10 цифр</span>
+                </div>
+            </form>
         </div>
     </main>
 
     <!-- ===================== УСПЕХ ===================== -->
-    <main id="view-success" class="view">
-        <div class="success-icon-wrap">
-            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <main id="view-success" class="view" aria-labelledby="success-title">
+        <div class="success-emblem" id="success-emblem" aria-hidden="true">
+            <div class="success-ring"></div>
+            <div class="success-ring"></div>
+            <div class="success-core">
+                <svg class="success-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="success-scan"></div>
         </div>
-        <div class="success-kicker">СИСТЕМА</div>
-        <div class="success-title">Заявка принята</div>
-        <div class="success-desc">Детали переданы специалисту в чат.</div>
-        <button class="btn-close" onclick="tg.close()">Закрыть</button>
+        <div class="success-kicker">СИСТЕМА / ПРИНЯТО</div>
+        <h1 class="success-title" id="success-title">Заявка принята</h1>
+        <p class="success-desc">Детали переданы специалисту. Мы свяжемся с вами в ближайшее время.</p>
+        <div class="success-id" id="success-id" hidden></div>
+        <div class="success-actions">
+            <button type="button" class="btn btn--primary" id="success-orders">Мои заявки</button>
+            <button type="button" class="btn btn--secondary" id="success-close">Закрыть</button>
+        </div>
     </main>
 
     <!-- ===================== ПЛАВАЮЩАЯ ПАНЕЛЬ ===================== -->
-    <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
-        <div class="fb-info">
+    <button type="button" id="floating-bar" class="floating-bar" aria-label="Перейти к оформлению">
+        <span class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
             <span class="fb-total" id="fb-total">0 ₽</span>
-        </div>
-        <div class="fb-action">
+        </span>
+        <span class="fb-action">
             Далее
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-    </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+    </button>
 
     <!-- ===================== НАВИГАЦИЯ ===================== -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="navigate('services')" id="nav-services">
-            <span class="nav-icon">
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Разделы">
+        <button type="button" class="nav-item" data-view="services" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
             </span>
             <span>Услуги</span>
-        </div>
-        <div class="nav-item" onclick="navigate('cabinet')" id="nav-cabinet">
-            <span class="nav-icon">
+        </button>
+        <button type="button" class="nav-item" data-view="cabinet">
+            <span class="nav-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
             </span>
             <span>Кабинет</span>
-        </div>
-        <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
-            <span class="nav-icon">
+        </button>
+        <button type="button" class="nav-item" data-view="contacts">
+            <span class="nav-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </span>
             <span>Контакты</span>
-        </div>
+        </button>
     </nav>
 
+    <div class="toast" id="toast" role="alert">
+        <svg class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="toast-text"></span>
+    </div>
+
     <script>
-        // Если telegram-web-app.js не загрузился, интерфейс всё равно отрисуется
+    (() => {
+        'use strict';
+
+        /* ==================================================================
+           Telegram WebApp: безопасная обёртка
+           Если telegram-web-app.js не загрузился, интерфейс всё равно работает.
+           ================================================================== */
         const noop = () => {};
         const tg = (window.Telegram && window.Telegram.WebApp) || {
             initData: '', initDataUnsafe: {},
-            expand: noop, ready: noop, close: noop,
-            setHeaderColor: noop, setBackgroundColor: noop,
-            showAlert: m => alert(m),
-            MainButton: { text: '', setParams: noop, show: noop, hide: noop, onClick: noop, showProgress: noop, hideProgress: noop }
+            ready: noop, expand: noop, close: noop,
+            MainButton: { setParams: noop, show: noop, hide: noop, onClick: noop, showProgress: noop, hideProgress: noop, enable: noop, disable: noop }
+        };
+        const isVer = v => { try { return typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast(v); } catch (_) { return false; } };
+        /* Любой вызов Telegram API не должен ронять приложение */
+        const call = (obj, method, ...args) => {
+            try { return obj && typeof obj[method] === 'function' ? obj[method](...args) : undefined; }
+            catch (_) { return undefined; }
         };
 
-        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        const authHeaders = () => ({ 'X-Init-Data': tg.initData });
-        function fmtDate(v) {
-            const d = new Date(String(v).replace(' ', 'T') + 'Z');
-            return isNaN(d) ? esc(v) : d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+        const HF = isVer('6.1') ? tg.HapticFeedback : null;
+        const haptic = {
+            tap:     () => call(HF, 'impactOccurred', 'light'),
+            press:   () => call(HF, 'impactOccurred', 'medium'),
+            select:  () => call(HF, 'selectionChanged'),
+            success: () => call(HF, 'notificationOccurred', 'success'),
+            error:   () => call(HF, 'notificationOccurred', 'error')
+        };
+
+        call(tg, 'ready');
+        call(tg, 'expand');
+        if (isVer('6.1')) {
+            call(tg, 'setHeaderColor', '#000000');
+            call(tg, 'setBackgroundColor', '#000000');
         }
-        let isSubmitting = false;
-        let upsellCtrl = null;
+        if (isVer('7.10')) call(tg, 'setBottomBarColor', '#000000');
+        if (isVer('7.7')) call(tg, 'disableVerticalSwipes');
 
-        tg.expand();
-        tg.ready();
+        const MainButton = tg.MainButton;
+        const BackButton = isVer('6.1') ? tg.BackButton : null;
+        const canConfirmClose = isVer('6.2');
+        const authHeaders = () => ({ 'X-Init-Data': tg.initData || '' });
 
-        try {
-            tg.setHeaderColor('#000000');
-            tg.setBackgroundColor('#000000');
-        } catch (e) {
-            console.log("Telegram API color setting not supported in this version");
+        /* ==================================================================
+           Каталог (цены и итог сервер пересчитывает сам — здесь только витрина)
+           ================================================================== */
+        const CATALOG = Object.freeze({
+            b2c: Object.freeze([
+                { id: 'c1',  name: 'Диагностика компьютера', price: 0, label: 'Бесплатно*', subtitle: 'С последующим ремонтом' },
+                { id: 'c2',  name: 'Комплексная чистка ПК + замена термопасты', price: 1500, label: 'от 1 500 ₽', subtitle: 'Время работы ~1–2 часа' },
+                { id: 'c3',  name: 'Чистка ноутбука от пыли и перегрева', price: 2000, label: 'от 2 000 ₽', subtitle: 'С разбором корпуса и заменой пасты' },
+                { id: 'c4',  name: 'Установка Windows (с активацией)', price: 1500, label: 'от 1 500 ₽', subtitle: 'Включая базовые драйверы' },
+                { id: 'c5',  name: 'Установка пакета Microsoft Office', price: 500, label: 'от 500 ₽', subtitle: 'Word, Excel, PowerPoint' },
+                { id: 'c6',  name: 'Сборка ПК из комплектующих', price: 2500, label: 'от 2 500 ₽', subtitle: 'Аккуратный кабель-менеджмент' },
+                { id: 'c7',  name: 'Оптимизация и чистка от вирусов', price: 1000, label: 'от 1 000 ₽', subtitle: 'Ускорение работы системы' },
+                { id: 'c8',  name: 'Замена матрицы / экрана', price: 2500, label: 'от 2 500 ₽', subtitle: 'Цена детали рассчитывается отдельно' },
+                { id: 'c9',  name: 'Ремонт после залития', price: 2000, label: 'от 2 000 ₽', subtitle: 'Ультразвуковая чистка платы' },
+                { id: 'c10', name: 'Восстановление данных', price: 1000, label: 'от 1 000 ₽', subtitle: 'С поврежденных HDD / SSD / флешек' }
+            ]),
+            b2b: Object.freeze([
+                { id: 'b1', name: 'Организация рабочего места под ключ', price: 3000, label: 'от 3 000 ₽ / место', subtitle: 'Сборка, ПО, настройка сети', details: 'Включает: распаковку и расстановку техники, кабель-менеджмент, базовую настройку ОС, подключение к офисной сети и принтерам.' },
+                { id: 'b2', name: 'Настройка локальной сети и серверов', price: 10000, label: 'от 10 000 ₽', subtitle: 'Роутеры, NAS, Active Directory', details: 'Включает: аудит сети, настройку роутеров/коммутаторов, развертывание файловых хранилищ (NAS) и распределение прав доступа.' },
+                { id: 'b3', name: 'IT-аутсорсинг офиса', price: 0, label: 'По договоренности', subtitle: 'Регулярное обслуживание техники', details: 'Комплексная поддержка: плановые выезды, удаленная помощь сотрудникам (Helpdesk), мониторинг серверов 24/7.' },
+                { id: 'b4', name: 'Легализация и установка корпоративного ПО', price: 2000, label: 'от 2 000 ₽ / ПК', subtitle: '1C, CRM-системы, офисные пакеты', details: 'Аудит текущего софта, подбор корпоративных лицензий, централизованная установка 1С и офисных пакетов.' },
+                { id: 'b5', name: 'Настройка систем резервного копирования', price: 5000, label: 'от 5 000 ₽', subtitle: 'Защита корпоративных данных', details: 'Настройка автоматического защищенного бэкапа критически важных баз данных и документов на локальные или облачные серверы.' },
+                { id: 'b6', name: 'Модернизация корпоративного парка ПК', price: 0, label: 'Индивидуальный расчет', subtitle: 'Аудит и апгрейд железа', details: 'Инвентаризация оборудования, подбор и закупка комплектующих (SSD, RAM), бережная установка с сохранением всех данных.' }
+            ])
+        });
+        const MODE_TEXT = Object.freeze({
+            b2c: { desc: 'Ремонт, обслуживание и настройка. Выберите необходимое.', button: 'ОФОРМИТЬ ЗАЯВКУ', kicker: 'ОФОРМЛЕНИЕ' },
+            b2b: { desc: 'Комплексные IT-решения и обслуживание для вашей компании.', button: 'ПОЛУЧИТЬ СМЕТУ', kicker: 'ОФОРМЛЕНИЕ / БИЗНЕС' }
+        });
+        const MAX_ITEMS = 20;                        // как MAX_ITEMS на сервере
+        const MAX_PHOTO_BYTES = 8 * 1024 * 1024;     // как MAX_PHOTO_BYTES на сервере
+        const MAX_RAW_PHOTO_BYTES = 40 * 1024 * 1024;
+        const REQUEST_TIMEOUT = 30000;
+        const FALLBACK_REC = '<b>Регулярное обслуживание</b> продлевает срок службы техники.';
+        const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        /* ==================================================================
+           Состояние
+           ================================================================== */
+        const state = {
+            mode: 'b2c',
+            view: 'services',
+            cart: new Map(),
+            photo: null,          // { blob, name, url }
+            photoTask: null,      // Promise оптимизации фото
+            photoToken: 0,        // защищает от гонки при быстрой замене фото
+            isSubmitting: false,
+            upsellCtrl: null,
+            ordersCtrl: null,
+            shownTotal: 0,
+            countRaf: 0,
+            toastTimer: 0,
+            particlesTimer: 0
+        };
+
+        /* ==================================================================
+           DOM-утилиты: только createElement + textContent, без innerHTML
+           ================================================================== */
+        const $ = id => document.getElementById(id);
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+
+        function el(tag, props, ...children) {
+            const node = document.createElement(tag);
+            if (props) {
+                for (const [key, value] of Object.entries(props)) {
+                    if (value == null || value === false) continue;
+                    if (key === 'class') node.className = value;
+                    else if (key === 'text') node.textContent = value;
+                    else if (key === 'dataset') Object.assign(node.dataset, value);
+                    else if (key === 'style') {
+                        for (const [prop, v] of Object.entries(value)) node.style.setProperty(prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase()), v);
+                    }
+                    else node.setAttribute(key, value === true ? '' : String(value));
+                }
+            }
+            for (const child of children.flat(Infinity)) {
+                if (child == null || child === false) continue;
+                node.append(child instanceof Node ? child : String(child));
+            }
+            return node;
         }
 
-        function updateButtonTheme() {
-            tg.MainButton.setParams({ color: '#007BFF', text_color: '#FFFFFF' });
+        function svg(size, shapes, extra) {
+            const root = document.createElementNS(SVG_NS, 'svg');
+            const attrs = Object.assign({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' }, extra);
+            for (const [k, v] of Object.entries(attrs)) root.setAttribute(k, v);
+            for (const [tag, a] of shapes) {
+                const shape = document.createElementNS(SVG_NS, tag);
+                for (const [k, v] of Object.entries(a)) shape.setAttribute(k, v);
+                root.append(shape);
+            }
+            return root;
         }
+        const ICON = {
+            check: () => svg(16, [['polyline', { points: '20 6 9 17 4 12' }]], { 'stroke-width': 3 }),
+            inbox: () => svg(24, [['polyline', { points: '22 12 16 12 14 15 10 15 8 12 2 12' }], ['path', { d: 'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z' }]], { 'stroke-width': 1.8 }),
+            alert: () => svg(24, [['circle', { cx: 12, cy: 12, r: 10 }], ['line', { x1: 12, y1: 8, x2: 12, y2: 12 }], ['line', { x1: 12, y1: 16, x2: 12.01, y2: 16 }]], { 'stroke-width': 1.8 })
+        };
 
-        const servicesDataB2C = [
-            { id: 'c1', name: "Диагностика компьютера", price: 0, label: "Бесплатно*", subtitle: "С последующим ремонтом" },
-            { id: 'c2', name: "Комплексная чистка ПК + замена термопасты", price: 1500, label: "от 1 500 ₽", subtitle: "Время работы ~1–2 часа" },
-            { id: 'c3', name: "Чистка ноутбука от пыли и перегрева", price: 2000, label: "от 2 000 ₽", subtitle: "С разбором корпуса и заменой пасты" },
-            { id: 'c4', name: "Установка Windows (с активацией)", price: 1500, label: "от 1 500 ₽", subtitle: "Включая базовые драйверы" },
-            { id: 'c5', name: "Установка пакета Microsoft Office", price: 500, label: "от 500 ₽", subtitle: "Word, Excel, PowerPoint" },
-            { id: 'c6', name: "Сборка ПК из комплектующих", price: 2500, label: "от 2 500 ₽", subtitle: "Аккуратный кабель-менеджмент" },
-            { id: 'c7', name: "Оптимизация и чистка от вирусов", price: 1000, label: "от 1 000 ₽", subtitle: "Ускорение работы системы" },
-            { id: 'c8', name: "Замена матрицы / экрана", price: 2500, label: "от 2 500 ₽", subtitle: "Цена детали рассчитывается отдельно" },
-            { id: 'c9', name: "Ремонт после залития", price: 2000, label: "от 2 000 ₽", subtitle: "Ультразвуковая чистка платы" },
-            { id: 'c10', name: "Восстановление данных", price: 1000, label: "от 1 000 ₽", subtitle: "С поврежденных HDD / SSD / флешек" }
-        ];
-
-        const servicesDataB2B = [
-            { id: 'b1', name: "Организация рабочего места под ключ", price: 3000, label: "от 3 000 ₽ / место", subtitle: "Сборка, ПО, настройка сети", details: "Включает: распаковку и расстановку техники, кабель-менеджмент, базовую настройку ОС, подключение к офисной сети и принтерам." },
-            { id: 'b2', name: "Настройка локальной сети и серверов", price: 10000, label: "от 10 000 ₽", subtitle: "Роутеры, NAS, Active Directory", details: "Включает: аудит сети, настройку роутеров/коммутаторов, развертывание файловых хранилищ (NAS) и распределение прав доступа." },
-            { id: 'b3', name: "IT-аутсорсинг офиса", price: 0, label: "По договоренности", subtitle: "Регулярное обслуживание техники", details: "Комплексная поддержка: плановые выезды, удаленная помощь сотрудникам (Helpdesk), мониторинг серверов 24/7." },
-            { id: 'b4', name: "Легализация и установка корпоративного ПО", price: 2000, label: "от 2 000 ₽ / ПК", subtitle: "1C, CRM-системы, офисные пакеты", details: "Аудит текущего софта, подбор корпоративных лицензий, централизованная установка 1С и офисных пакетов." },
-            { id: 'b5', name: "Настройка систем резервного копирования", price: 5000, label: "от 5 000 ₽", subtitle: "Защита корпоративных данных", details: "Настройка автоматического защищенного бэкапа критически важных баз данных и документов на локальные или облачные серверы." },
-            { id: 'b6', name: "Модернизация корпоративного парка ПК", price: 0, label: "Индивидуальный расчет", subtitle: "Аудит и апгрейд железа", details: "Инвентаризация оборудования, подбор и закупка комплектующих (SSD, RAM), бережная установка с сохранением всех данных." }
-        ];
-
-        let currentMode = 'b2c';
-        let cart = new Map();
-        let currentView = 'services';
-        let selectedFile = null;
-
-        function pluralize(n, forms) {
+        const pluralize = (n, forms) => {
             const n100 = n % 100, n10 = n % 10;
             if (n100 > 10 && n100 < 20) return forms[2];
             if (n10 > 1 && n10 < 5) return forms[1];
             if (n10 === 1) return forms[0];
             return forms[2];
+        };
+        const rub = n => `${Math.round(n).toLocaleString('ru-RU')} ₽`;
+        const totalLabel = n => (n > 0 ? rub(n) : 'Смета');
+        const fmtBytes = b => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} МБ` : `${Math.max(1, Math.round(b / 1024))} КБ`);
+        function fmtDate(value) {
+            const d = new Date(String(value ?? '').replace(' ', 'T') + 'Z');
+            return Number.isNaN(d.getTime()) ? String(value ?? '') : d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+        }
+        const cartTotal = () => { let s = 0; for (const item of state.cart.values()) s += item.price; return s; };
+
+        /* fetch с таймаутом и внешней отменой; всегда пытается разобрать JSON */
+        async function request(url, { signal, timeout = REQUEST_TIMEOUT, ...options } = {}) {
+            const ctrl = new AbortController();
+            let timedOut = false;
+            const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeout);
+            const onAbort = () => ctrl.abort();
+            if (signal) {
+                if (signal.aborted) ctrl.abort();
+                else signal.addEventListener('abort', onAbort, { once: true });
+            }
+            try {
+                const res = await fetch(url, { ...options, signal: ctrl.signal, credentials: 'same-origin' });
+                const data = await res.json().catch(() => null);
+                return { ok: res.ok, status: res.status, data };
+            } catch (e) {
+                if (timedOut) { const err = new Error('Сервер не ответил вовремя. Проверьте интернет и попробуйте ещё раз.'); err.name = 'TimeoutError'; throw err; }
+                throw e;
+            } finally {
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener('abort', onAbort);
+            }
+        }
+        function errorMessage(status, data, fallback) {
+            const detail = data && data.detail;
+            if (typeof detail === 'string' && detail.length < 200) return detail;
+            if (status === 401) return 'Сессия устарела. Закройте и откройте приложение заново.';
+            if (status === 413) return 'Фото слишком большое (максимум 8 МБ).';
+            if (status === 429) return 'Слишком много запросов. Попробуйте через минуту.';
+            return fallback;
+        }
+        const netMessage = (e, fallback) =>
+            e && e.name === 'TimeoutError' ? e.message
+            : e instanceof TypeError ? 'Нет связи с сервером. Проверьте интернет.'
+            : (e && e.message) || fallback;
+
+        /* ==================================================================
+           Тост
+           ================================================================== */
+        function toast(message, kind = 'error') {
+            const box = $('toast');
+            $('toast-text').textContent = message;
+            box.classList.toggle('toast--info', kind === 'info');
+            box.classList.add('visible');
+            clearTimeout(state.toastTimer);
+            state.toastTimer = setTimeout(() => box.classList.remove('visible'), 4000);
+            if (kind === 'error') haptic.error();
+        }
+        function hideToast() {
+            clearTimeout(state.toastTimer);
+            $('toast').classList.remove('visible');
+        }
+
+        /* ==================================================================
+           Каталог
+           ================================================================== */
+        function renderServices() {
+            const items = CATALOG[state.mode];
+            $('services-meta').textContent = `Каталог · ${items.length} ${pluralize(items.length, ['позиция', 'позиции', 'позиций'])}`;
+            const frag = document.createDocumentFragment();
+            items.forEach((s, i) => {
+                frag.append(el('button', {
+                    type: 'button',
+                    class: 'card card-enter',
+                    role: 'checkbox',
+                    'aria-checked': String(state.cart.has(s.id)),
+                    dataset: { id: s.id },
+                    style: { animationDelay: `${i * 35}ms` }
+                },
+                    el('span', { class: 'card-index', 'aria-hidden': 'true', text: String(i + 1).padStart(2, '0') }),
+                    el('span', { class: 'card-content' },
+                        el('span', { class: 'card-title', text: s.name }),
+                        el('span', { class: 'card-subtitle', text: s.subtitle })
+                    ),
+                    el('span', { class: 'card-side' },
+                        el('span', { class: 'card-price', text: s.label }),
+                        el('span', { class: 'checkbox', 'aria-hidden': 'true' }, ICON.check())
+                    )
+                ));
+            });
+            $('services-list').replaceChildren(frag);
+        }
+
+        function toggleService(card) {
+            const service = CATALOG[state.mode].find(s => s.id === card.dataset.id);
+            if (!service) return;
+            if (state.cart.has(service.id)) {
+                state.cart.delete(service.id);
+                haptic.tap();
+            } else {
+                if (state.cart.size >= MAX_ITEMS) { toast(`Можно выбрать не больше ${MAX_ITEMS} услуг.`); return; }
+                state.cart.set(service.id, service);
+                haptic.press();
+            }
+            card.classList.remove('card-enter');
+            card.style.removeProperty('animation-delay');
+            card.setAttribute('aria-checked', String(state.cart.has(service.id)));
+            updateCart();
         }
 
         function switchMode(mode) {
-            if (currentMode === mode) return;
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-            currentMode = mode;
-            cart.clear();
-            updateCartState();
-
-            const tabB2C = document.getElementById('tab-b2c');
-            const tabB2B = document.getElementById('tab-b2b');
-            const desc = document.getElementById('service-desc');
-
-            if (mode === 'b2b') {
-                tabB2C.classList.remove('active');
-                tabB2B.classList.add('active');
-                document.body.classList.add('theme-b2b');
-                desc.innerText = "Комплексные IT-решения и обслуживание для вашей компании.";
-            } else {
-                tabB2B.classList.remove('active');
-                tabB2C.classList.add('active');
-                document.body.classList.remove('theme-b2b');
-                desc.innerText = "Ремонт, обслуживание и настройка. Выберите необходимое.";
-            }
-
-            updateButtonTheme();
+            if (mode === state.mode || !CATALOG[mode]) return;
+            haptic.select();
+            state.mode = mode;
+            state.cart.clear();
+            const seg = $('segment');
+            seg.dataset.mode = mode;
+            seg.querySelectorAll('.segment').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
+            $('service-desc').textContent = MODE_TEXT[mode].desc;
             renderServices();
+            updateCart();
         }
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                selectedFile = file;
-                compressImage(file).then(b => { if (b && selectedFile === file) selectedFile = b; });
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('preview-img').src = e.target.result;
-                    document.getElementById('preview-name').innerText = file.name;
-                    document.getElementById('dropzone-label').style.display = 'none';
-                    document.getElementById('preview-wrapper').style.display = 'flex';
-                }
-                reader.readAsDataURL(file);
+        /* Сумма в плавающей панели «прокручивается» к новому значению */
+        function animateTotal(target) {
+            const node = $('fb-total');
+            cancelAnimationFrame(state.countRaf);
+            const from = state.shownTotal;
+            state.shownTotal = target;
+            if (target <= 0) { node.textContent = 'Смета'; return; }
+            if (from === target || REDUCED_MOTION) { node.textContent = rub(target); return; }
+            node.classList.remove('tick');
+            void node.offsetWidth;
+            node.classList.add('tick');
+            const start = performance.now(), duration = 420;
+            const step = now => {
+                const t = Math.min(1, (now - start) / duration);
+                node.textContent = rub(from + (target - from) * (1 - Math.pow(1 - t, 3)));
+                if (t < 1) state.countRaf = requestAnimationFrame(step);
+            };
+            state.countRaf = requestAnimationFrame(step);
+        }
+
+        function updateCart() {
+            const size = state.cart.size;
+            const bar = $('floating-bar');
+            if (size > 0) {
+                $('fb-count').textContent = `${size} ${pluralize(size, ['услуга', 'услуги', 'услуг'])}`;
+                animateTotal(cartTotal());
+                bar.classList.toggle('visible', state.view === 'services');
+                if (canConfirmClose) call(tg, 'enableClosingConfirmation');
+            } else {
+                cancelAnimationFrame(state.countRaf);
+                bar.classList.remove('visible');
+                state.shownTotal = 0;
+                if (canConfirmClose) call(tg, 'disableClosingConfirmation');
+                if (state.view === 'summary') navigate('services');
             }
         }
 
-        function compressImage(file, maxSide = 1600) {
+        /* ==================================================================
+           Навигация
+           ================================================================== */
+        function navigate(view) {
+            if (!$(`view-${view}`)) return;
+            if (view === 'summary' && state.cart.size === 0) view = 'services';
+            const changed = view !== state.view;
+            if (changed) hideToast();
+            if (changed && view !== 'success') haptic.select();
+            state.view = view;
+
+            document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${view}`));
+            document.querySelectorAll('.nav-item').forEach(n => {
+                if (n.dataset.view === view) n.setAttribute('aria-current', 'page');
+                else n.removeAttribute('aria-current');
+            });
+            if (changed) window.scrollTo(0, 0);
+
+            $('bottom-nav').classList.toggle('hidden', view === 'success');
+            $('floating-bar').classList.toggle('visible', view === 'services' && state.cart.size > 0);
+
+            if (view !== 'summary' && state.upsellCtrl) { state.upsellCtrl.abort(); state.upsellCtrl = null; }
+            if (view !== 'cabinet' && state.ordersCtrl) { state.ordersCtrl.abort(); state.ordersCtrl = null; }
+
+            if (view === 'summary') {
+                setupSummary();
+                call(MainButton, 'setParams', { text: MODE_TEXT[state.mode].button, color: '#007BFF', text_color: '#FFFFFF', is_active: true, is_visible: true });
+                call(MainButton, 'show');
+                call(BackButton, 'show');
+            } else {
+                call(MainButton, 'hide');
+                call(BackButton, 'hide');
+            }
+            if (view === 'cabinet') loadOrders();
+            if (view === 'success') burstParticles();
+        }
+
+        /* ==================================================================
+           Оформление
+           ================================================================== */
+        function setupSummary() {
+            const isB2B = state.mode === 'b2b';
+            $('fields-b2c').hidden = isB2B;
+            $('fields-b2b').hidden = !isB2B;
+            $('summary-kicker').textContent = MODE_TEXT[state.mode].kicker;
+
+            const frag = document.createDocumentFragment();
+            let i = 0;
+            for (const item of state.cart.values()) {
+                frag.append(el('div', { class: 'summary-item', style: { animationDelay: `${i++ * 40}ms` } },
+                    el('div', { class: 'summary-row' },
+                        el('span', { class: 'summary-name', text: item.name }),
+                        el('span', { class: 'summary-price', text: item.price > 0 ? rub(item.price) : 'По договоренности' })
+                    ),
+                    isB2B && item.details ? el('div', { class: 'summary-details', text: item.details }) : null
+                ));
+            }
+            $('summary-list').replaceChildren(frag);
+            $('summary-total').textContent = totalLabel(cartTotal());
+            loadUpsell();
+        }
+
+        /* Белый список: в рекомендации остаются только текст и <b>. Всё прочее — просто текст. */
+        function safeRichText(html) {
+            const frag = document.createDocumentFragment();
+            const doc = new DOMParser().parseFromString(`<!doctype html><body>${String(html)}</body>`, 'text/html');
+            const walk = (src, dst) => {
+                for (const node of src.childNodes) {
+                    if (node.nodeType === Node.TEXT_NODE) dst.append(node.textContent);
+                    else if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.tagName === 'B' || node.tagName === 'STRONG') { const b = document.createElement('b'); walk(node, b); dst.append(b); }
+                        else if (!/^(SCRIPT|STYLE|TEMPLATE|IFRAME|OBJECT|NOSCRIPT)$/.test(node.tagName)) walk(node, dst);
+                    }
+                }
+            };
+            walk(doc.body, frag);
+            return frag;
+        }
+        function showUpsell(html) {
+            const text = $('ai-text');
+            text.replaceChildren(safeRichText(html));
+            text.classList.remove('reveal');
+            void text.offsetWidth;
+            text.classList.add('reveal');
+        }
+
+        async function loadUpsell() {
+            const panel = $('ai-panel'), text = $('ai-text');
+            if (state.upsellCtrl) state.upsellCtrl.abort();
+            if (state.cart.size === 0) { panel.hidden = true; return; }
+            panel.hidden = false;
+            text.classList.remove('reveal');
+            text.replaceChildren(
+                el('div', { class: 'skeleton sk-line', style: { width: '92%' } }),
+                el('div', { class: 'skeleton sk-line', style: { width: '64%' } })
+            );
+            if (!tg.initData) { showUpsell(FALLBACK_REC); return; }
+
+            const ctrl = new AbortController();
+            state.upsellCtrl = ctrl;
+            const body = new FormData();
+            body.append('items', JSON.stringify([...state.cart.keys()]));
+            body.append('is_b2b', String(state.mode === 'b2b'));
+            try {
+                const { ok, data } = await request('/api/upsell', { method: 'POST', headers: authHeaders(), body, signal: ctrl.signal, timeout: 20000 });
+                if (ctrl.signal.aborted) return;
+                showUpsell(ok && data && data.success && data.recommendation ? data.recommendation : FALLBACK_REC);
+            } catch (_) {
+                if (!ctrl.signal.aborted) showUpsell(FALLBACK_REC);
+            } finally {
+                if (state.upsellCtrl === ctrl) state.upsellCtrl = null;
+            }
+        }
+
+        /* ---------- Телефон: маска, сохранение каретки, нормализация ---------- */
+        const phoneInput = $('client-phone');
+        const phoneError = $('phone-error');
+
+        function normalizePhone(raw) {
+            let d = String(raw).replace(/\D/g, '');
+            if (!d) return '';
+            if (d[0] === '8') d = '7' + d.slice(1);
+            else if (d[0] !== '7') d = '7' + d;
+            return d.slice(0, 11);
+        }
+        function formatPhone(d) {
+            if (!d) return '';
+            let out = '+7';
+            if (d.length > 1) out += ' (' + d.slice(1, 4);
+            if (d.length >= 5) out += ') ' + d.slice(4, 7);
+            if (d.length >= 8) out += '-' + d.slice(7, 9);
+            if (d.length >= 10) out += '-' + d.slice(9, 11);
+            return out;
+        }
+        const isPhoneValid = () => normalizePhone(phoneInput.value).length === 11;
+
+        function setInvalid(input, errorEl, invalid) {
+            if (invalid) {
+                input.setAttribute('aria-invalid', 'true');
+                errorEl.hidden = false;
+            } else {
+                input.removeAttribute('aria-invalid');
+                errorEl.hidden = true;
+            }
+        }
+
+        phoneInput.addEventListener('input', e => {
+            const raw = phoneInput.value;
+            const caret = phoneInput.selectionStart == null ? raw.length : phoneInput.selectionStart;
+            const atEnd = caret >= raw.length;
+            const rawDigits = raw.replace(/\D/g, '');
+            const prefixAdded = rawDigits && rawDigits[0] !== '7' && rawDigits[0] !== '8' ? 1 : 0;
+            let d = normalizePhone(raw);
+            // Стирание до кода страны очищает поле, а не «застревает» на +7
+            if (e.inputType && e.inputType.startsWith('delete') && d.length <= 1) d = '';
+            const formatted = formatPhone(d);
+            phoneInput.value = formatted;
+
+            if (document.activeElement === phoneInput && !atEnd) {
+                const wanted = Math.min(raw.slice(0, caret).replace(/\D/g, '').length + prefixAdded, d.length);
+                let pos = formatted.length, seen = 0;
+                for (let i = 0; i < formatted.length && wanted > 0; i++) {
+                    if (formatted[i] >= '0' && formatted[i] <= '9' && ++seen === wanted) { pos = i + 1; break; }
+                }
+                try { phoneInput.setSelectionRange(pos, pos); } catch (_) { /* старые WebView */ }
+            }
+            if (phoneInput.hasAttribute('aria-invalid') && isPhoneValid()) setInvalid(phoneInput, phoneError, false);
+        });
+        phoneInput.addEventListener('blur', () => {
+            if (normalizePhone(phoneInput.value).length <= 1) { phoneInput.value = ''; setInvalid(phoneInput, phoneError, false); return; }
+            setInvalid(phoneInput, phoneError, !isPhoneValid());
+        });
+
+        /* ---------- Рабочие места: только целое 1…100 000 ---------- */
+        const workplacesInput = $('b2b-workplaces');
+        const workplacesError = $('workplaces-error');
+        workplacesInput.addEventListener('input', () => {
+            const clean = workplacesInput.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 6);
+            if (clean !== workplacesInput.value) workplacesInput.value = clean;
+            setInvalid(workplacesInput, workplacesError, false);
+        });
+        const workplacesValid = () => {
+            const v = workplacesInput.value.trim();
+            if (!v) return true;
+            const n = Number(v);
+            return Number.isInteger(n) && n >= 1 && n <= 100000;
+        };
+
+        /* ---------- Счётчик символов ---------- */
+        const problemInput = $('problem-desc');
+        const updateCounter = () => { $('problem-counter').textContent = `${problemInput.value.length} / 500`; };
+        problemInput.addEventListener('input', updateCounter);
+
+        /* ---------- Фото: оптимизация и превью через objectURL без утечек ---------- */
+        const photoInput = $('photo-input');
+        $('dropzone').addEventListener('click', () => { haptic.tap(); photoInput.click(); });
+        photoInput.addEventListener('change', () => {
+            const file = photoInput.files && photoInput.files[0];
+            photoInput.value = '';          // позволяет выбрать тот же файл повторно
+            if (file) setPhoto(file);
+        });
+        $('photo-remove').addEventListener('click', () => { haptic.tap(); clearPhoto(); });
+
+        function compressImage(file, maxSide = 1600, quality = 0.82) {
             return new Promise(resolve => {
                 const url = URL.createObjectURL(file);
                 const img = new Image();
+                const done = blob => { URL.revokeObjectURL(url); img.onload = img.onerror = null; resolve(blob); };
                 img.onload = () => {
-                    const k = Math.min(1, maxSide / Math.max(img.width, img.height));
-                    const c = document.createElement('canvas');
-                    c.width = Math.round(img.width * k);
-                    c.height = Math.round(img.height * k);
-                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-                    URL.revokeObjectURL(url);
-                    c.toBlob(b => resolve(b), 'image/jpeg', 0.8);
+                    try {
+                        const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.naturalWidth * k));
+                        canvas.height = Math.max(1, Math.round(img.naturalHeight * k));
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF';          // прозрачный PNG не станет чёрным в JPEG
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob(b => { canvas.width = canvas.height = 0; done(b); }, 'image/jpeg', quality);
+                    } catch (_) { done(null); }
                 };
-                img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+                img.onerror = () => done(null);
                 img.src = url;
             });
         }
 
-        function removePhoto() {
-            selectedFile = null;
-            document.getElementById('problem-photo').value = '';
-            document.getElementById('dropzone-label').style.display = 'flex';
-            document.getElementById('preview-wrapper').style.display = 'none';
+        function setPhoto(file) {
+            const looksLikeImage = /^image\//.test(file.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name || '');
+            if (!looksLikeImage) { toast('Выберите изображение: JPEG, PNG или WebP.'); return; }
+            if (file.size > MAX_RAW_PHOTO_BYTES) { toast('Файл слишком большой. Выберите фото поменьше.'); return; }
+
+            clearPhoto();
+            const token = ++state.photoToken;
+            const serverAccepts = /^image\/(jpeg|png|webp)$/.test(file.type);
+            state.photo = { blob: null, name: file.name || 'photo.jpg', url: null };
+            $('preview-name').textContent = state.photo.name;
+            $('preview-size').textContent = 'Оптимизация…';
+            $('preview-skeleton').hidden = false;
+            $('dropzone').hidden = true;
+            $('preview').hidden = false;
+
+            state.photoTask = compressImage(file).then(compressed => {
+                if (token !== state.photoToken) return;            // фото уже заменили или удалили
+                let best = compressed;
+                if (serverAccepts && (!best || file.size <= best.size)) best = file;
+                if (!best) { clearPhoto(); toast('Не удалось прочитать фото. Попробуйте другое.'); return; }
+                if (best.size > MAX_PHOTO_BYTES) { clearPhoto(); toast('Фото слишком большое (максимум 8 МБ).'); return; }
+                state.photo.blob = best;
+                state.photo.url = URL.createObjectURL(best);
+                $('preview-img').src = state.photo.url;
+                $('preview-skeleton').hidden = true;
+                $('preview-size').textContent = fmtBytes(best.size);
+            }).finally(() => { if (token === state.photoToken) state.photoTask = null; });
         }
 
-        const phoneInput = document.getElementById('client-phone');
-        phoneInput.addEventListener('input', function (e) {
-            let inputNumbersValue = e.target.value.replace(/\D/g, '');
-            let formattedInputValue = '';
-
-            phoneInput.classList.remove('is-error');
-            document.getElementById('phone-error').style.display = 'none';
-
-            if (!inputNumbersValue) return e.target.value = '';
-
-            if (['7', '8', '9'].indexOf(inputNumbersValue[0]) > -1) {
-                if (inputNumbersValue[0] === '9') inputNumbersValue = '7' + inputNumbersValue;
-
-                formattedInputValue = '+7 ';
-                if (inputNumbersValue.length > 1) formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
-                if (inputNumbersValue.length >= 5) formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
-                if (inputNumbersValue.length >= 8) formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-                if (inputNumbersValue.length >= 10) formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
-            } else {
-                formattedInputValue = '+' + inputNumbersValue.substring(0, 15);
-            }
-            e.target.value = formattedInputValue;
-        });
-
-        function renderServices() {
-            const container = document.getElementById('services-container');
-            container.innerHTML = '';
-
-            const activeData = currentMode === 'b2b' ? servicesDataB2B : servicesDataB2C;
-            document.getElementById('services-meta').innerText =
-                `Каталог · ${activeData.length} ${pluralize(activeData.length, ['позиция', 'позиции', 'позиций'])}`;
-
-            activeData.forEach((s, i) => {
-                const isSelected = cart.has(s.id);
-                const card = document.createElement('div');
-                card.className = `card card-enter ${isSelected ? 'selected' : ''}`;
-                card.style.animationDelay = `${i * 35}ms`;
-                card.onclick = () => toggleService(card, s);
-
-                card.innerHTML = `
-                    <div class="card-index">${String(i + 1).padStart(2, '0')}</div>
-                    <div class="card-content">
-                        <div class="card-title">${esc(s.name)}</div>
-                        <div class="card-subtitle">${esc(s.subtitle)}</div>
-                    </div>
-                    <div class="card-side">
-                        <div class="card-price">${esc(s.label)}</div>
-                        <div class="checkbox-wrapper">
-                            <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+        function clearPhoto() {
+            state.photoToken++;
+            state.photoTask = null;
+            if (state.photo && state.photo.url) URL.revokeObjectURL(state.photo.url);
+            state.photo = null;
+            $('preview-img').removeAttribute('src');
+            $('preview').hidden = true;
+            $('dropzone').hidden = false;
         }
 
-        function toggleService(cardElement, service) {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-            if (cart.has(service.id)) {
-                cart.delete(service.id);
-                cardElement.classList.remove('selected');
-            } else {
-                cart.set(service.id, service);
-                cardElement.classList.add('selected');
+        /* ---------- Отправка заказа ---------- */
+        function validateForm() {
+            if (!isPhoneValid()) {
+                setInvalid(phoneInput, phoneError, true);
+                phoneInput.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+                return 'Введите корректный номер телефона.';
             }
-            updateCartState();
+            if (state.mode === 'b2b' && !workplacesValid()) {
+                setInvalid(workplacesInput, workplacesError, true);
+                workplacesInput.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+                return 'Количество рабочих мест — число от 1 до 100 000.';
+            }
+            return null;
         }
 
-        function updateCartState() {
-            const bar = document.getElementById('floating-bar');
-            if (cart.size > 0) {
-                let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
-
-                const word = pluralize(cart.size, ['услуга', 'услуги', 'услуг']);
-
-                document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
-                document.getElementById('fb-total').innerText = total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : `Смета`;
-
-                if (currentView === 'services') bar.classList.add('visible');
+        function setSubmitting(on) {
+            state.isSubmitting = on;
+            if (on) {
+                call(MainButton, 'setParams', { text: 'ОТПРАВКА…' });
+                call(MainButton, 'showProgress', false);
+                call(MainButton, 'disable');
             } else {
-                bar.classList.remove('visible');
-                if (currentView === 'summary') navigate('services');
+                call(MainButton, 'hideProgress');
+                call(MainButton, 'enable');
+                call(MainButton, 'setParams', { text: MODE_TEXT[state.mode].button });
             }
+            $('order-form').querySelectorAll('input, textarea, select, button').forEach(n => { n.disabled = on; });
         }
 
-        function navigate(viewName) {
-            if (tg.HapticFeedback && viewName !== 'success') tg.HapticFeedback.selectionChanged();
-            currentView = viewName;
+        async function submitOrder() {
+            // Единственная точка входа: повторные нажатия во время отправки игнорируются
+            if (state.isSubmitting || state.view !== 'summary' || state.cart.size === 0) return;
+            if (!tg.initData) { toast('Откройте приложение через Telegram.'); return; }
+            const invalid = validateForm();
+            if (invalid) { toast(invalid); return; }
 
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+            setSubmitting(true);
+            try {
+                if (state.photoTask) await state.photoTask;
 
-            document.getElementById(`view-${viewName}`).classList.add('active');
-            window.scrollTo({ top: 0 });
-
-            const navBtn = document.getElementById(`nav-${viewName}`);
-            if(navBtn) navBtn.classList.add('active');
-
-            const floatingBar = document.getElementById('floating-bar');
-            const bottomNav = document.querySelector('.bottom-nav');
-
-            if (viewName === 'success') {
-                bottomNav.style.transform = 'translateY(100%)';
-                floatingBar.classList.remove('visible');
-                tg.MainButton.hide();
-                return;
-            } else {
-                bottomNav.style.transform = 'translateY(0)';
-            }
-
-            if (viewName === 'cabinet') loadUserOrders();
-
-            if (viewName === 'summary') {
-                floatingBar.classList.remove('visible');
-                setupSummaryView();
-                renderSummary();
-                updateButtonTheme();
-                tg.MainButton.text = currentMode === 'b2b' ? "ПОЛУЧИТЬ СМЕТУ" : "ОФОРМИТЬ ЗАЯВКУ";
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-                if (cart.size > 0 && viewName === 'services') {
-                    floatingBar.classList.add('visible');
+                const body = new FormData();
+                body.append('items', JSON.stringify([...state.cart.keys()]));
+                body.append('phone', '+' + normalizePhone(phoneInput.value));
+                body.append('is_b2b', String(state.mode === 'b2b'));
+                if (state.mode === 'b2b') {
+                    body.append('workplaces', workplacesInput.value.trim());
+                    body.append('office_info', $('b2b-office').value.trim().slice(0, 200));
                 } else {
-                    floatingBar.classList.remove('visible');
+                    body.append('device', $('device-type').value);
+                    body.append('problem', problemInput.value.trim().slice(0, 500));
+                    if (state.photo && state.photo.blob) body.append('photo', state.photo.blob, 'problem.jpg');
                 }
+
+                const { ok, status, data } = await request('/api/order', { method: 'POST', headers: authHeaders(), body });
+                if (!ok || !data || !data.success) throw new Error(errorMessage(status, data, 'Не удалось оформить заявку. Попробуйте позже.'));
+
+                haptic.success();
+                onOrderSuccess(data.order_id);
+            } catch (e) {
+                toast(netMessage(e, 'Ошибка передачи данных.'));
+            } finally {
+                setSubmitting(false);
             }
         }
 
-        function setupSummaryView() {
-            const fieldsB2C = document.getElementById('form-fields-b2c');
-            const fieldsB2B = document.getElementById('form-fields-b2b');
-            const summarySubtitle = document.getElementById('summary-subtitle');
+        function onOrderSuccess(orderId) {
+            const idBox = $('success-id');
+            idBox.textContent = orderId ? `Заявка ${String(orderId)}` : '';
+            idBox.hidden = !orderId;
 
-            if (currentMode === 'b2b') {
-                fieldsB2C.style.display = 'none';
-                fieldsB2B.style.display = 'flex';
-                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ / БИЗНЕС';
-            } else {
-                fieldsB2B.style.display = 'none';
-                fieldsB2C.style.display = 'flex';
-                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ';
-            }
+            state.cart.clear();
+            state.shownTotal = 0;
+            if (canConfirmClose) call(tg, 'disableClosingConfirmation');
+            hideToast();
+            problemInput.value = '';
+            updateCounter();
+            workplacesInput.value = '';
+            $('b2b-office').value = '';
+            clearPhoto();
+            renderServices();
+
+            // Перезапуск анимаций экрана успеха
+            const view = $('view-success');
+            view.classList.remove('active');
+            void view.offsetWidth;
+            navigate('success');
         }
 
-        function getTimelineHtml(statusText) {
-            let activeStep = 1;
-            const s = statusText.toLowerCase();
-
-            if (s.includes("отмен") || s.includes("отказ")) {
-                activeStep = -1;
-            } else if (s.includes("в работе")) {
-                activeStep = 2;
-            } else if (s.includes("готов") || s.includes("выдан")) {
-                activeStep = 3;
+        /* Технологичные частицы, разлетающиеся от эмблемы */
+        function burstParticles() {
+            if (REDUCED_MOTION) return;
+            const host = $('success-emblem');
+            host.querySelectorAll('.particle').forEach(p => p.remove());
+            clearTimeout(state.particlesTimer);
+            const colors = ['#007BFF', '#4DA3FF', '#FFFFFF', '#32D74B'];
+            const frag = document.createDocumentFragment();
+            const count = 28;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.25;
+                const dist = 70 + Math.random() * 80;
+                frag.append(el('span', { class: 'particle', style: {
+                    '--x': `${(Math.cos(angle) * dist).toFixed(1)}px`,
+                    '--y': `${(Math.sin(angle) * dist).toFixed(1)}px`,
+                    '--r': `${Math.round(Math.random() * 360)}deg`,
+                    '--s': `${(2 + Math.random() * 4).toFixed(1)}px`,
+                    '--d': `${(0.8 + Math.random() * 0.6).toFixed(2)}s`,
+                    '--delay': `${(0.5 + Math.random() * 0.15).toFixed(2)}s`,
+                    '--c': colors[i % colors.length]
+                } }));
             }
-
-            if (activeStep === -1) {
-                return `
-                    <div class="timeline">
-                        <div class="timeline-step cancelled">
-                            <div class="timeline-bullet">✕</div>
-                            <div class="timeline-label">ОТМЕНЕН</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const steps = ["СОЗДАН", "В РАБОТЕ", "ГОТОВ"];
-
-            let html = '<div class="timeline">';
-            for (let i = 1; i <= 3; i++) {
-                let cls = '';
-                let content = i;
-                if (i < activeStep) {
-                    cls = 'completed';
-                    content = '✓';
-                } else if (i === activeStep) {
-                    cls = 'active';
-                }
-                html += `
-                    <div class="timeline-step ${cls}">
-                        <div class="timeline-bullet">${content}</div>
-                        <div class="timeline-label">${steps[i-1]}</div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            return html;
+            host.append(frag);
+            state.particlesTimer = setTimeout(() => host.querySelectorAll('.particle').forEach(p => p.remove()), 2600);
         }
 
-        function loadUserOrders() {
-            const container = document.getElementById('orders-container');
-            if (!tg.initData) {
-                container.innerHTML = '<div class="empty-cabinet">Не удалось определить пользователя. Откройте через Telegram.</div>';
-                return;
-            }
-            container.innerHTML = '<div class="empty-cabinet"><span class="loading-text">ЗАГРУЗКА ДАННЫХ</span></div>';
-
-            fetch('/api/orders', { headers: authHeaders() })
-                .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
-                .then(data => {
-                    if (!data.success || !data.orders.length) {
-                        container.innerHTML = '<div class="empty-cabinet">Нет активных или прошлых заказов.</div>';
-                        return;
-                    }
-                    container.innerHTML = data.orders.map(order => {
-                        const st = String(order.status || '');
-                        const isCancelled = /отмен|отказ/i.test(st);
-                        return `
-                            <div class="panel order-card">
-                                <div class="order-header">
-                                    <span class="order-id">ЗАКАЗ ${esc(order.order_id)}</span>
-                                    <span class="order-status ${isCancelled ? 'cancelled' : ''}">${esc(st)}</span>
-                                </div>
-                                <div class="order-body">
-                                    <span class="order-body-label">СОСТАВ</span>
-                                    ${esc(order.items)}
-                                </div>
-                                ${getTimelineHtml(st)}
-                                <div class="order-footer">
-                                    <span class="order-date">${fmtDate(order.created_at)}</span>
-                                    <span class="order-total">${Number(order.total) > 0 ? Number(order.total).toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
-                                </div>
-                            </div>`;
-                    }).join('');
-                })
-                .catch(() => {
-                    container.innerHTML = '<div class="empty-cabinet">Не удалось загрузить историю. Попробуйте позже.</div>';
-                });
+        /* ==================================================================
+           Кабинет
+           ================================================================== */
+        const STEPS = ['СОЗДАН', 'В РАБОТЕ', 'ГОТОВО'];
+        function statusInfo(status) {
+            const s = String(status || '').toLowerCase();
+            if (/отмен|отказ/.test(s)) return { step: -1, badge: 'badge--cancelled' };
+            if (/готов|выдан|выполн/.test(s)) return { step: 3, badge: 'badge--done' };
+            if (/работе|ремонт|диагност/.test(s)) return { step: 2, badge: '' };
+            return { step: 1, badge: '' };
         }
 
-        function renderSummary() {
-            const container = document.getElementById('summary-list');
-            let total = 0;
-            let html = '';
-
-            cart.forEach(item => {
-                total += item.price;
-                const priceStr = item.price === 0 ? 'По договоренности' : `${item.price.toLocaleString('ru-RU')} ₽`;
-                const details = (currentMode === 'b2b' && item.details)
-                    ? `<div class="summary-details">${esc(item.details)}</div>` : '';
-                html += `
-                    <div class="summary-item">
-                        <div class="summary-row">
-                            <span class="summary-name">${esc(item.name)}</span>
-                            <span class="summary-price">${priceStr}</span>
-                        </div>
-                        ${details}
-                    </div>`;
+        function timeline(step) {
+            if (step === -1) {
+                return el('div', { class: 'timeline timeline--cancelled' },
+                    el('div', { class: 'timeline-step cancelled' },
+                        el('div', { class: 'timeline-bullet', text: '✕' }),
+                        el('div', { class: 'timeline-label', text: 'ОТМЕНЕНО' })
+                    ));
+            }
+            const root = el('div', { class: 'timeline', role: 'img', 'aria-label': `Этап ${step} из 3: ${STEPS[step - 1]}` },
+                el('div', { class: 'timeline-track' }),
+                el('div', { class: 'timeline-fill', style: { '--progress': String((step - 1) / 2) } })
+            );
+            STEPS.forEach((label, i) => {
+                const n = i + 1;
+                const cls = n < step || step === 3 ? 'completed' : n === step ? 'active' : '';
+                root.append(el('div', { class: `timeline-step ${cls}` },
+                    el('div', { class: 'timeline-bullet', text: cls === 'completed' ? '✓' : String(n) }),
+                    el('div', { class: 'timeline-label', text: label })
+                ));
             });
-            html += `
-                <div class="summary-total">
-                    <span class="summary-total-label">ИТОГО</span>
-                    <span class="summary-total-value">${total > 0 ? total.toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
-                </div>`;
-            container.innerHTML = html;
+            return root;
+        }
 
-            const upsellContainer = document.getElementById('ai-upsell-container');
-            const upsellText = document.getElementById('ai-upsell-text');
-            if (upsellCtrl) upsellCtrl.abort();
-
-            if (cart.size === 0) { upsellContainer.style.display = 'none'; return; }
-
-            upsellContainer.style.display = 'flex';
-            upsellText.innerHTML = '<span class="loading-text">СИСТЕМНЫЙ АНАЛИЗ</span>';
-
-            upsellCtrl = new AbortController();
-            const formData = new FormData();
-            formData.append('items', JSON.stringify([...cart.keys()]));
-            formData.append('is_b2b', currentMode === 'b2b' ? 'true' : 'false');
-
-            fetch('/api/upsell', { method: 'POST', headers: authHeaders(), body: formData, signal: upsellCtrl.signal })
-                .then(res => res.json())
-                .then(data => {
-                    // сервер экранирует текст и оставляет только <b>
-                    upsellText.innerHTML = (data && data.success && data.recommendation)
-                        ? data.recommendation
-                        : 'Своевременный аудит инфраструктуры снижает риски поломок.';
-                })
-                .catch(err => {
-                    if (err.name === 'AbortError') return;
-                    upsellText.textContent = 'Своевременный аудит инфраструктуры снижает риски поломок.';
+        /* Сервер хранит состав как «Название (1500₽), Название (0₽)» */
+        function parseItems(raw) {
+            return String(raw || '')
+                .split(/,\s+(?=[^,]*\(\d+\s*₽\))/)
+                .map(s => s.trim())
+                .filter(Boolean)
+                .map(s => {
+                    const m = s.match(/^(.*)\s\((\d+)\s*₽\)$/);
+                    return m ? { name: m[1], price: Number(m[2]) } : { name: s, price: null };
                 });
         }
 
-        function resetMainButton() {
-            isSubmitting = false;
-            tg.MainButton.hideProgress();
-            tg.MainButton.text = currentMode === 'b2b' ? 'ПОЛУЧИТЬ СМЕТУ' : 'ОФОРМИТЬ ЗАЯВКУ';
+        function orderCard(order, index) {
+            const status = String(order.status || 'Новый');
+            const info = statusInfo(status);
+            return el('article', { class: 'panel order-card', style: { animationDelay: `${index * 60}ms` } },
+                el('div', { class: 'order-header' },
+                    el('span', { class: 'order-id', text: `ЗАКАЗ ${String(order.order_id || '')}` }),
+                    el('span', { class: `badge ${info.badge}`, text: status })
+                ),
+                el('div', null,
+                    el('span', { class: 'order-label', text: 'СОСТАВ' }),
+                    el('ul', { class: 'order-items' }, parseItems(order.items).map(it =>
+                        el('li', null,
+                            el('span', { text: it.name }),
+                            it.price == null ? null : el('span', { class: 'price', text: it.price > 0 ? rub(it.price) : 'договорная' })
+                        )))
+                ),
+                timeline(info.step),
+                el('div', { class: 'order-footer' },
+                    el('span', { class: 'order-date', text: fmtDate(order.created_at) }),
+                    el('span', { class: 'order-total', text: totalLabel(Number(order.total) || 0) })
+                )
+            );
         }
 
-        tg.MainButton.onClick(() => {
-            if (cart.size === 0 || isSubmitting) return;
+        function skeletonOrders(n = 2) {
+            return Array.from({ length: n }, () =>
+                el('div', { class: 'panel sk-order', 'aria-hidden': 'true' },
+                    el('div', { class: 'sk-row' },
+                        el('div', { class: 'skeleton sk-line', style: { width: '38%' } }),
+                        el('div', { class: 'skeleton', style: { width: '72px', height: '22px' } })
+                    ),
+                    el('div', null,
+                        el('div', { class: 'skeleton sk-line', style: { width: '22%' } }),
+                        el('div', { class: 'skeleton sk-line', style: { width: '86%' } }),
+                        el('div', { class: 'skeleton sk-line', style: { width: '58%' } })
+                    ),
+                    el('div', { class: 'sk-dots' },
+                        el('div', { class: 'skeleton sk-dot' }), el('div', { class: 'skeleton sk-dot' }), el('div', { class: 'skeleton sk-dot' })
+                    ),
+                    el('div', { class: 'sk-row' },
+                        el('div', { class: 'skeleton sk-line', style: { width: '34%' } }),
+                        el('div', { class: 'skeleton', style: { width: '80px', height: '18px' } })
+                    )
+                ));
+        }
 
+        function emptyState(message, { error = false, action = null } = {}) {
+            return el('div', { class: `empty-state${error ? ' empty-state--error' : ''}` },
+                el('div', { class: 'empty-state-icon' }, error ? ICON.alert() : ICON.inbox()),
+                el('div', { text: message }),
+                action ? el('button', { type: 'button', class: 'text-btn', dataset: { action: action.id }, text: action.label }) : null
+            );
+        }
+
+        async function loadOrders() {
+            const list = $('orders-list');
+            const refresh = $('orders-refresh');
+            if (state.ordersCtrl) state.ordersCtrl.abort();
             if (!tg.initData) {
-                tg.showAlert('Откройте приложение через Telegram.');
+                list.replaceChildren(emptyState('Не удалось определить пользователя. Откройте приложение через Telegram.', { error: true }));
                 return;
             }
-
-            const phoneDigits = phoneInput.value.replace(/\D/g, '');
-            if (phoneDigits.length !== 11) {
-                tg.showAlert('ТРЕБУЕТСЯ: Корректный номер телефона (11 цифр).');
-                phoneInput.classList.add('is-error');
-                document.getElementById('phone-error').style.display = 'block';
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                return;
+            const ctrl = new AbortController();
+            state.ordersCtrl = ctrl;
+            list.setAttribute('aria-busy', 'true');
+            refresh.classList.add('spinning');
+            refresh.disabled = true;
+            list.replaceChildren(...skeletonOrders());
+            const started = performance.now();
+            try {
+                const { ok, status, data } = await request('/api/orders', { headers: authHeaders(), signal: ctrl.signal, timeout: 15000 });
+                // Короткая пауза: скелетон не «мигает» при мгновенном ответе
+                const wait = 350 - (performance.now() - started);
+                if (wait > 0) await new Promise(r => setTimeout(r, wait));
+                if (ctrl.signal.aborted) return;
+                if (!ok || !data || !data.success) throw new Error(errorMessage(status, data, 'Не удалось загрузить историю.'));
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+                if (!orders.length) {
+                    list.replaceChildren(emptyState('Здесь появятся ваши заявки. Выберите услугу — и мы возьмёмся за дело.', { action: { id: 'to-services', label: 'Выбрать услугу' } }));
+                } else {
+                    const frag = document.createDocumentFragment();
+                    orders.forEach((o, i) => frag.append(orderCard(o, i)));
+                    list.replaceChildren(frag);
+                }
+            } catch (e) {
+                if (ctrl.signal.aborted) return;
+                list.replaceChildren(emptyState(netMessage(e, 'Не удалось загрузить историю.'), { error: true, action: { id: 'retry-orders', label: 'Повторить' } }));
+            } finally {
+                if (state.ordersCtrl === ctrl) state.ordersCtrl = null;
+                if (!state.ordersCtrl) {
+                    list.setAttribute('aria-busy', 'false');
+                    refresh.classList.remove('spinning');
+                    refresh.disabled = false;
+                }
             }
+        }
 
-            if (selectedFile && selectedFile.size > 8 * 1024 * 1024) {
-                tg.showAlert('Фото слишком большое (максимум 8 МБ).');
-                return;
+        /* ==================================================================
+           События: делегирование — по одному обработчику на группу
+           ================================================================== */
+        const servicesList = $('services-list');
+        servicesList.addEventListener('click', e => {
+            const card = e.target.closest('.card');
+            if (card) toggleService(card);
+        });
+        /* Световое пятно следует за пальцем/курсором */
+        const trackSpot = e => {
+            const card = e.target.closest('.card');
+            if (!card) return;
+            const r = card.getBoundingClientRect();
+            card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+            card.style.setProperty('--my', `${e.clientY - r.top}px`);
+        };
+        servicesList.addEventListener('pointermove', trackSpot, { passive: true });
+        servicesList.addEventListener('pointerdown', trackSpot, { passive: true });
+
+        $('segment').addEventListener('click', e => {
+            const btn = e.target.closest('.segment');
+            if (btn) switchMode(btn.dataset.mode);
+        });
+        $('bottom-nav').addEventListener('click', e => {
+            const btn = e.target.closest('.nav-item');
+            if (btn) navigate(btn.dataset.view);
+        });
+        $('floating-bar').addEventListener('click', () => { haptic.press(); navigate('summary'); });
+        $('orders-refresh').addEventListener('click', () => { haptic.tap(); loadOrders(); });
+        $('orders-list').addEventListener('click', e => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            haptic.tap();
+            if (btn.dataset.action === 'retry-orders') loadOrders();
+            else if (btn.dataset.action === 'to-services') navigate('services');
+        });
+        $('success-orders').addEventListener('click', () => { haptic.tap(); navigate('cabinet'); });
+        $('success-close').addEventListener('click', () => { haptic.tap(); call(tg, 'close'); });
+        document.querySelectorAll('[data-haptic]').forEach(a => a.addEventListener('click', () => haptic.tap()));
+
+        /* Ссылка на Telegram открывается нативно, без выхода из клиента */
+        $('tg-contact').addEventListener('click', e => {
+            if (tg.initData && isVer('6.1') && typeof tg.openTelegramLink === 'function') {
+                e.preventDefault();
+                call(tg, 'openTelegramLink', e.currentTarget.href);
             }
-
-            // Отправляем только id услуг: цены и итог сервер считает сам
-            const formData = new FormData();
-            formData.append('items', JSON.stringify([...cart.keys()]));
-            formData.append('phone', phoneInput.value);
-            formData.append('is_b2b', currentMode === 'b2b' ? 'true' : 'false');
-
-            if (currentMode === 'b2b') {
-                formData.append('workplaces', document.getElementById('b2b-workplaces').value);
-                formData.append('office_info', document.getElementById('b2b-office').value);
-            } else {
-                formData.append('device', document.getElementById('device-type').value);
-                formData.append('problem', document.getElementById('problem-desc').value.trim());
-                if (selectedFile) formData.append('photo', selectedFile, 'problem.jpg');
-            }
-
-            isSubmitting = true;
-            tg.MainButton.text = 'ОБРАБОТКА ДАННЫХ...';
-            tg.MainButton.showProgress();
-
-            fetch('/api/order', { method: 'POST', headers: authHeaders(), body: formData })
-                .then(async response => {
-                    const data = await response.json().catch(() => null);
-                    if (!response.ok) {
-                        const msg = data && typeof data.detail === 'string' ? data.detail : 'Ошибка сервера, попробуйте позже.';
-                        throw new Error(msg);
-                    }
-                    return data;
-                })
-                .then(data => {
-                    if (data && data.success) {
-                        tg.MainButton.hideProgress();
-                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        cart.clear();
-                        renderServices();
-                        navigate('success');
-                        isSubmitting = false;
-                    } else {
-                        resetMainButton();
-                        tg.showAlert('Не удалось оформить заявку. Попробуйте позже.');
-                    }
-                })
-                .catch(error => {
-                    resetMainButton();
-                    tg.showAlert(error.message || 'Ошибка передачи данных.');
-                });
         });
 
-        updateButtonTheme();
+        $('order-form').addEventListener('submit', e => { e.preventDefault(); submitOrder(); });
+        call(MainButton, 'onClick', submitOrder);
+        call(BackButton, 'onClick', () => navigate('services'));
+
+        /* ==================================================================
+           Старт
+           ================================================================== */
         renderServices();
+        updateCart();
+    })();
     </script>
 </body>
 </html>
