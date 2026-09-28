@@ -8,7 +8,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <!-- Шрифты не блокируют отрисовку: если Google Fonts недоступен, остаются системные -->
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
     <style>
         /* =========================================================
            ЭЛИВЕЙТ — Design Tokens
@@ -1208,7 +1209,15 @@
     </nav>
 
     <script>
-        const tg = window.Telegram.WebApp;
+        // Если telegram-web-app.js не загрузился, интерфейс всё равно отрисуется
+        const noop = () => {};
+        const tg = (window.Telegram && window.Telegram.WebApp) || {
+            initData: '', initDataUnsafe: {},
+            expand: noop, ready: noop, close: noop,
+            setHeaderColor: noop, setBackgroundColor: noop,
+            showAlert: m => alert(m),
+            MainButton: { text: '', setParams: noop, show: noop, hide: noop, onClick: noop, showProgress: noop, hideProgress: noop }
+        };
 
         const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const authHeaders = () => ({ 'X-Init-Data': tg.initData });

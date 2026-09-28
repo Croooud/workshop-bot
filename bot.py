@@ -328,6 +328,8 @@ async def security_headers(request: Request, call_next):
             "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
             "img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'")
+        # Telegram WebView агрессивно кэширует страницу — без этого после деплоя видна старая версия
+        resp.headers["Cache-Control"] = "no-cache"
     if request.url.path.startswith("/api/"):
         resp.headers["Cache-Control"] = "no-store"
     return resp
