@@ -45,7 +45,7 @@ ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "1044338073,602535191").spli
 DB_PATH = os.getenv("DB_PATH", "database.db")  # на Render укажите путь на Persistent Disk, напр. /data/database.db
 ADMIN_DB_KEY = os.getenv("ADMIN_DB_KEY", "")  # пусто = эндпоинт выгрузки БД отключён
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")  # сверьте с актуальным списком моделей
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")  # как в исходном коде; можно переопределить через env
 
 INITDATA_MAX_AGE = 24 * 3600
 MAX_PHOTO_BYTES = 8 * 1024 * 1024
@@ -54,6 +54,8 @@ MAX_ITEMS = 20
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 if not gemini_client:
     log.warning("GEMINI_API_KEY не задан — ИИ-функции работают в режиме fallback")
+else:
+    log.info("Gemini включён, модель: %s", GEMINI_MODEL)
 ai_disabled = False  # включается при 401/403 от Gemini
 AI_SEM = asyncio.Semaphore(4)
 
@@ -217,12 +219,12 @@ async def ask_gemini(contents, timeout: float = 20.0):
             except genai_errors.APIError as e:
                 if e.code in (401, 403):
                     ai_disabled = True
-                    log.critical("Gemini отклонил ключ (%s) — ИИ отключён до перезапуска", e.code)
+                    log.critical("Gemini отклонил ключ (%s): %s — ИИ отключён до перезапуска", e.code, getattr(e, "message", e))
                     return None
                 if e.code in (429, 500, 503) and attempt < 2:
                     await asyncio.sleep(2 ** attempt + secrets.randbelow(1000) / 1000)
                     continue
-                log.error("Gemini API error %s", e.code)
+                log.error("Gemini API error %s: %s (модель: %s)", e.code, getattr(e, "message", e), GEMINI_MODEL)
                 return None
             except asyncio.TimeoutError:
                 log.warning("Gemini timeout (попытка %d)", attempt + 1)
