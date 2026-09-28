@@ -268,11 +268,11 @@ async def api_order(
     total_str = f"{total:,} ₽".replace(',', ' ')
 
     if is_b2b == "true":
-        header = f"💼 <b>НОВЫЙ КОРПОРАТИВНЫЙ ЗАКАЗ {order_id}</b>"
+        header = f"💼 <b>НОВЫЙ КОРПОРАТИВНЫЙ ЗАКАЗ ЭЛИВЕЙТ {order_id}</b>"
         device_block = ""
         problem_block = f"🏢 Рабочих мест: <b>{workplaces or 'Не указано'}</b>\n📍 Офис/Площадь: <b>{office_info or 'Не указано'}</b>"
     else:
-        header = f"🔔 <b>НОВЫЙ ЗАКАЗ {order_id}</b>"
+        header = f"🔔 <b>НОВЫЙ ЗАКАЗ ЭЛИВЕЙТ {order_id}</b>"
         device_block = f"💻 Тип устройства: {device or 'Не указано'}\n"
         problem_block = f"⚠️ Проблема: {problem or 'Не указано'}"
 
@@ -352,7 +352,7 @@ async def cmd_stats(message: aiogram_types.Message):
         revenue_str = f"{total_revenue:,}".replace(',', ' ')
 
         stats_text = (
-            f"📊 <b>Аналитика ВЕКТОР</b>\n\n"
+            f"📊 <b>Аналитика ЭЛИВЕЙТ</b>\n\n"
             f"📦 Всего заказов: <b>{total_orders}</b>\n"
             f"🛠 Сейчас в работе: <b>{in_progress_orders}</b>\n"
             f"✅ Выполнено: <b>{done_orders}</b>\n"
@@ -389,7 +389,7 @@ async def schedule_review_request(client_chat_id: int, order_id: str):
 
         msg_text = (
             f"СИСТЕМА: Заказ <b>{order_id}</b> завершен 24 часа назад.\n\n"
-            f"Пожалуйста, оцените качество работы специалистов ВЕКТОР."
+            f"Пожалуйста, оцените качество работы специалистов ЭЛИВЕЙТ."
         )
         await bot.send_message(chat_id=client_chat_id, text=msg_text, reply_markup=review_kb, parse_mode="HTML")
     except Exception as e:
@@ -533,7 +533,7 @@ async def cmd_start(message: aiogram_types.Message):
         ]
     )
     welcome_text = (
-        "<b>ВЕКТОР. ИНЖЕНЕРНЫЙ СЕРВИС.</b>\n\n"
+        "<b>ЭЛИВЕЙТ. ИНЖЕНЕРНЫЙ СЕРВИС.</b>\n\n"
         "Обслуживание ИТ-инфраструктуры и вычислительной техники."
     )
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="HTML")
