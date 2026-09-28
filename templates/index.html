@@ -2,135 +2,1022 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
     <title>ЭЛИВЕЙТ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <style>
+        /* =========================================================
+           ЭЛИВЕЙТ — Design Tokens
+           ========================================================= */
         :root {
-            --bg-color: #000000;
-            --surface-color: #141414;
-            --surface-hover: #1A1A1A;
-            --accent-color: #007BFF;
+            /* Палитра */
+            --bg: #000000;
+            --surface: #141414;              /* Матовые панели */
+            --surface-2: #1A1A1A;            /* Hover / подложки */
+            --graphite: #2E2E2E;             /* Корпоративный графит */
+            --graphite-line: #3A3A3C;
+
+            --accent: #007BFF;
+            --accent-hover: #1A8BFF;
             --accent-bg: rgba(0, 123, 255, 0.08);
+            --accent-line: rgba(0, 123, 255, 0.45);
+            --accent-glow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            --accent-glow-lg: 0 8px 28px rgba(0, 123, 255, 0.35);
+
             --text-primary: #FFFFFF;
             --text-secondary: #8E8E93;
-            --border-color: rgba(255, 255, 255, 0.05);
-            --danger-color: #FF453A;
-            --success-color: #32D74B;
+            --text-tertiary: #48484A;
+
+            --border: rgba(255, 255, 255, 0.05);
+            --border-strong: rgba(255, 255, 255, 0.09);
+            --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);   /* Верхний блик панели */
+
+            --danger: #FF453A;
+            --success: #32D74B;
+
+            /* Глубина */
+            --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.8);
+            --glass: rgba(10, 10, 10, 0.85);
+            --blur: blur(12px) saturate(160%);
+
+            /* Микро-скругления */
             --radius-sm: 6px;
             --radius-md: 12px;
             --radius-lg: 14px;
+
+            /* Шрифты */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+            /* Моушн */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+            /* Лейаут */
             --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --nav-height: 65px;
+            --nav-height: 64px;
+            --gutter: 16px;
+            --max-width: 560px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color) !important; color: var(--text-primary) !important; overscroll-behavior-y: none; padding-bottom: calc(var(--nav-height) + 90px + var(--safe-bottom)); transition: background-color 0.3s ease; }
-        .view { display: none; opacity: 0; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; padding: 24px 16px; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        header { margin-bottom: 24px; }
-        .brand-subtitle { font-size: 12px; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; color: var(--accent-color); margin-bottom: 6px; }
-        h1 { font-size: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; line-height: 1.1; }
-        .desc { font-size: 15px; color: var(--text-secondary); line-height: 1.4; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .segment-control-wrapper { background: var(--surface-hover); border-radius: var(--radius-lg); padding: 4px; margin-bottom: 24px; display: flex; position: relative; }
-        .segment { flex: 1; text-align: center; padding: 10px 0; font-size: 13px; font-weight: 600; cursor: pointer; z-index: 2; color: var(--text-secondary); transition: color 0.3s ease; }
-        .segment.active { color: #ffffff; }
-        .segment-slider { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); background: var(--accent-color); border-radius: 10px; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 1; box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3); }
+        html { background: var(--bg); }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg) !important;
+            color: var(--text-primary) !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: none;
+            min-height: 100vh;
+            padding-bottom: calc(var(--nav-height) + 96px + var(--safe-bottom));
+        }
+
+        /* =========================================================
+           Атмосфера: синее свечение сверху + инженерная сетка
+           ========================================================= */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::before {
+            background: radial-gradient(ellipse 90% 45% at 50% -8%, rgba(0, 123, 255, 0.16), transparent 70%);
+        }
+        body::after {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+            background-size: 32px 32px;
+            background-position: center top;
+            -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
+                    mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
+        }
+
+        /* =========================================================
+           Экраны
+           ========================================================= */
+        .view {
+            display: none;
+            position: relative;
+            z-index: 1;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 28px var(--gutter) 24px;
+        }
+        .view.active {
+            display: block;
+            animation: viewIn 0.5s var(--ease-out) both;
+        }
+        @keyframes viewIn {
+            from { opacity: 0; translate: 0 10px; }
+            to   { opacity: 1; translate: 0 0; }
+        }
+
+        /* =========================================================
+           Типографика
+           ========================================================= */
+        header { margin-bottom: 28px; }
+
+        .brand-subtitle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+        .brand-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 2px;
+            background: var(--accent);
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.9);
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.35; }
+        }
+
+        h1 {
+            font-size: 34px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.02;
+            margin-bottom: 10px;
+        }
+
+        .desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            max-width: 34ch;
+        }
+
+        .section-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin: 4px 2px 12px;
+        }
+        .section-meta::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            margin-left: 12px;
+            background: linear-gradient(90deg, var(--border-strong), transparent);
+        }
+
+        /* =========================================================
+           Сегментированный переключатель (iOS pill)
+           ========================================================= */
+        .segment-control-wrapper {
+            position: relative;
+            display: flex;
+            padding: 4px;
+            margin-bottom: 28px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--highlight);
+        }
+        .segment {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            padding: 11px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s var(--ease-snap);
+        }
+        .segment.active { color: #FFFFFF; }
+
+        .segment-slider {
+            position: absolute;
+            z-index: 1;
+            top: 4px;
+            bottom: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            background: var(--accent);
+            border-radius: 10px;
+            box-shadow: var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            transition: transform 0.4s var(--ease-snap);
+        }
         body.theme-b2b .segment-slider { transform: translateX(100%); }
 
-        .list-group { display: flex; flex-direction: column; gap: 12px; }
-        .card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: border-color 0.2s ease, transform 0.1s ease, background-color 0.2s ease; }
-        .card:active { transform: scale(0.98); }
-        .card.selected { border-color: var(--accent-color); background-color: var(--accent-bg); }
-        .card-content { flex: 1; padding-right: 16px; }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
-        .card-subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
-        .card-price { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; transition: color 0.2s; }
-        .card.selected .card-price { color: var(--accent-color); }
+        /* =========================================================
+           Панели и карточки
+           ========================================================= */
+        .list-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .checkbox-wrapper { width: 24px; height: 24px; border-radius: var(--radius-sm); border: 1px solid #555; background: #2E2E2E; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); flex-shrink: 0; }
-        .card.selected .checkbox-wrapper { background-color: var(--accent-color); border-color: var(--accent-color); }
-        .check-icon { opacity: 0; transform: scale(0.5); transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); fill: none; stroke: #ffffff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .card.selected .check-icon { opacity: 1; transform: scale(1); }
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), var(--highlight);
+        }
 
-        .input-base { width: 100%; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-primary); font-size: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
-        .input-base:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
-        .input-base::placeholder { color: var(--text-secondary); }
-        label { font-size: 12px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 6px; }
+        .card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            cursor: pointer;
+            user-select: none;
+            transition:
+                background-color 0.25s var(--ease-snap),
+                border-color 0.25s var(--ease-snap),
+                box-shadow 0.25s var(--ease-snap),
+                transform 0.15s var(--ease-snap);
+        }
+        .card.card-enter {
+            animation: cardIn 0.5s var(--ease-out) both;
+        }
+        @keyframes cardIn {
+            from { opacity: 0; translate: 0 12px; }
+            to   { opacity: 1; translate: 0 0; }
+        }
 
+        @media (hover: hover) {
+            .card:hover {
+                background: var(--surface-2);
+                border-color: var(--accent);
+            }
+        }
+        .card:active {
+            background: var(--surface-2);
+            border-color: var(--accent);
+            transform: scale(0.98);
+        }
+
+        .card.selected {
+            background:
+                linear-gradient(var(--accent-bg), var(--accent-bg)),
+                var(--surface-2);
+            border-color: var(--accent);
+            box-shadow:
+                var(--shadow-panel),
+                0 0 0 1px rgba(0, 123, 255, 0.15),
+                0 6px 24px rgba(0, 123, 255, 0.12),
+                var(--highlight);
+        }
+
+        .card-index {
+            align-self: flex-start;
+            padding-top: 3px;
+            min-width: 18px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            transition: color 0.25s;
+        }
+        .card.selected .card-index { color: var(--accent); }
+
+        .card-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .card-side {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .card-price {
+            font-size: 14px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            color: var(--text-primary);
+            transition: color 0.25s;
+        }
+        .card.selected .card-price { color: var(--accent); }
+
+        /* Чекбокс 24×24 */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: var(--graphite);
+            border: 1px solid var(--graphite-line);
+            border-radius: var(--radius-sm);
+            transition:
+                background-color 0.25s var(--ease-snap),
+                border-color 0.25s var(--ease-snap),
+                box-shadow 0.25s var(--ease-snap),
+                transform 0.25s var(--ease-snap);
+        }
+        .card.selected .checkbox-wrapper {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: var(--accent-glow);
+            animation: checkPop 0.35s var(--ease-snap);
+        }
+        @keyframes checkPop {
+            0%   { transform: scale(0.8); }
+            60%  { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .check-icon {
+            fill: none;
+            stroke: #FFFFFF;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 24;
+            stroke-dashoffset: 24;
+            transition: stroke-dashoffset 0.3s var(--ease-snap) 0.05s;
+        }
+        .card.selected .check-icon { stroke-dashoffset: 0; }
+
+        /* =========================================================
+           Формы
+           ========================================================= */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .field-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding-left: 2px;
+        }
+        .field-label .req { color: var(--danger); }
+
+        .input-base {
+            width: 100%;
+            padding: 16px;
+            font-family: var(--font-sans);
+            font-size: 16px;
+            color: var(--text-primary);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: var(--highlight);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            -webkit-appearance: none;
+                    appearance: none;
+        }
+        .input-base::placeholder { color: var(--text-tertiary); }
+        .input-base:focus {
+            outline: none;
+            background: var(--surface-2);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.18);
+        }
+        .input-base.is-error {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.15);
+        }
+        textarea.input-base { resize: none; line-height: 1.45; }
+
+        select.input-base {
+            padding-right: 44px;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+        select.input-base option { background: var(--surface); color: var(--text-primary); }
+
+        .field-error {
+            display: none;
+            font-size: 12px;
+            color: var(--danger);
+            padding-left: 2px;
+        }
+
+        /* Загрузка фото */
         .file-upload-container { display: flex; flex-direction: column; gap: 8px; }
-        .file-dropzone { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px dashed #555; border-radius: var(--radius-md); background: var(--surface-color); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
-        .file-dropzone:active { background: var(--surface-hover); }
-        .file-dropzone-icon { font-size: 24px; color: var(--accent-color); }
-        .file-dropzone-text { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+        .file-dropzone {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px dashed var(--graphite-line);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+        }
+        @media (hover: hover) {
+            .file-dropzone:hover { border-color: var(--accent); background: var(--surface-2); }
+        }
+        .file-dropzone:active { transform: scale(0.98); background: var(--surface-2); border-color: var(--accent); }
+        .file-dropzone-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border-radius: var(--radius-sm);
+        }
+        .file-dropzone-text { font-size: 15px; font-weight: 500; }
         .file-dropzone-subtext { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-        .preview-wrapper { position: relative; display: none; align-items: center; gap: 12px; padding: 10px; background: var(--surface-hover); border-radius: var(--radius-md); border: 1px solid var(--border-color); }
-        .preview-img { width: 50px; height: 50px; border-radius: var(--radius-sm); object-fit: cover; }
-        .preview-name { font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .btn-remove-photo { background: var(--danger-color); color: white; border: none; width: 30px; height: 30px; border-radius: var(--radius-sm); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .contact-card { display: flex; align-items: center; padding: 16px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); text-decoration: none; color: inherit; margin-bottom: 12px; transition: transform 0.1s; }
-        .contact-card:active { transform: scale(0.98); }
-        .contact-icon { width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-primary); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px; }
-        .contact-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
-        .contact-info p { font-size: 14px; color: var(--text-secondary); }
+        .preview-wrapper {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+        }
+        .preview-img { width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); }
+        .preview-name { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn-remove-photo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            color: var(--danger);
+            background: rgba(255, 69, 58, 0.12);
+            border: 1px solid rgba(255, 69, 58, 0.25);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .btn-remove-photo:active { transform: scale(0.92); }
 
-        .summary-item { display: flex; flex-direction: column; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
-        .summary-item:last-child { border-bottom: none; }
-        .summary-total { display: flex; justify-content: space-between; margin-top: 16px; font-size: 20px; font-weight: 700; }
+        /* =========================================================
+           Контакты
+           ========================================================= */
+        .contact-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 16px;
+            margin-bottom: 12px;
+            color: inherit;
+            text-decoration: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            transition: background-color 0.25s, border-color 0.25s, transform 0.15s;
+        }
+        a.contact-card:active { transform: scale(0.98); background: var(--surface-2); border-color: var(--accent); }
+        @media (hover: hover) {
+            a.contact-card:hover { background: var(--surface-2); border-color: var(--accent); }
+        }
+        .contact-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border: 1px solid rgba(0, 123, 255, 0.15);
+            border-radius: var(--radius-sm);
+        }
+        .contact-info { flex: 1; min-width: 0; }
+        .contact-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+        .contact-info p { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+        .contact-chevron { color: var(--text-tertiary); flex-shrink: 0; }
 
-        .floating-bar { position: fixed; bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px); left: 16px; right: 16px; background-color: var(--accent-color); color: #ffffff; border-radius: var(--radius-md); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; transform: translateY(150px); opacity: 0; pointer-events: none; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; z-index: 95; box-shadow: 0 8px 24px rgba(0, 123, 255, 0.25); }
-        .floating-bar.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .floating-bar:active { transform: scale(0.98); }
+        /* =========================================================
+           Оформление заказа
+           ========================================================= */
+        .summary-panel { padding: 6px 16px 18px; }
+
+        .summary-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .summary-name {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.35;
+        }
+        .summary-name::before {
+            content: '';
+            flex-shrink: 0;
+            width: 6px;
+            height: 6px;
+            margin-top: 7px;
+            border-radius: 2px;
+            background: var(--accent);
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.7);
+        }
+        .summary-price {
+            font-size: 14px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .summary-details {
+            margin: 8px 0 0 16px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+        }
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding-top: 16px;
+        }
+        .summary-total-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            color: var(--text-secondary);
+        }
+        .summary-total-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--accent);
+            text-shadow: 0 0 24px rgba(0, 123, 255, 0.35);
+        }
+
+        /* AI-рекомендация */
+        .ai-panel {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            padding: 16px;
+            background:
+                linear-gradient(135deg, rgba(0, 123, 255, 0.12), rgba(0, 123, 255, 0.02) 60%),
+                var(--surface);
+            border: 1px solid var(--accent-line);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), 0 0 24px rgba(0, 123, 255, 0.08), var(--highlight);
+        }
+        .ai-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .ai-tag {
+            padding: 2px 6px;
+            font-size: 10px;
+            color: #FFFFFF;
+            background: var(--accent);
+            border-radius: 4px;
+            box-shadow: var(--accent-glow);
+        }
+        .ai-text { font-size: 14px; line-height: 1.45; }
+        .ai-text b { color: var(--accent); font-weight: 600; }
+
+        .loading-text {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+        .loading-text::after {
+            content: '';
+            animation: dots 1.4s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+        }
+
+        /* =========================================================
+           Плавающая панель заказа (glass)
+           ========================================================= */
+        .floating-bar {
+            position: fixed;
+            z-index: 95;
+            left: var(--gutter);
+            right: var(--gutter);
+            bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+            max-width: calc(var(--max-width) - var(--gutter) * 2);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 8px 8px 18px;
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(140%);
+            pointer-events: none;
+            transition: transform 0.45s var(--ease-out), opacity 0.3s ease;
+        }
+        .floating-bar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .floating-bar.visible:active { transform: scale(0.98); }
+
         .fb-info { display: flex; flex-direction: column; }
-        .fb-count { font-size: 13px; opacity: 0.9; font-weight: 500; }
-        .fb-total { font-size: 18px; font-weight: 700; margin-top: 2px; }
-        .fb-action { font-size: 16px; font-weight: 700; text-transform: uppercase; }
+        .fb-count {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .fb-total {
+            margin-top: 2px;
+            font-size: 19px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .fb-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            background: var(--accent);
+            border-radius: 10px;
+            box-shadow: var(--accent-glow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: calc(var(--nav-height) + var(--safe-bottom)); background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding-bottom: var(--safe-bottom); z-index: 100; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; transition: color 0.2s; }
-        .nav-item.active { color: var(--accent-color); }
-        .nav-icon { font-size: 22px; margin-bottom: 2px; }
+        /* =========================================================
+           Нижняя навигация (glass)
+           ========================================================= */
+        .bottom-nav {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: space-around;
+            height: calc(var(--nav-height) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+            border-top: 1px solid var(--border-strong);
+            transition: transform 0.4s var(--ease-out);
+        }
+        .nav-item {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            max-width: 160px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #636366;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.25s;
+        }
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            width: 28px;
+            height: 2px;
+            border-radius: 0 0 2px 2px;
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 123, 255, 0.9);
+            transform: translateX(-50%) scaleX(0);
+            transition: transform 0.35s var(--ease-snap);
+        }
+        .nav-item.active { color: var(--accent); }
+        .nav-item.active::before { transform: translateX(-50%) scaleX(1); }
+        .nav-item:active .nav-icon { transform: scale(0.88); }
+        .nav-icon { display: flex; transition: transform 0.15s; }
 
-        .order-card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-        .order-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        .order-status { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; background: var(--accent-bg); color: var(--accent-color); text-transform: uppercase; font-weight: 700; }
-        .order-status.cancelled { background: rgba(255, 69, 58, 0.1); color: var(--danger-color); }
-        .order-body { font-size: 14px; line-height: 1.5; color: var(--text-primary); }
-        .order-footer { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; margin-top: 4px; border-top: 1px solid var(--border-color); padding-top: 12px; }
-        .empty-cabinet { text-align: center; color: var(--text-secondary); padding: 40px 16px; font-size: 15px; }
+        /* =========================================================
+           Кабинет / заказы
+           ========================================================= */
+        .order-card {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 18px 16px;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .order-id {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+        .order-status {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border: 1px solid rgba(0, 123, 255, 0.2);
+            border-radius: var(--radius-sm);
+        }
+        .order-status.cancelled {
+            color: var(--danger);
+            background: rgba(255, 69, 58, 0.1);
+            border-color: rgba(255, 69, 58, 0.2);
+        }
+        .order-body { font-size: 14px; line-height: 1.5; }
+        .order-body-label {
+            display: block;
+            margin-bottom: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .order-date { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+        .order-total { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        .timeline { display: flex; justify-content: space-between; position: relative; margin: 12px 4px 4px 4px; }
-        .timeline::before { content: ''; position: absolute; top: 10px; left: 10px; right: 10px; height: 2px; background: var(--surface-hover); z-index: 1; }
-        .timeline-step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; flex: 1; }
-        .timeline-bullet { width: 22px; height: 22px; border-radius: var(--radius-sm); background-color: var(--surface-color); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-secondary); }
-        .timeline-step.completed .timeline-bullet { background-color: var(--success-color); border-color: var(--success-color); color: #fff; }
-        .timeline-step.active .timeline-bullet { background-color: var(--surface-hover); border-color: var(--success-color); color: var(--success-color); font-weight: bold; }
-        .timeline-label { font-size: 10px; color: var(--text-secondary); margin-top: 8px; text-align: center; max-width: 65px; line-height: 1.2; font-weight: 600; }
-        .timeline-step.completed .timeline-label, .timeline-step.active .timeline-label { color: var(--text-primary); }
-        .timeline-step.cancelled .timeline-bullet { background-color: var(--danger-color); border-color: var(--danger-color); color: #fff; }
-        .timeline-step.cancelled .timeline-label { color: var(--danger-color); }
+        .empty-cabinet {
+            padding: 48px 16px;
+            text-align: center;
+            font-size: 15px;
+            color: var(--text-secondary);
+            background: var(--surface);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+        }
 
-        #view-success.active { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 75vh; }
-        .success-icon-wrap { width: 80px; height: 80px; background-color: var(--success-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(50, 215, 75, 0.2); }
-        .success-icon-wrap svg { width: 40px; height: 40px; stroke: #ffffff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-        .success-title { font-size: 24px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; line-height: 1.2; }
-        .success-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; }
-        .btn-close { background-color: var(--surface-hover); color: var(--text-primary); border: none; padding: 16px 36px; border-radius: var(--radius-md); font-size: 15px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: background-color 0.2s; }
-        .btn-close:active { background-color: #2A2A2A; }
+        /* Таймлайн */
+        .timeline {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0 2px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            z-index: 1;
+            top: 11px;
+            left: 12%;
+            right: 12%;
+            height: 2px;
+            background: var(--graphite);
+        }
+        .timeline:has(.cancelled)::before { display: none; }
+        .timeline-step {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .timeline-bullet {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            background: var(--surface);
+            border: 2px solid var(--graphite);
+            border-radius: var(--radius-sm);
+        }
+        .timeline-step.completed .timeline-bullet {
+            color: #FFFFFF;
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .timeline-step.active .timeline-bullet {
+            color: var(--accent);
+            background: var(--surface-2);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 123, 255, 0.5);
+        }
+        .timeline-step.cancelled .timeline-bullet {
+            color: #FFFFFF;
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+        .timeline-label {
+            max-width: 70px;
+            margin-top: 8px;
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            line-height: 1.2;
+            text-align: center;
+            color: var(--text-tertiary);
+        }
+        .timeline-step.completed .timeline-label,
+        .timeline-step.active .timeline-label { color: var(--text-primary); }
+        .timeline-step.cancelled .timeline-label { color: var(--danger); }
+
+        /* =========================================================
+           Экран успеха
+           ========================================================= */
+        #view-success.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+        .success-icon-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 84px;
+            height: 84px;
+            margin-bottom: 28px;
+            background: var(--success);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(50, 215, 75, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            animation: successIn 0.6s var(--ease-snap) both;
+        }
+        .success-icon-wrap::after {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border: 1px solid rgba(50, 215, 75, 0.35);
+            border-radius: 18px;
+            animation: ring 2.2s ease-out infinite;
+        }
+        @keyframes successIn {
+            from { transform: scale(0.6); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+        @keyframes ring {
+            0%   { opacity: 0.9; transform: scale(0.92); }
+            100% { opacity: 0; transform: scale(1.25); }
+        }
+        .success-icon-wrap svg {
+            width: 40px;
+            height: 40px;
+            fill: none;
+            stroke: #FFFFFF;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .success-kicker {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .success-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .success-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 36px; }
+        .btn-close {
+            padding: 16px 40px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .btn-close:active { transform: scale(0.97); background: var(--graphite); border-color: var(--accent); }
+
+        /* Доступность */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
 
+    <!-- ===================== УСЛУГИ ===================== -->
     <main id="view-services" class="view active">
         <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ СЕРВИС</div>
-            <h1>УСЛУГИ</h1>
+            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / СЕРВИС</div>
+            <h1>Услуги</h1>
             <p class="desc" id="service-desc">Ремонт, обслуживание и настройка. Выберите необходимое.</p>
         </header>
 
@@ -140,43 +1027,54 @@
             <div class="segment" id="tab-b2b" onclick="switchMode('b2b')">Для бизнеса</div>
         </div>
 
+        <div class="section-meta" id="services-meta">Каталог</div>
         <div class="list-group" id="services-container"></div>
     </main>
 
+    <!-- ===================== КАБИНЕТ ===================== -->
     <main id="view-cabinet" class="view">
         <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ ПРОФИЛЬ</div>
-            <h1>КАБИНЕТ</h1>
+            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / ПРОФИЛЬ</div>
+            <h1>Кабинет</h1>
             <p class="desc">История ваших заявок и их статусы.</p>
         </header>
         <div class="list-group" id="orders-container">
-            <div class="empty-cabinet">Загрузка истории заказов...</div>
+            <div class="empty-cabinet"><span class="loading-text">ЗАГРУЗКА ИСТОРИИ</span></div>
         </div>
     </main>
 
+    <!-- ===================== КОНТАКТЫ ===================== -->
     <main id="view-contacts" class="view">
         <header>
-            <div class="brand-subtitle">ЭЛИВЕЙТ ИНФО</div>
-            <h1>КОНТАКТЫ</h1>
+            <div class="brand-subtitle"><span class="brand-dot"></span>ЭЛИВЕЙТ / ИНФО</div>
+            <h1>Контакты</h1>
             <p class="desc">Свяжитесь с нами удобным способом.</p>
         </header>
 
         <a href="tel:+79918886017" class="contact-card">
-            <div class="contact-icon">📞</div>
+            <div class="contact-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
             <div class="contact-info">
                 <h3>+7 (991) 888-60-17</h3>
                 <p>Телефон / WhatsApp</p>
             </div>
+            <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
         <a href="https://t.me/IvanMiroshnichenkoo" target="_blank" rel="noopener" class="contact-card">
-            <div class="contact-icon">💬</div>
+            <div class="contact-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+            </div>
             <div class="contact-info">
                 <h3>@IvanMiroshnichenkoo</h3>
                 <p>Написать в Telegram</p>
             </div>
+            <svg class="contact-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
         <div class="contact-card">
-            <div class="contact-icon">📍</div>
+            <div class="contact-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
             <div class="contact-info">
                 <h3>Инженерный центр Эливэйт</h3>
                 <p>Выезд на дом и в офис по договоренности</p>
@@ -184,27 +1082,30 @@
         </div>
     </main>
 
+    <!-- ===================== ОФОРМЛЕНИЕ ===================== -->
     <main id="view-summary" class="view">
         <header>
-            <div class="brand-subtitle" id="summary-subtitle">ОФОРМЛЕНИЕ</div>
-            <h1 id="summary-title">ВАШ ЗАКАЗ</h1>
+            <div class="brand-subtitle"><span class="brand-dot"></span><span id="summary-subtitle">ОФОРМЛЕНИЕ</span></div>
+            <h1 id="summary-title">Ваш заказ</h1>
             <p class="desc">Проверьте выбранные услуги и укажите детали заявки.</p>
         </header>
 
         <div class="list-group">
 
-            <div class="card" id="ai-upsell-container" style="display: none; background: var(--accent-bg); border-color: var(--accent-color); flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-color);">СИСТЕМНАЯ РЕКОМЕНДАЦИЯ:</div>
-                <div id="ai-upsell-text" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">Анализ данных...</div>
+            <div class="ai-panel" id="ai-upsell-container">
+                <div class="ai-head"><span class="ai-tag">AI</span>Системная рекомендация</div>
+                <div class="ai-text" id="ai-upsell-text"><span class="loading-text">АНАЛИЗ ДАННЫХ</span></div>
             </div>
 
-            <div class="card" style="cursor: default; transform: none; box-shadow: none;">
-                <div id="summary-list" style="width: 100%;"></div>
+            <div class="panel summary-panel">
+                <div id="summary-list"></div>
             </div>
 
-            <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 12px;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>ТИП УСТРОЙСТВА:</label>
+            <div class="section-meta" style="margin-top: 12px;">Детали заявки</div>
+
+            <div id="form-fields-b2c" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="field">
+                    <label class="field-label" for="device-type">Тип устройства</label>
                     <select id="device-type" class="input-base">
                         <option value="Ноутбук">Ноутбук</option>
                         <option value="Системный блок">Системный блок</option>
@@ -213,16 +1114,18 @@
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>КРАТКО ОПИШИТЕ ПРОБЛЕМУ (НЕОБЯЗАТЕЛЬНО):</label>
-                    <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" maxlength="500" style="resize: none;"></textarea>
+                <div class="field">
+                    <label class="field-label" for="problem-desc">Кратко опишите проблему · необязательно</label>
+                    <textarea id="problem-desc" class="input-base" placeholder="Например: шумит, не включается..." rows="3" maxlength="500"></textarea>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>ФОТО ПРОБЛЕМЫ (НЕОБЯЗАТЕЛЬНО):</label>
+                <div class="field">
+                    <span class="field-label">Фото проблемы · необязательно</span>
                     <div class="file-upload-container">
                         <label class="file-dropzone" id="dropzone-label">
-                            <span class="file-dropzone-icon">📷</span>
+                            <span class="file-dropzone-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            </span>
                             <div>
                                 <div class="file-dropzone-text">Прикрепить фото проблемы</div>
                                 <div class="file-dropzone-subtext">Нажмите для выбора из галереи</div>
@@ -232,64 +1135,74 @@
                         <div class="preview-wrapper" id="preview-wrapper">
                             <img id="preview-img" class="preview-img" src="" alt="Превью">
                             <span class="preview-name" id="preview-name">photo.jpg</span>
-                            <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
+                            <button type="button" class="btn-remove-photo" onclick="removePhoto()" aria-label="Удалить фото">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 12px;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>КОЛИЧЕСТВО РАБОЧИХ МЕСТ (ШТ.):</label>
-                    <input type="number" id="b2b-workplaces" class="input-base" placeholder="Например: 15" min="1" max="100000">
+            <div id="form-fields-b2b" style="display: none; flex-direction: column; gap: 16px;">
+                <div class="field">
+                    <label class="field-label" for="b2b-workplaces">Количество рабочих мест, шт.</label>
+                    <input type="number" id="b2b-workplaces" class="input-base" placeholder="Например: 15" min="1" max="100000" inputmode="numeric">
                 </div>
-
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label>АДРЕС ИЛИ ПЛОЩАДЬ ОФИСА (КВ.М):</label>
+                <div class="field">
+                    <label class="field-label" for="b2b-office">Адрес или площадь офиса, кв.м</label>
                     <input type="text" id="b2b-office" class="input-base" placeholder="Например: БЦ Эливэйт, 100 кв.м" maxlength="200">
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
-                <label>ВАШ НОМЕР ТЕЛЕФОНА: <span style="color: var(--danger-color);">*</span></label>
-                <input type="tel" id="client-phone" class="input-base" placeholder="+7 (___) ___-__-__" maxlength="18">
-                <span id="phone-error" style="color: var(--danger-color); font-size: 12px; display: none;">Введите корректный номер (11 цифр)</span>
+            <div class="field" style="margin-top: 4px;">
+                <label class="field-label" for="client-phone">Ваш номер телефона <span class="req">*</span></label>
+                <input type="tel" id="client-phone" class="input-base" placeholder="+7 (___) ___-__-__" maxlength="18" inputmode="tel" autocomplete="tel">
+                <span id="phone-error" class="field-error">Введите корректный номер (11 цифр)</span>
             </div>
         </div>
     </main>
 
+    <!-- ===================== УСПЕХ ===================== -->
     <main id="view-success" class="view">
         <div class="success-icon-wrap">
-            <svg viewBox="0 0 24 24">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
-        <div class="success-title">СИСТЕМА:<br>ЗАЯВКА ПРИНЯТА</div>
-        <div class="success-desc" style="margin-top: 12px;">Детали переданы специалисту в чат.</div>
-        <button class="btn-close" onclick="tg.close()">ЗАКРЫТЬ</button>
+        <div class="success-kicker">СИСТЕМА</div>
+        <div class="success-title">Заявка принята</div>
+        <div class="success-desc">Детали переданы специалисту в чат.</div>
+        <button class="btn-close" onclick="tg.close()">Закрыть</button>
     </main>
 
+    <!-- ===================== ПЛАВАЮЩАЯ ПАНЕЛЬ ===================== -->
     <div id="floating-bar" class="floating-bar" onclick="navigate('summary')">
         <div class="fb-info">
             <span class="fb-count" id="fb-count">0 услуг</span>
             <span class="fb-total" id="fb-total">0 ₽</span>
         </div>
         <div class="fb-action">
-            ДАЛЕЕ <span>→</span>
+            Далее
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </div>
     </div>
 
+    <!-- ===================== НАВИГАЦИЯ ===================== -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navigate('services')" id="nav-services">
-            <span class="nav-icon">▤</span>
+            <span class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+            </span>
             <span>Услуги</span>
         </div>
         <div class="nav-item" onclick="navigate('cabinet')" id="nav-cabinet">
-            <span class="nav-icon">👤</span>
+            <span class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+            </span>
             <span>Кабинет</span>
         </div>
         <div class="nav-item" onclick="navigate('contacts')" id="nav-contacts">
-            <span class="nav-icon">●</span>
+            <span class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
             <span>Контакты</span>
         </div>
     </nav>
@@ -346,6 +1259,14 @@
         let cart = new Map();
         let currentView = 'services';
         let selectedFile = null;
+
+        function pluralize(n, forms) {
+            const n100 = n % 100, n10 = n % 10;
+            if (n100 > 10 && n100 < 20) return forms[2];
+            if (n10 > 1 && n10 < 5) return forms[1];
+            if (n10 === 1) return forms[0];
+            return forms[2];
+        }
 
         function switchMode(mode) {
             if (currentMode === mode) return;
@@ -421,7 +1342,7 @@
             let inputNumbersValue = e.target.value.replace(/\D/g, '');
             let formattedInputValue = '';
 
-            phoneInput.style.borderColor = 'var(--border-color)';
+            phoneInput.classList.remove('is-error');
             document.getElementById('phone-error').style.display = 'none';
 
             if (!inputNumbersValue) return e.target.value = '';
@@ -445,19 +1366,23 @@
             container.innerHTML = '';
 
             const activeData = currentMode === 'b2b' ? servicesDataB2B : servicesDataB2C;
+            document.getElementById('services-meta').innerText =
+                `Каталог · ${activeData.length} ${pluralize(activeData.length, ['позиция', 'позиции', 'позиций'])}`;
 
-            activeData.forEach(s => {
+            activeData.forEach((s, i) => {
                 const isSelected = cart.has(s.id);
                 const card = document.createElement('div');
-                card.className = `card ${isSelected ? 'selected' : ''}`;
+                card.className = `card card-enter ${isSelected ? 'selected' : ''}`;
+                card.style.animationDelay = `${i * 35}ms`;
                 card.onclick = () => toggleService(card, s);
 
                 card.innerHTML = `
+                    <div class="card-index">${String(i + 1).padStart(2, '0')}</div>
                     <div class="card-content">
                         <div class="card-title">${esc(s.name)}</div>
                         <div class="card-subtitle">${esc(s.subtitle)}</div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="card-side">
                         <div class="card-price">${esc(s.label)}</div>
                         <div class="checkbox-wrapper">
                             <svg class="check-icon" viewBox="0 0 24 24" width="16" height="16">
@@ -488,10 +1413,7 @@
             if (cart.size > 0) {
                 let total = Array.from(cart.values()).reduce((sum, item) => sum + item.price, 0);
 
-                let words = ['услуга', 'услуги', 'услуг'];
-                let n = cart.size % 100;
-                let n1 = n % 10;
-                let word = (n > 10 && n < 20) ? words[2] : (n1 > 1 && n1 < 5) ? words[1] : (n1 === 1) ? words[0] : words[2];
+                const word = pluralize(cart.size, ['услуга', 'услуги', 'услуг']);
 
                 document.getElementById('fb-count').innerText = `${cart.size} ${word}`;
                 document.getElementById('fb-total').innerText = total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : `Смета`;
@@ -511,6 +1433,7 @@
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
 
             document.getElementById(`view-${viewName}`).classList.add('active');
+            window.scrollTo({ top: 0 });
 
             const navBtn = document.getElementById(`nav-${viewName}`);
             if(navBtn) navBtn.classList.add('active');
@@ -554,7 +1477,7 @@
             if (currentMode === 'b2b') {
                 fieldsB2C.style.display = 'none';
                 fieldsB2B.style.display = 'flex';
-                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ (БИЗНЕС)';
+                summarySubtitle.innerText = 'ОФОРМЛЕНИЕ / БИЗНЕС';
             } else {
                 fieldsB2B.style.display = 'none';
                 fieldsB2C.style.display = 'flex';
@@ -577,7 +1500,7 @@
             if (activeStep === -1) {
                 return `
                     <div class="timeline">
-                        <div class="timeline-step cancelled" style="flex: 1;">
+                        <div class="timeline-step cancelled">
                             <div class="timeline-bullet">✕</div>
                             <div class="timeline-label">ОТМЕНЕН</div>
                         </div>
@@ -614,7 +1537,7 @@
                 container.innerHTML = '<div class="empty-cabinet">Не удалось определить пользователя. Откройте через Telegram.</div>';
                 return;
             }
-            container.innerHTML = '<div class="empty-cabinet">Загрузка данных...</div>';
+            container.innerHTML = '<div class="empty-cabinet"><span class="loading-text">ЗАГРУЗКА ДАННЫХ</span></div>';
 
             fetch('/api/orders', { headers: authHeaders() })
                 .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
@@ -627,16 +1550,19 @@
                         const st = String(order.status || '');
                         const isCancelled = /отмен|отказ/i.test(st);
                         return `
-                            <div class="order-card">
+                            <div class="panel order-card">
                                 <div class="order-header">
-                                    <span>ЗАКАЗ ${esc(order.order_id)}</span>
+                                    <span class="order-id">ЗАКАЗ ${esc(order.order_id)}</span>
                                     <span class="order-status ${isCancelled ? 'cancelled' : ''}">${esc(st)}</span>
                                 </div>
-                                <div class="order-body"><b>СОСТАВ:</b> ${esc(order.items)}</div>
+                                <div class="order-body">
+                                    <span class="order-body-label">СОСТАВ</span>
+                                    ${esc(order.items)}
+                                </div>
                                 ${getTimelineHtml(st)}
                                 <div class="order-footer">
-                                    <span style="font-size: 13px; color: var(--text-secondary); font-weight: 400;">${fmtDate(order.created_at)}</span>
-                                    <span>${Number(order.total).toLocaleString('ru-RU')} ₽</span>
+                                    <span class="order-date">${fmtDate(order.created_at)}</span>
+                                    <span class="order-total">${Number(order.total) > 0 ? Number(order.total).toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
                                 </div>
                             </div>`;
                     }).join('');
@@ -655,20 +1581,20 @@
                 total += item.price;
                 const priceStr = item.price === 0 ? 'По договоренности' : `${item.price.toLocaleString('ru-RU')} ₽`;
                 const details = (currentMode === 'b2b' && item.details)
-                    ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.3;">${esc(item.details)}</div>` : '';
+                    ? `<div class="summary-details">${esc(item.details)}</div>` : '';
                 html += `
                     <div class="summary-item">
-                        <div style="display: flex; justify-content: space-between; width: 100%;">
-                            <span style="flex:1; padding-right:12px; font-weight: 500;">✓ ${esc(item.name)}</span>
-                            <span style="font-weight:600; white-space: nowrap;">${priceStr}</span>
+                        <div class="summary-row">
+                            <span class="summary-name">${esc(item.name)}</span>
+                            <span class="summary-price">${priceStr}</span>
                         </div>
                         ${details}
                     </div>`;
             });
             html += `
                 <div class="summary-total">
-                    <span>ИТОГО:</span>
-                    <span style="color: var(--accent-color);">${total > 0 ? total.toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
+                    <span class="summary-total-label">ИТОГО</span>
+                    <span class="summary-total-value">${total > 0 ? total.toLocaleString('ru-RU') + ' ₽' : 'Смета'}</span>
                 </div>`;
             container.innerHTML = html;
 
@@ -679,7 +1605,7 @@
             if (cart.size === 0) { upsellContainer.style.display = 'none'; return; }
 
             upsellContainer.style.display = 'flex';
-            upsellText.innerHTML = '<span style="color: var(--text-secondary);">СИСТЕМНЫЙ АНАЛИЗ...</span>';
+            upsellText.innerHTML = '<span class="loading-text">СИСТЕМНЫЙ АНАЛИЗ</span>';
 
             upsellCtrl = new AbortController();
             const formData = new FormData();
@@ -717,7 +1643,7 @@
             const phoneDigits = phoneInput.value.replace(/\D/g, '');
             if (phoneDigits.length !== 11) {
                 tg.showAlert('ТРЕБУЕТСЯ: Корректный номер телефона (11 цифр).');
-                phoneInput.style.borderColor = 'var(--danger-color)';
+                phoneInput.classList.add('is-error');
                 document.getElementById('phone-error').style.display = 'block';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 return;
