@@ -1766,6 +1766,242 @@
             .particles-canvas { display: none; }
             .success-frame { stroke-dashoffset: 0; }
         }
+
+        /* =====================================================================
+           Академия — обучение мастеров (видна только администраторам)
+           ===================================================================== */
+        .xp-card { position: relative; padding: 18px 16px; margin-bottom: 28px; }
+        .xp-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .xp-caption {
+            margin-bottom: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .xp-level { font-size: 18px; font-weight: 700; }
+        .xp-level.level-up { animation: xpLevelUp 1.2s ease; }
+        @keyframes xpLevelUp { 30% { color: var(--success); } }
+        .xp-value {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .xp-track { height: 8px; margin-top: 14px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+        .xp-fill {
+            width: 0;
+            height: 100%;
+            border-radius: 4px;
+            background: var(--success);
+            box-shadow: 0 0 12px rgba(var(--success-rgb), 0.45);
+            transition: width 0.9s var(--ease-out);
+        }
+        .xp-next { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+        .xp-gain {
+            position: absolute;
+            top: -8px;
+            right: 16px;
+            padding: 4px 10px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: #000;
+            background: var(--success);
+            border-radius: var(--radius-sm);
+            pointer-events: none;
+            animation: xpFloat 1.3s var(--ease-out) forwards;
+        }
+        @keyframes xpFloat {
+            0%   { opacity: 0; transform: translateY(10px) scale(0.9); }
+            20%  { opacity: 1; transform: none; }
+            75%  { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-14px); }
+        }
+        .academy-label {
+            margin-bottom: 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .skill-tree { display: flex; flex-direction: column; gap: 16px; }
+        .skill-node {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 16px;
+            text-align: left;
+            color: var(--text-primary);
+            transition: border-color var(--t-base), transform var(--t-fast) var(--ease-snap), opacity var(--t-base);
+        }
+        .skill-node:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 37px;
+            width: 2px;
+            height: 17px;
+            background: var(--graphite-line);
+        }
+        .skill-node.completed:not(:last-child)::after { background: var(--success); }
+        .skill-node:not(.locked):active { transform: scale(0.98); }
+        .skill-node.available { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.18); }
+        .skill-node.locked { cursor: default; opacity: 0.45; filter: grayscale(1); }
+        .skill-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: var(--surface-2);
+            border-radius: var(--radius-md);
+        }
+        .skill-node.available .skill-badge { color: #fff; background: var(--accent); }
+        .skill-node.completed .skill-badge { color: #fff; background: var(--success); }
+        .skill-body { flex: 1; min-width: 0; }
+        .skill-title { font-size: 16px; font-weight: 600; line-height: 1.3; }
+        .skill-sub { margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+        .skill-meta { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+        .skill-node.available .skill-meta { color: var(--accent); }
+        .skill-node.completed .skill-meta { color: var(--success); }
+        .skill-chevron { flex-shrink: 0; display: flex; color: var(--text-secondary); }
+
+        .academy-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 16px;
+            padding: 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .module-head { margin-bottom: 20px; }
+        .module-head h2 { margin-bottom: 6px; font-size: 22px; font-weight: 700; line-height: 1.15; text-transform: uppercase; }
+        .theory-card { padding: 18px 16px; }
+        .theory-step { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--accent); }
+        .theory-title { margin: 6px 0 8px; font-size: 16px; font-weight: 600; }
+        .theory-text { font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, 0.86); }
+        .theory-tip {
+            margin-top: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
+            line-height: 1.45;
+            background: var(--accent-bg);
+            border-left: 2px solid var(--accent);
+            border-radius: var(--radius-sm);
+        }
+        .academy-actions { margin-top: 20px; }
+
+        .quiz-dots { display: flex; gap: 6px; margin-bottom: 18px; }
+        .quiz-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-2); transition: background var(--t-base); }
+        .quiz-dot.current { background: var(--accent); }
+        .quiz-dot.done { background: var(--success); }
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .quiz-meta .quiz-xp { color: var(--success); }
+        .quiz-question { margin-bottom: 20px; font-size: 18px; font-weight: 600; line-height: 1.35; }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+        .quiz-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.35;
+            color: var(--text-primary);
+            transition: border-color var(--t-base), background-color var(--t-base), opacity var(--t-base), transform var(--t-fast);
+        }
+        .quiz-option:not(:disabled):active { transform: scale(0.98); }
+        .quiz-option:disabled { cursor: default; }
+        .quiz-letter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            transition: background-color var(--t-base), color var(--t-base);
+        }
+        .quiz-option.correct { border-color: var(--success); background: rgba(var(--success-rgb), 0.1); }
+        .quiz-option.correct .quiz-letter { color: #fff; background: var(--success); }
+        .quiz-option.wrong { border-color: var(--danger); background: rgba(var(--danger-rgb), 0.08); opacity: 0.6; animation: quizShake 0.35s; }
+        .quiz-option.wrong .quiz-letter { color: #fff; background: var(--danger); }
+        .quiz-option.dimmed { opacity: 0.4; }
+        @keyframes quizShake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        .quiz-feedback {
+            margin-top: 16px;
+            padding: 14px 16px;
+            font-size: 14px;
+            line-height: 1.45;
+            border-radius: var(--radius-md);
+            animation: viewIn var(--t-base) var(--ease-out) both;
+        }
+        .quiz-feedback b { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; }
+        .quiz-feedback.ok  { background: rgba(var(--success-rgb), 0.08); border: 1px solid rgba(var(--success-rgb), 0.3); }
+        .quiz-feedback.ok b { color: var(--success); }
+        .quiz-feedback.bad { background: rgba(var(--danger-rgb), 0.08); border: 1px solid rgba(var(--danger-rgb), 0.3); }
+        .quiz-feedback.bad b { color: var(--danger); }
+        .quiz-next { margin-top: 16px; }
+
+        .academy-complete { display: flex; flex-direction: column; align-items: center; padding: 24px 0 8px; text-align: center; }
+        .academy-complete-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 20px;
+            color: #fff;
+            background: var(--success);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 24px rgba(var(--success-rgb), 0.25);
+        }
+        .academy-complete h2 { margin-bottom: 10px; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+        .academy-complete p { margin-bottom: 20px; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+        .unlock-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--accent-bg);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-sm);
+        }
+        .academy-reset { display: block; margin: 20px auto 0; }
     </style>
 </head>
 <body>
@@ -1843,6 +2079,29 @@
                 </div>
             </div>
         </div>
+    </main>
+
+    <!-- ===================== АКАДЕМИЯ (только админы) ===================== -->
+    <main id="view-academy" class="view" aria-labelledby="academy-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / ВНУТРЕННЕЕ</div>
+            <h1 id="academy-title">Академия</h1>
+            <p class="desc">Прокачка мастеров: теория, квизы, уровни.</p>
+        </header>
+
+        <div class="panel xp-card" id="xp-card">
+            <div class="xp-top">
+                <div>
+                    <div class="xp-caption">Уровень</div>
+                    <div class="xp-level" id="xp-level">—</div>
+                </div>
+                <div class="xp-value" id="xp-value">0 / 0 XP</div>
+            </div>
+            <div class="xp-track" role="progressbar" aria-label="Опыт" aria-valuemin="0" id="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+            <div class="xp-next" id="xp-next">&nbsp;</div>
+        </div>
+
+        <div id="academy-root" aria-live="polite"></div>
     </main>
 
     <!-- ===================== ДОСКА МАСТЕРА (только админы) ===================== -->
@@ -2027,6 +2286,13 @@
             </span>
             <span>CRM</span>
             <span class="nav-badge" id="nav-master-badge" hidden></span>
+        </button>
+        <!-- Вкладка Академии: тоже только для администраторов -->
+        <button type="button" class="nav-item" id="nav-academy" data-view="academy" hidden style="display: none;">
+            <span class="nav-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/><path d="M22 10v6"/></svg>
+            </span>
+            <span>Академия</span>
         </button>
     </nav>
 
@@ -2382,6 +2648,7 @@
             }
             if (view === 'cabinet') loadOrders();
             if (view === 'master') startBoard();
+            if (view === 'academy' && changed) loadAcademy();
             if (view === 'success') burstParticles();
         }
 
@@ -2982,6 +3249,9 @@
                 const nav = $('nav-master');
                 nav.hidden = false;
                 nav.style.removeProperty('display');
+                const navAcademy = $('nav-academy');
+                navAcademy.hidden = false;
+                navAcademy.style.removeProperty('display');
                 // Счётчик новых заявок на вкладке — без отрисовки доски
                 const res = await request('/api/admin/orders', { headers: authHeaders(), timeout: 15000 });
                 if (res.ok && res.data && res.data.counts) updateBadge(res.data.counts.new);
@@ -3408,6 +3678,237 @@
         $('order-form').addEventListener('submit', e => { e.preventDefault(); submitOrder(); });
         call(MainButton, 'onClick', submitOrder);
         call(BackButton, 'onClick', () => navigate('services'));
+
+        /* ==================================================================
+           Академия. Дерево навыков, квизы и XP. Верные ответы хранятся
+           только на сервере; прогресс — в SQLite (таблица academy_answers).
+           ================================================================== */
+        const academy = { state: null, screen: 'tree', moduleId: null, qIndex: 0, lastResult: null, busy: false };
+        ICON.lock = () => svg(20, [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }]], { 'stroke-width': 2 });
+        ICON.unlock = () => svg(18, [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 7.8-1.2' }]], { 'stroke-width': 2 });
+        ICON.chevron = () => svg(18, [['polyline', { points: '9 6 15 12 9 18' }]], { 'stroke-width': 2 });
+        ICON.back = () => svg(18, [['polyline', { points: '15 6 9 12 15 18' }]], { 'stroke-width': 2.2 });
+        ICON.bigCheck = () => svg(36, [['polyline', { points: '20 6 9 17 4 12' }]], { 'stroke-width': 3 });
+
+        async function academyApi(url, body) {
+            const opts = { headers: authHeaders(), timeout: 15000 };
+            if (body !== undefined) {
+                opts.method = 'POST';
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(body);
+            }
+            const { ok, status, data } = await request(url, opts);
+            if (!ok) throw new Error(errorMessage(status, data, 'Не удалось связаться с Академией.'));
+            return data;
+        }
+
+        async function loadAcademy() {
+            const root = $('academy-root');
+            academy.screen = 'tree';
+            if (academy.state) renderAcademy();
+            else root.replaceChildren(emptyState('Загрузка программы обучения…'));
+            try {
+                academy.state = await academyApi('/api/academy/content');
+                updateXp(academy.state.progress);
+                if (state.view === 'academy' && academy.screen === 'tree') renderAcademy();
+            } catch (e) {
+                if (!academy.state) root.replaceChildren(emptyState(netMessage(e, 'Академия недоступна.'), { error: true }));
+                else toast(netMessage(e, 'Академия недоступна.'));
+            }
+        }
+
+        function updateXp(p, levelUp = false) {
+            const lvl = $('xp-level');
+            lvl.textContent = p.level.title;
+            if (levelUp) { lvl.classList.remove('level-up'); void lvl.offsetWidth; lvl.classList.add('level-up'); }
+            $('xp-value').textContent = `${p.xp} / ${p.max_xp} XP`;
+            const track = $('xp-track');
+            track.setAttribute('aria-valuemax', p.max_xp);
+            track.setAttribute('aria-valuenow', p.xp);
+            const pct = p.max_xp ? Math.min(100, (p.xp / p.max_xp) * 100) : 0;
+            requestAnimationFrame(() => { $('xp-fill').style.width = pct + '%'; });
+            $('xp-next').textContent = p.next_level
+                ? `До уровня «${p.next_level.title}»: ${p.next_level.xp - p.xp} XP`
+                : 'Максимальный уровень достигнут';
+        }
+
+        function showXpGain(n) {
+            if (!n) return;
+            const chip = el('div', { class: 'xp-gain', text: `+${n} XP` });
+            $('xp-card').append(chip);
+            setTimeout(() => chip.remove(), 1400);
+        }
+
+        const findModule = id => academy.state && academy.state.modules.find(m => m.id === id);
+        function goAcademy(screen) {
+            academy.screen = screen;
+            renderAcademy();
+            window.scrollTo({ top: 0, behavior: REDUCED_MOTION ? 'auto' : 'smooth' });
+        }
+        function renderAcademy() {
+            if (!academy.state) return;
+            ({ module: renderModule, quiz: renderQuiz, complete: renderComplete }[academy.screen] || renderTree)();
+        }
+        const backBtn = (label, onClick) => {
+            const b = el('button', { type: 'button', class: 'academy-back' }, ICON.back(), el('span', { text: label }));
+            b.addEventListener('click', () => { haptic.tap(); onClick(); });
+            return b;
+        };
+
+        function renderTree() {
+            const mods = academy.state.modules;
+            const tree = el('div', { class: 'skill-tree' });
+            mods.forEach((m, i) => {
+                const meta = m.status === 'locked' ? `Откроется после модуля «${mods[i - 1].title}»`
+                    : m.status === 'completed' ? `Пройден · ${m.xp_earned} / ${m.max_xp} XP`
+                    : `${m.correct_count} / ${m.question_count} вопросов · до ${m.max_xp} XP`;
+                const badge = el('div', { class: 'skill-badge' },
+                    m.status === 'completed' ? ICON.check() : m.status === 'locked' ? ICON.lock() : String(i + 1));
+                const node = el('button', {
+                    type: 'button', class: `panel skill-node ${m.status}`,
+                    'aria-disabled': m.status === 'locked' ? 'true' : null
+                },
+                    badge,
+                    el('div', { class: 'skill-body' },
+                        el('div', { class: 'skill-title', text: m.title }),
+                        el('div', { class: 'skill-sub', text: m.subtitle }),
+                        el('div', { class: 'skill-meta', text: meta })),
+                    m.status === 'locked' ? null : el('span', { class: 'skill-chevron' }, ICON.chevron()));
+                node.addEventListener('click', () => {
+                    if (m.status === 'locked') { call(HF, 'notificationOccurred', 'warning'); return; }
+                    haptic.select();
+                    academy.moduleId = m.id;
+                    goAcademy('module');
+                });
+                tree.append(node);
+            });
+            const reset = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'Сбросить прогресс' });
+            reset.addEventListener('click', resetAcademy);
+            $('academy-root').replaceChildren(el('div', { class: 'academy-label', text: 'Дерево навыков' }), tree, reset);
+        }
+
+        async function resetAcademy() {
+            if (!(await confirmAsync('Сбросить весь прогресс Академии? XP и пройденные модули обнулятся.'))) return;
+            try {
+                academy.state = await academyApi('/api/academy/reset', {});
+                updateXp(academy.state.progress);
+                goAcademy('tree');
+            } catch (e) { toast(netMessage(e, 'Не удалось сбросить прогресс.')); }
+        }
+
+        function renderModule() {
+            const m = findModule(academy.moduleId);
+            if (!m || m.status === 'locked') return goAcademy('tree');
+            const done = m.status === 'completed';
+            const start = el('button', { type: 'button', class: `btn ${done ? 'btn--secondary' : 'btn--primary'}`,
+                text: done ? 'Повторить квиз (без XP)' : 'Перейти к квизу' });
+            start.addEventListener('click', () => { haptic.press(); startQuiz(m); });
+            $('academy-root').replaceChildren(
+                backBtn('Дерево навыков', () => goAcademy('tree')),
+                el('div', { class: 'module-head' },
+                    el('div', { class: 'kicker', text: `Модуль ${m.order}` }),
+                    el('h2', { text: m.title }),
+                    el('p', { class: 'desc', text: m.subtitle })),
+                el('div', { class: 'list-group' }, m.theory.map((t, i) =>
+                    el('div', { class: 'panel theory-card' },
+                        el('div', { class: 'theory-step', text: `${i + 1} / ${m.theory.length}` }),
+                        el('div', { class: 'theory-title', text: t.title }),
+                        el('div', { class: 'theory-text', text: t.text }),
+                        t.tip ? el('div', { class: 'theory-tip', text: '💡 ' + t.tip }) : null))),
+                el('div', { class: 'academy-actions' }, start));
+        }
+
+        function startQuiz(m) {
+            const done = new Set(m.correct_question_ids);
+            const first = m.quiz.findIndex(q => !done.has(q.id));
+            academy.qIndex = first === -1 ? 0 : first;
+            academy.lastResult = null;
+            goAcademy('quiz');
+        }
+
+        function renderQuiz() {
+            const m = findModule(academy.moduleId);
+            if (!m || !m.quiz.length) return goAcademy('tree');
+            const q = m.quiz[academy.qIndex];
+            const done = new Set(m.correct_question_ids);
+            const isLast = academy.qIndex === m.quiz.length - 1;
+            const feedback = el('div');
+            const next = el('button', { type: 'button', class: 'btn btn--primary quiz-next', text: isLast ? 'Завершить модуль' : 'Следующий вопрос', hidden: true });
+            const options = el('div', { class: 'quiz-options' });
+            q.options.forEach((text, idx) => {
+                const b = el('button', { type: 'button', class: 'panel quiz-option' },
+                    el('span', { class: 'quiz-letter', text: String.fromCharCode(65 + idx) }), el('span', { text }));
+                b.addEventListener('click', () => submitAnswer(m, q, idx, b, options, feedback, next));
+                options.append(b);
+            });
+            next.addEventListener('click', () => {
+                haptic.press();
+                if (isLast) goAcademy('complete');
+                else { academy.qIndex += 1; goAcademy('quiz'); }
+            });
+            $('academy-root').replaceChildren(
+                backBtn('К теории', () => goAcademy('module')),
+                el('div', { class: 'quiz-dots' }, m.quiz.map((qq, i) =>
+                    el('div', { class: `quiz-dot${i === academy.qIndex ? ' current' : done.has(qq.id) ? ' done' : ''}` }))),
+                el('div', { class: 'quiz-meta' },
+                    el('span', { text: `Вопрос ${academy.qIndex + 1} из ${m.quiz.length}` }),
+                    el('span', { class: 'quiz-xp', text: done.has(q.id) ? 'Повторение' : `+${q.xp} XP` })),
+                el('div', { class: 'quiz-question', text: q.question }),
+                options, feedback, next);
+        }
+
+        async function submitAnswer(m, q, idx, btn, wrap, feedback, next) {
+            if (academy.busy || btn.disabled) return;
+            academy.busy = true;
+            haptic.tap();
+            const buttons = [...wrap.children];
+            buttons.forEach(b => { b.disabled = true; });
+            const reopen = () => buttons.forEach(b => { if (!b.classList.contains('wrong')) b.disabled = false; });
+            try {
+                const res = await academyApi('/api/academy/answer', { module_id: m.id, question_id: q.id, option: idx });
+                academy.state = res.state;
+                updateXp(res.state.progress, res.level_up);
+                const box = el('div', { class: `quiz-feedback ${res.correct ? 'ok' : 'bad'}` },
+                    el('b', { text: res.correct ? 'Верно!' : 'Не совсем' }), el('span', { text: res.feedback }));
+                feedback.replaceChildren(box);
+                if (res.correct) {
+                    btn.classList.add('correct');
+                    buttons.forEach(b => { if (b !== btn && !b.classList.contains('wrong')) b.classList.add('dimmed'); });
+                    haptic.success();
+                    showXpGain(res.xp_gained + res.bonus_xp);
+                    academy.lastResult = res;
+                    next.hidden = false;
+                } else {
+                    btn.classList.add('wrong');
+                    haptic.error();
+                    reopen();
+                }
+            } catch (e) {
+                reopen();
+                toast(netMessage(e, 'Ответ не отправлен.'));
+            } finally {
+                academy.busy = false;
+            }
+        }
+
+        function renderComplete() {
+            const m = findModule(academy.moduleId);
+            const r = academy.lastResult || {};
+            const p = academy.state.progress;
+            const toTree = el('button', { type: 'button', class: 'btn btn--primary', text: 'К дереву навыков' });
+            toTree.addEventListener('click', () => { haptic.press(); goAcademy('tree'); });
+            $('academy-root').replaceChildren(el('div', { class: 'academy-complete' },
+                el('div', { class: 'academy-complete-icon' }, ICON.bigCheck()),
+                el('h2', { text: 'Модуль пройден' }),
+                el('p', { text: r.module_completed_now
+                    ? `«${m.title}» закрыт. Бонус за модуль: +${r.bonus_xp} XP`
+                    : `«${m.title}» — повторение без начисления XP. Знания освежены.` }),
+                r.unlocked_module
+                    ? el('div', { class: 'unlock-chip' }, ICON.unlock(), el('span', { text: `Открыт модуль: «${r.unlocked_module.title}»` }))
+                    : r.module_completed_now && p.completed_modules === p.total_modules
+                        ? el('div', { class: 'unlock-chip', text: '🏆 Вся программа пройдена' }) : null,
+                toTree));
+        }
 
         /* ==================================================================
            Старт

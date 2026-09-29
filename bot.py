@@ -33,6 +33,7 @@ from fastapi.templating import Jinja2Templates
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
+from pydantic import BaseModel, Field
 
 from proposal import build_proposal_pdf
 
@@ -147,6 +148,12 @@ def init_db():
                 conn.execute(ddl)
             except sqlite3.OperationalError:
                 pass
+        # «Академия»: одна строка на пару (мастер, вопрос)
+        conn.execute("""CREATE TABLE IF NOT EXISTS academy_answers (
+            user_id INTEGER NOT NULL, module_id TEXT NOT NULL, question_id TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0, is_correct INTEGER NOT NULL DEFAULT 0,
+            xp_awarded INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, question_id))""")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_orders_status ON orders(status, created_at)")
         try:
             conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_reviews ON reviews(order_id, user_id)")
@@ -756,6 +763,155 @@ def admin_order_view(r: dict) -> dict:
 async def api_admin_me(user=Depends(current_user)):
     """Тихая проверка прав при старте Mini App: не-админ получает 200 с admin=false, без ошибок в консоли."""
     return {"success": True, "admin": user.id in ADMIN_IDS}
+
+
+# ───────────────────────── Академия: обучение мастеров (только ADMIN_IDS) ─────────────────────────
+TRAINING_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "academy", "training_data.js")
+
+
+def _load_training_data() -> dict:
+    """academy/training_data.js: всё между первой '{' и последней '}' — строгий JSON."""
+    with open(TRAINING_DATA_PATH, encoding="utf-8") as f:
+        raw = f.read()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end == -1:
+        raise RuntimeError("training_data.js: не найден JSON-объект")
+    data = json.loads(raw[start:end + 1])
+    seen = set()
+    for m in data["modules"]:
+        for key in ("id", "order", "title", "subtitle", "xp_bonus", "theory", "quiz"):
+            if key not in m:
+                raise ValueError(f"Академия: у модуля {m.get('id')} нет поля {key}")
+        for q in m["quiz"]:
+            if q["id"] in seen:
+                raise ValueError(f"Академия: повторяющийся id вопроса {q['id']}")
+            seen.add(q["id"])
+            if not 0 <= q["correct"] < len(q["options"]):
+                raise ValueError(f"Академия: у вопроса {q['id']} индекс correct вне диапазона")
+    if not data.get("levels"):
+        raise ValueError("Академия: не заданы уровни")
+    data["modules"].sort(key=lambda m: m["order"])
+    data["levels"].sort(key=lambda lvl: lvl["xp"])
+    return data
+
+
+# Читаем и проверяем контент при старте: ошибка в JSON не всплывёт посреди квиза.
+TRAINING = _load_training_data()
+
+
+def academy_state(answers: dict) -> dict:
+    """Дерево навыков для клиента. correct / explanation / hint наружу не уходят."""
+    modules_out, total_xp, max_xp, completed_count, prev_completed = [], 0, 0, 0, True
+    for m in TRAINING["modules"]:
+        quiz = m["quiz"]
+        correct_ids = [q["id"] for q in quiz if answers.get(q["id"], {}).get("is_correct")]
+        completed = len(correct_ids) == len(quiz)
+        status = "completed" if completed else ("available" if prev_completed else "locked")
+        m_max = sum(q["xp"] for q in quiz) + m["xp_bonus"]
+        m_xp = sum(answers[qid]["xp_awarded"] for qid in correct_ids) + (m["xp_bonus"] if completed else 0)
+        item = {
+            "id": m["id"], "order": m["order"], "title": m["title"], "subtitle": m["subtitle"],
+            "status": status, "xp_bonus": m["xp_bonus"], "xp_earned": m_xp, "max_xp": m_max,
+            "question_count": len(quiz), "correct_count": len(correct_ids),
+            "correct_question_ids": correct_ids, "theory": [], "quiz": [],
+        }
+        if status != "locked":
+            item["theory"] = m["theory"]
+            item["quiz"] = [{"id": q["id"], "question": q["question"], "options": q["options"], "xp": q["xp"]}
+                            for q in quiz]
+        modules_out.append(item)
+        total_xp += m_xp
+        max_xp += m_max
+        completed_count += completed
+        prev_completed = completed
+
+    level, next_level = TRAINING["levels"][0], None
+    for lvl in TRAINING["levels"]:
+        if total_xp >= lvl["xp"]:
+            level = lvl
+        else:
+            next_level = lvl
+            break
+    return {
+        "progress": {"xp": total_xp, "max_xp": max_xp, "level": level, "next_level": next_level,
+                     "completed_modules": completed_count, "total_modules": len(modules_out)},
+        "modules": modules_out,
+    }
+
+
+async def academy_answers(user_id: int) -> dict:
+    rows = await adb("SELECT question_id, attempts, is_correct, xp_awarded FROM academy_answers WHERE user_id = ?",
+                     (user_id,), mode="all")
+    return {r["question_id"]: r for r in rows}
+
+
+class AcademyAnswerIn(BaseModel):
+    module_id: str = Field(..., max_length=32)
+    question_id: str = Field(..., max_length=32)
+    option: int = Field(..., ge=0, le=20)
+
+
+@app.get("/api/academy/content")
+async def api_academy_content(admin=Depends(admin_user)):
+    return academy_state(await academy_answers(admin.id))
+
+
+@app.post("/api/academy/answer")
+async def api_academy_answer(payload: AcademyAnswerIn, admin=Depends(admin_user)):
+    module = next((m for m in TRAINING["modules"] if m["id"] == payload.module_id), None)
+    question = module and next((q for q in module["quiz"] if q["id"] == payload.question_id), None)
+    if not question:
+        raise HTTPException(404, "Вопрос не найден.")
+    if payload.option >= len(question["options"]):
+        raise HTTPException(422, "Нет такого варианта ответа.")
+
+    answers = await academy_answers(admin.id)
+    before = academy_state(answers)
+    before_m = next(m for m in before["modules"] if m["id"] == module["id"])
+    if before_m["status"] == "locked":
+        raise HTTPException(403, "Модуль ещё заблокирован.")
+
+    is_correct = payload.option == question["correct"]
+    prev = answers.get(question["id"], {})
+    xp_gained = 0
+    if not prev.get("is_correct"):
+        if is_correct:  # с первой попытки — полный XP, после ошибки — половина
+            xp_gained = question["xp"] if prev.get("attempts", 0) == 0 else question["xp"] // 2
+        # Уже верно отвеченный вопрос не перезаписывается — XP начисляется один раз
+        await adb("""INSERT INTO academy_answers (user_id, module_id, question_id, attempts, is_correct, xp_awarded)
+                     VALUES (?, ?, ?, 1, ?, ?)
+                     ON CONFLICT(user_id, question_id) DO UPDATE SET
+                         attempts = academy_answers.attempts + 1, is_correct = excluded.is_correct,
+                         xp_awarded = excluded.xp_awarded, updated_at = CURRENT_TIMESTAMP
+                     WHERE academy_answers.is_correct = 0""",
+                  (admin.id, module["id"], question["id"], int(is_correct), xp_gained))
+        answers = await academy_answers(admin.id)
+
+    after = academy_state(answers)
+    after_m = next(m for m in after["modules"] if m["id"] == module["id"])
+    completed_now = before_m["status"] != "completed" and after_m["status"] == "completed"
+    unlocked = None
+    if completed_now:
+        idx = [m["id"] for m in after["modules"]].index(module["id"])
+        if idx + 1 < len(after["modules"]):
+            nxt = after["modules"][idx + 1]
+            unlocked = {"id": nxt["id"], "title": nxt["title"]}
+    return {
+        "correct": is_correct,
+        "feedback": question["explanation"] if is_correct else question.get("hint", "Попробуй ещё раз."),
+        "xp_gained": xp_gained,
+        "bonus_xp": module["xp_bonus"] if completed_now else 0,
+        "module_completed_now": completed_now,
+        "unlocked_module": unlocked,
+        "level_up": after["progress"]["level"]["xp"] > before["progress"]["level"]["xp"],
+        "state": after,
+    }
+
+
+@app.post("/api/academy/reset")
+async def api_academy_reset(admin=Depends(admin_user)):
+    await adb("DELETE FROM academy_answers WHERE user_id = ?", (admin.id,))
+    return academy_state({})
 
 
 @app.get("/api/admin/orders")
