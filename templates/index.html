@@ -2002,6 +2002,248 @@
             border-radius: var(--radius-sm);
         }
         .academy-reset { display: block; margin: 20px auto 0; }
+
+        /* ---------- Симулятор мастера ---------- */
+        .xp-card { margin-bottom: 16px; }
+        .xp-top { align-items: center; }
+        .xp-lvl-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            font-family: var(--font-mono);
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent);
+            border-radius: var(--radius-md);
+            box-shadow: var(--accent-glow);
+        }
+        .xp-lvl-badge.level-up { animation: lvlPop 0.9s var(--ease-spring); }
+        @keyframes lvlPop { 0% { transform: scale(1); } 35% { transform: scale(1.25); box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.9); } 100% { transform: scale(1); } }
+        .xp-who { flex: 1; min-width: 0; }
+        .xp-who .xp-caption { margin-bottom: 2px; }
+        .xp-track { background: var(--graphite); }
+        .xp-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+        .xp-foot .xp-next { margin-top: 0; }
+        .rep { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .rep-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); }
+        .rep-track { width: 44px; height: 4px; border-radius: 2px; background: var(--graphite); overflow: hidden; }
+        .rep-fill { display: block; height: 100%; width: 50%; border-radius: 2px; background: var(--accent); transition: width 0.6s var(--ease-out), background-color var(--t-base); }
+        .rep-fill.low { background: var(--danger); }
+        .rep-fill.high { background: var(--success); }
+        .rep-value { font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .academy-tabs { margin-bottom: 24px; }
+        .segment-control[data-mode="train"] .segment-slider { transform: translateX(100%); }
+
+        .sim-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .sim-stat { padding: 12px 10px; text-align: center; }
+        .sim-stat b { display: block; font-family: var(--font-mono); font-size: 20px; font-weight: 700; }
+        .sim-stat span { font-size: 11px; color: var(--text-secondary); }
+        .quest-btns { display: flex; flex-direction: column; gap: 12px; }
+        .quest-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 18px 16px;
+            overflow: hidden;
+            text-align: left;
+            color: var(--text-primary);
+            transition: transform var(--t-fast) var(--ease-snap), border-color var(--t-base), box-shadow var(--t-base);
+        }
+        .quest-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(var(--accent-rgb), 0.08) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.8s var(--ease-out);
+            pointer-events: none;
+        }
+        .quest-btn:active { transform: scale(0.98); }
+        @media (hover: hover) {
+            .quest-btn:hover { border-color: var(--accent-line); box-shadow: var(--shadow-panel), 0 0 24px rgba(var(--accent-rgb), 0.15); }
+            .quest-btn:hover::after { transform: translateX(100%); }
+        }
+        .quest-btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            color: var(--accent);
+            background: var(--accent-bg);
+            border: 1px solid var(--accent-line);
+            border-radius: var(--radius-md);
+        }
+        .quest-btn-body { flex: 1; min-width: 0; }
+        .quest-btn-title { font-size: 16px; font-weight: 700; }
+        .quest-btn-sub { margin-top: 3px; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+        .quest-btn--resume { border-color: var(--accent); background: var(--accent-bg); }
+
+        .order-card { padding: 16px; margin-bottom: 16px; }
+        .order-client { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+        .order-title { margin: 6px 0 6px; font-size: 18px; font-weight: 700; line-height: 1.25; }
+        .order-brief { font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); }
+        .order-reqs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 9px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: var(--text-primary);
+            background: var(--graphite);
+            border-radius: var(--radius-sm);
+        }
+        .chip--accent { color: #fff; background: var(--accent); }
+
+        .build-summary {
+            position: sticky;
+            top: calc(8px + var(--safe-top));
+            z-index: 5;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            background: var(--glass);
+            -webkit-backdrop-filter: var(--blur);
+                    backdrop-filter: var(--blur);
+        }
+        .meter + .meter { margin-top: 10px; }
+        .meter-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+        .meter-row span:first-child { color: var(--text-secondary); }
+        .meter-row b { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .meter-track { position: relative; height: 6px; margin-top: 6px; border-radius: 3px; background: var(--graphite); overflow: hidden; }
+        .meter-fill { height: 100%; width: 0; border-radius: 3px; background: var(--accent); transition: width 0.5s var(--ease-out), background-color var(--t-base); }
+        .meter-fill.warn { background: var(--warning); }
+        .meter-fill.bad { background: var(--danger); }
+        .meter-fill.good { background: var(--success); }
+
+        .cat-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+        .cat-tabs::-webkit-scrollbar { display: none; }
+        .cat-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            padding: 9px 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            transition: color var(--t-base), border-color var(--t-base), background-color var(--t-base), transform var(--t-fast);
+        }
+        .cat-tab:active { transform: scale(0.96); }
+        .cat-tab[aria-selected="true"] { color: #fff; background: var(--accent); border-color: var(--accent); box-shadow: var(--accent-glow); }
+        .cat-tab .cat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--graphite-line); transition: background-color var(--t-base); }
+        .cat-tab.done .cat-dot { background: var(--success); box-shadow: 0 0 6px rgba(var(--success-rgb), 0.8); }
+        .cat-title { margin-bottom: 10px; font-size: 13px; color: var(--text-secondary); }
+
+        .parts { display: flex; flex-direction: column; gap: 10px; }
+        .part {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+            padding: 14px;
+            text-align: left;
+            color: var(--text-primary);
+            transition: transform var(--t-fast) var(--ease-snap), border-color var(--t-base), background-color var(--t-base), box-shadow var(--t-base);
+            animation: partIn 0.35s var(--ease-out) both;
+        }
+        @keyframes partIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .part:active { transform: scale(0.98); }
+        @media (hover: hover) { .part:hover { border-color: var(--accent-line); } }
+        .part[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); box-shadow: var(--shadow-selected, 0 0 0 1px var(--accent)), 0 0 22px rgba(var(--accent-rgb), 0.22); }
+        .part-check {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            margin-top: 1px;
+            color: transparent;
+            background: var(--graphite);
+            border: 1px solid var(--graphite-line);
+            border-radius: var(--radius-sm);
+            transition: background-color var(--t-base), border-color var(--t-base), color var(--t-base), transform 0.3s var(--ease-spring);
+        }
+        .part[aria-pressed="true"] .part-check { color: #fff; background: var(--accent); border-color: var(--accent); transform: scale(1.08); }
+        .part-body { flex: 1; min-width: 0; }
+        .part-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+        .part-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
+        .part-price { flex-shrink: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+        .part[aria-pressed="true"] .part-price { color: var(--accent); }
+        .part-specs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .part-specs .chip { padding: 3px 7px; font-size: 10.5px; }
+        .part-tier { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary); }
+        .perf { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .perf-track { flex: 1; height: 4px; border-radius: 2px; background: var(--graphite); overflow: hidden; }
+        .perf-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), #5AB0FF); }
+        .perf span { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); }
+
+        .build-errors { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+        .build-error {
+            display: flex;
+            gap: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            line-height: 1.45;
+            background: rgba(var(--danger-rgb), 0.08);
+            border: 1px solid rgba(var(--danger-rgb), 0.3);
+            border-radius: var(--radius-md);
+            animation: viewIn var(--t-base) var(--ease-out) both;
+        }
+        .build-error svg { flex-shrink: 0; margin-top: 2px; color: var(--danger); }
+        .build-actions { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
+
+        .complaint { padding: 16px; margin-bottom: 16px; }
+        .complaint-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .complaint-quote { margin-top: 10px; font-size: 16px; line-height: 1.5; }
+        .complaint-quote::before { content: '«'; color: var(--accent); }
+        .complaint-quote::after { content: '»'; color: var(--accent); }
+        .patience { display: inline-flex; gap: 4px; font-size: 16px; line-height: 1; }
+        .patience span { transition: opacity var(--t-base), filter var(--t-base), transform 0.3s var(--ease-spring); }
+        .patience span.gone { opacity: 0.25; filter: grayscale(1); transform: scale(0.8); }
+        .clues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .clue {
+            width: 100%;
+            padding: 12px 14px;
+            text-align: left;
+            color: var(--text-primary);
+            transition: border-color var(--t-base), background-color var(--t-base), transform var(--t-fast);
+        }
+        .clue:active { transform: scale(0.98); }
+        .clue-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+        .clue-label svg { color: var(--accent); flex-shrink: 0; }
+        .clue-result { display: none; margin-top: 8px; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); }
+        .clue.open { border-color: var(--accent-line); }
+        .clue.open .clue-result { display: block; animation: viewIn var(--t-base) var(--ease-out) both; }
+        .clue.open .clue-label { color: var(--accent); }
+
+        .sim-result { display: flex; flex-direction: column; align-items: center; padding: 16px 0 4px; text-align: center; }
+        .sim-result-icon { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; margin-bottom: 18px; color: #fff; border-radius: var(--radius-md); }
+        .sim-result-icon.ok { background: var(--success); box-shadow: 0 8px 24px rgba(var(--success-rgb), 0.25); }
+        .sim-result-icon.bad { background: var(--danger); box-shadow: 0 8px 24px rgba(var(--danger-rgb), 0.25); }
+        .sim-result h2 { margin-bottom: 10px; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+        .sim-result p { margin-bottom: 16px; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+        .reward-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 22px; }
+        .reward-row .chip { padding: 7px 11px; font-size: 12px; }
+        .chip--good { color: #000; background: var(--success); }
+        .chip--bad { color: #fff; background: var(--danger); }
     </style>
 </head>
 <body>
@@ -2086,19 +2328,34 @@
         <header class="view-header">
             <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / ВНУТРЕННЕЕ</div>
             <h1 id="academy-title">Академия</h1>
-            <p class="desc">Прокачка мастеров: теория, квизы, уровни.</p>
+            <p class="desc">Симулятор мастера: заказы на сборку, диагностика и теория.</p>
         </header>
 
+        <!-- Панель игрока: уровень, ранг, EXP до следующего уровня, репутация -->
         <div class="panel xp-card" id="xp-card">
             <div class="xp-top">
-                <div>
-                    <div class="xp-caption">Уровень</div>
-                    <div class="xp-level" id="xp-level">—</div>
+                <div class="xp-lvl-badge" id="xp-lvl-badge" aria-hidden="true">1</div>
+                <div class="xp-who">
+                    <div class="xp-caption" id="xp-caption">Уровень 1</div>
+                    <div class="xp-level" id="xp-level">Стажёр</div>
                 </div>
-                <div class="xp-value" id="xp-value">0 / 0 XP</div>
+                <div class="xp-value" id="xp-value">0 EXP</div>
             </div>
-            <div class="xp-track" role="progressbar" aria-label="Опыт" aria-valuemin="0" id="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
-            <div class="xp-next" id="xp-next">&nbsp;</div>
+            <div class="xp-track" role="progressbar" aria-label="Опыт до следующего уровня" aria-valuemin="0" aria-valuemax="100" id="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+            <div class="xp-foot">
+                <span class="xp-next" id="xp-next">&nbsp;</span>
+                <span class="rep" id="rep" title="Репутация у клиентов">
+                    <span class="rep-label">Репутация</span>
+                    <span class="rep-track"><span class="rep-fill" id="rep-fill"></span></span>
+                    <span class="rep-value" id="rep-value">50</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="segment-control academy-tabs" id="academy-tabs" data-mode="sim" role="tablist" aria-label="Раздел Академии">
+            <div class="segment-slider" aria-hidden="true"></div>
+            <button type="button" class="segment" role="tab" data-tab="sim" aria-selected="true">Симулятор</button>
+            <button type="button" class="segment" role="tab" data-tab="train" aria-selected="false">Обучение</button>
         </div>
 
         <div id="academy-root" aria-live="polite"></div>
@@ -3680,15 +3937,34 @@
         call(BackButton, 'onClick', () => navigate('services'));
 
         /* ==================================================================
-           Академия. Дерево навыков, квизы и XP. Верные ответы хранятся
-           только на сервере; прогресс — в SQLite (таблица academy_answers).
+           Академия: симулятор мастера (сборка ПК под заказ, диагностика)
+           и обучение (дерево навыков с квизами). Источник истины — сервер:
+           он хранит заказы, проверяет сборку и ответы, начисляет EXP.
+           Клиент повторяет правила совместимости только для живых подсказок.
            ================================================================== */
-        const academy = { state: null, screen: 'tree', moduleId: null, qIndex: 0, lastResult: null, busy: false };
+        const academy = {
+            data: null,          // снимок: progress, training, sim
+            game: null,          // каталог деталей и правила
+            tab: 'sim',
+            screen: 'hub',       // sim: hub | build | fix | result;  train: tree | module | quiz | complete
+            trainScreen: 'tree',
+            moduleId: null, qIndex: 0, lastQuiz: null,
+            picks: {}, cat: 'cpu', buildErrors: null, questKey: null,
+            clues: new Set(), fixFeedback: null,
+            result: null,
+            busy: false
+        };
+        const PICKS_KEY = 'elevate.academy.picks';
         ICON.lock = () => svg(20, [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }]], { 'stroke-width': 2 });
         ICON.unlock = () => svg(18, [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 7.8-1.2' }]], { 'stroke-width': 2 });
         ICON.chevron = () => svg(18, [['polyline', { points: '9 6 15 12 9 18' }]], { 'stroke-width': 2 });
         ICON.back = () => svg(18, [['polyline', { points: '15 6 9 12 15 18' }]], { 'stroke-width': 2.2 });
         ICON.bigCheck = () => svg(36, [['polyline', { points: '20 6 9 17 4 12' }]], { 'stroke-width': 3 });
+        ICON.bigX = () => svg(34, [['line', { x1: 6, y1: 6, x2: 18, y2: 18 }], ['line', { x1: 18, y1: 6, x2: 6, y2: 18 }]], { 'stroke-width': 3 });
+        ICON.chip = () => svg(24, [['rect', { x: 5, y: 5, width: 14, height: 14, rx: 2 }], ['rect', { x: 9, y: 9, width: 6, height: 6 }], ['path', { d: 'M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3' }]], { 'stroke-width': 1.8 });
+        ICON.wrench = () => svg(24, [['path', { d: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z' }]], { 'stroke-width': 1.8 });
+        ICON.search = () => svg(16, [['circle', { cx: 11, cy: 11, r: 7 }], ['line', { x1: 21, y1: 21, x2: 16.65, y2: 16.65 }]], { 'stroke-width': 2.2 });
+        ICON.warn = () => svg(18, [['path', { d: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z' }], ['line', { x1: 12, y1: 9, x2: 12, y2: 13 }], ['line', { x1: 12, y1: 17, x2: 12.01, y2: 17 }]], { 'stroke-width': 2 });
 
         async function academyApi(url, body) {
             const opts = { headers: authHeaders(), timeout: 15000 };
@@ -3702,73 +3978,483 @@
             return data;
         }
 
+        /* Применяет свежий снимок с сервера; при росте уровня — праздник */
+        function applyState(next, levelUp = false) {
+            academy.data = next;
+            updatePlayer(next.progress, levelUp);
+            if (levelUp) celebrateLevel(next.progress);
+        }
+
         async function loadAcademy() {
             const root = $('academy-root');
-            academy.screen = 'tree';
-            if (academy.state) renderAcademy();
-            else root.replaceChildren(emptyState('Загрузка программы обучения…'));
+            if (academy.data) renderAcademy();
+            else root.replaceChildren(emptyState('Загрузка симулятора…'));
             try {
-                academy.state = await academyApi('/api/academy/content');
-                updateXp(academy.state.progress);
-                if (state.view === 'academy' && academy.screen === 'tree') renderAcademy();
+                const res = await academyApi('/api/academy/content');
+                academy.game = res.game;
+                applyState({ progress: res.progress, training: res.training, sim: res.sim });
+                if (state.view === 'academy') {
+                    if (academy.tab === 'sim' && academy.screen !== 'result') academy.screen = screenForQuest();
+                    renderAcademy();
+                }
             } catch (e) {
-                if (!academy.state) root.replaceChildren(emptyState(netMessage(e, 'Академия недоступна.'), { error: true }));
+                if (!academy.data) root.replaceChildren(emptyState(netMessage(e, 'Академия недоступна.'), { error: true }));
                 else toast(netMessage(e, 'Академия недоступна.'));
             }
         }
 
-        function updateXp(p, levelUp = false) {
-            const lvl = $('xp-level');
-            lvl.textContent = p.level.title;
-            if (levelUp) { lvl.classList.remove('level-up'); void lvl.offsetWidth; lvl.classList.add('level-up'); }
-            $('xp-value').textContent = `${p.xp} / ${p.max_xp} XP`;
-            const track = $('xp-track');
-            track.setAttribute('aria-valuemax', p.max_xp);
-            track.setAttribute('aria-valuenow', p.xp);
-            const pct = p.max_xp ? Math.min(100, (p.xp / p.max_xp) * 100) : 0;
+        /* ---------- Панель игрока ---------- */
+        function updatePlayer(p, levelUp = false) {
+            $('xp-lvl-badge').textContent = String(p.level);
+            $('xp-caption').textContent = `Уровень ${p.level} из ${p.max_level}`;
+            $('xp-level').textContent = p.rank;
+            const span = p.next_exp ? p.next_exp - p.level_exp : 1;
+            const into = p.next_exp ? p.exp - p.level_exp : 1;
+            const pct = Math.max(0, Math.min(100, (into / span) * 100));
+            $('xp-value').textContent = p.next_exp ? `${p.exp} / ${p.next_exp} EXP` : `${p.exp} EXP`;
+            $('xp-track').setAttribute('aria-valuenow', String(Math.round(pct)));
             requestAnimationFrame(() => { $('xp-fill').style.width = pct + '%'; });
-            $('xp-next').textContent = p.next_level
-                ? `До уровня «${p.next_level.title}»: ${p.next_level.xp - p.xp} XP`
-                : 'Максимальный уровень достигнут';
+            $('xp-next').textContent = p.next_exp
+                ? `До уровня ${p.level + 1}${p.next_rank !== p.rank ? ` · ${p.next_rank}` : ''}: ${p.next_exp - p.exp} EXP`
+                : 'Максимальный уровень — вы Senior!';
+            const rep = $('rep-fill');
+            rep.style.width = p.reputation + '%';
+            rep.classList.toggle('low', p.reputation < 30);
+            rep.classList.toggle('high', p.reputation >= 75);
+            $('rep-value').textContent = String(p.reputation);
+            if (levelUp) {
+                for (const id of ['xp-level', 'xp-lvl-badge']) {
+                    const node = $(id);
+                    node.classList.remove('level-up'); void node.offsetWidth; node.classList.add('level-up');
+                }
+            }
+        }
+
+        function celebrateLevel(p) {
+            haptic.success();
+            toast(`Новый уровень ${p.level}: ${p.rank}!`, 'info');
+            if (REDUCED_MOTION || !fx.canvas) return;
+            fxResize();
+            if (!fx.ctx) return;
+            const r = $('xp-lvl-badge').getBoundingClientRect();
+            fxSpawn(r.left + r.width / 2, r.top + r.height / 2, 48);
         }
 
         function showXpGain(n) {
             if (!n) return;
-            const chip = el('div', { class: 'xp-gain', text: `+${n} XP` });
+            const chip = el('div', { class: 'xp-gain', text: `+${n} EXP` });
             $('xp-card').append(chip);
             setTimeout(() => chip.remove(), 1400);
         }
 
-        const findModule = id => academy.state && academy.state.modules.find(m => m.id === id);
-        function goAcademy(screen) {
-            academy.screen = screen;
+        /* ---------- Маршрутизация внутри Академии ---------- */
+        function screenForQuest() {
+            const q = academy.data && academy.data.sim.quest;
+            return q ? q.kind : 'hub';
+        }
+        function setTab(tab) {
+            if (tab === academy.tab) return;
+            haptic.select();
+            academy.tab = tab;
+            const tabs = $('academy-tabs');
+            tabs.dataset.mode = tab;
+            tabs.querySelectorAll('.segment').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+            if (tab === 'sim' && academy.screen !== 'result') academy.screen = screenForQuest();
+            renderAcademy();
+        }
+        function go(screen) {
+            if (academy.tab === 'sim') academy.screen = screen;
+            else academy.trainScreen = screen;
             renderAcademy();
             window.scrollTo({ top: 0, behavior: REDUCED_MOTION ? 'auto' : 'smooth' });
         }
         function renderAcademy() {
-            if (!academy.state) return;
-            ({ module: renderModule, quiz: renderQuiz, complete: renderComplete }[academy.screen] || renderTree)();
+            if (!academy.data) return;
+            if (academy.tab === 'sim') {
+                ({ build: renderBuild, fix: renderFix, result: renderSimResult }[academy.screen] || renderHub)();
+            } else {
+                ({ module: renderModule, quiz: renderQuiz, complete: renderComplete }[academy.trainScreen] || renderTree)();
+            }
         }
         const backBtn = (label, onClick) => {
             const b = el('button', { type: 'button', class: 'academy-back' }, ICON.back(), el('span', { text: label }));
             b.addEventListener('click', () => { haptic.tap(); onClick(); });
             return b;
         };
+        const fmtRub = n => `${Math.round(n).toLocaleString('ru-RU')} ₽`;
+
+        /* ---------- Хаб: выбор квеста ---------- */
+        function renderHub() {
+            const { stats, quest } = academy.data.sim;
+            const stat = (value, label) => el('div', { class: 'panel sim-stat' }, el('b', { text: String(value) }), el('span', { text: label }));
+            const btns = el('div', { class: 'quest-btns' });
+            if (quest) {
+                const resume = el('button', { type: 'button', class: 'panel quest-btn quest-btn--resume' },
+                    el('div', { class: 'quest-btn-icon' }, quest.kind === 'build' ? ICON.chip() : ICON.wrench()),
+                    el('div', { class: 'quest-btn-body' },
+                        el('div', { class: 'quest-btn-title', text: 'Продолжить заказ' }),
+                        el('div', { class: 'quest-btn-sub', text: quest.kind === 'build' ? `${quest.title} · ${quest.client}` : `${quest.device} · ${quest.client}` })),
+                    el('span', { class: 'skill-chevron' }, ICON.chevron()));
+                resume.addEventListener('click', () => { haptic.press(); go(quest.kind); });
+                btns.append(resume);
+            } else {
+                const mk = (kind, icon, title, sub) => {
+                    const b = el('button', { type: 'button', class: 'panel quest-btn', dataset: { kind } },
+                        el('div', { class: 'quest-btn-icon' }, icon),
+                        el('div', { class: 'quest-btn-body' }, el('div', { class: 'quest-btn-title', text: title }), el('div', { class: 'quest-btn-sub', text: sub })),
+                        el('span', { class: 'skill-chevron' }, ICON.chevron()));
+                    b.addEventListener('click', () => takeQuest(kind));
+                    return b;
+                };
+                btns.append(
+                    mk('build', ICON.chip(), 'Взять заказ на сборку', 'Подобрать совместимое железо под задачу и бюджет клиента'),
+                    mk('fix', ICON.wrench(), 'Диагностика устройства', 'Разобраться в жалобе, собрать улики и выбрать ремонт'));
+            }
+            $('academy-root').replaceChildren(
+                el('div', { class: 'sim-stats' },
+                    stat(stats.builds_done, 'Собрано ПК'),
+                    stat(stats.fixes_done, 'Отремонтировано'),
+                    stat(stats.fixes_failed, 'Ушли недовольными')),
+                el('div', { class: 'academy-label', text: quest ? 'Текущий заказ' : 'Новый заказ' }),
+                btns);
+        }
+
+        async function takeQuest(kind) {
+            if (academy.busy) return;
+            academy.busy = true;
+            haptic.press();
+            try {
+                const res = await academyApi('/api/academy/sim/quest', { kind });
+                applyState(res.state);
+                const q = res.state.sim.quest;
+                if (!res.created) toast('Сначала закройте текущий заказ.', 'info');
+                resetQuestUi(q);
+                go(q.kind);
+            } catch (e) { toast(netMessage(e, 'Не удалось взять заказ.')); }
+            finally { academy.busy = false; }
+        }
+
+        /* Черновик сборки и открытые улики привязаны к конкретному заказу */
+        const questKey = q => q ? `${q.kind}:${q.id}:${q.budget || ''}` : null;
+        function resetQuestUi(q) {
+            const key = questKey(q);
+            if (academy.questKey === key) return;
+            academy.questKey = key;
+            academy.picks = {};
+            academy.cat = 'cpu';
+            academy.buildErrors = null;
+            academy.clues = new Set();
+            academy.fixFeedback = null;
+            try {
+                const saved = JSON.parse(localStorage.getItem(PICKS_KEY) || 'null');
+                if (saved && saved.key === key) academy.picks = saved.picks || {};
+            } catch (_) { /* хранилище недоступно — начинаем с пустой сборки */ }
+        }
+        function savePicks() {
+            try { localStorage.setItem(PICKS_KEY, JSON.stringify({ key: academy.questKey, picks: academy.picks })); } catch (_) {}
+        }
+
+        async function abandonQuest() {
+            if (!(await confirmAsync('Отказаться от заказа? Клиент уйдёт, репутация снизится на 2.'))) return;
+            try {
+                const res = await academyApi('/api/academy/sim/abandon', {});
+                applyState(res.state);
+                haptic.error();
+                go('hub');
+            } catch (e) { toast(netMessage(e, 'Не удалось отказаться от заказа.')); }
+        }
+
+        /* ---------- Сборка ПК: правила совместимости (зеркало сервера) ---------- */
+        const partById = id => {
+            for (const [cat, list] of Object.entries(academy.game.parts)) {
+                const p = list.find(x => x.id === id);
+                if (p) return { cat, p };
+            }
+            return null;
+        };
+        function selectedParts() {
+            const out = {};
+            for (const [cat, id] of Object.entries(academy.picks)) {
+                const found = id && partById(id);
+                if (found && found.cat === cat) out[cat] = found.p;
+            }
+            return out;
+        }
+        function powerNeed(parts) {
+            if (!parts.cpu) return null;
+            return Math.ceil((parts.cpu.tdp + (parts.gpu ? parts.gpu.tdp : 0)) * academy.game.rules.psu_reserve);
+        }
+        const buildTotal = parts => Object.values(parts).reduce((s, p) => s + p.price, 0);
+
+        /* ---------- Экран сборки ---------- */
+        function specChips(cat, p) {
+            const c = t => el('span', { class: 'chip', text: t });
+            if (cat === 'cpu') return [c(p.socket), c(`TDP ${p.tdp} Вт`), c(p.cores), c(p.igpu ? 'Есть iGPU' : 'Без iGPU')];
+            if (cat === 'mb') return [c(p.socket), c(p.form), c(p.ram)];
+            if (cat === 'ram') return [c(p.type), c(`${p.size} ГБ`)];
+            if (cat === 'gpu') return [c(`TDP ${p.tdp} Вт`), c(`БП от ${p.min_psu} Вт`), c(`${p.vram} ГБ`)];
+            if (cat === 'psu') return [c(`${p.watts} Вт`), c(p.cert)];
+            return [];
+        }
+
+        function partCard(cat, p) {
+            const pressed = academy.picks[cat] === (p ? p.id : '');
+            const card = el('button', { type: 'button', class: 'panel part', 'aria-pressed': String(pressed) },
+                el('span', { class: 'part-check' }, ICON.check()),
+                el('div', { class: 'part-body' },
+                    el('div', { class: 'part-head' },
+                        el('span', { class: 'part-name', text: p ? p.name : 'Без видеокарты' }),
+                        el('span', { class: 'part-price', text: p ? fmtRub(p.price) : '0 ₽' })),
+                    p ? el('div', { class: 'part-tier', text: p.tier }) : el('div', { class: 'part-tier', text: 'Только встроенная графика процессора' }),
+                    p ? el('div', { class: 'part-specs' }, specChips(cat, p)) : null,
+                    p && p.perf ? el('div', { class: 'perf' },
+                        el('div', { class: 'perf-track' }, el('div', { class: 'perf-fill', style: { width: p.perf + '%' } })),
+                        el('span', { text: `мощность ${p.perf}` })) : null));
+            card.addEventListener('click', () => pickPart(cat, p ? p.id : ''));
+            return card;
+        }
+
+        function pickPart(cat, id) {
+            call(HF, 'selectionChanged');
+            if (academy.picks[cat] === id) delete academy.picks[cat];
+            else academy.picks[cat] = id;
+            academy.buildErrors = null;
+            savePicks();
+            // Автопереход к следующей незаполненной категории
+            const cats = academy.game.categories.map(c => c.id);
+            if (academy.picks[cat] !== undefined) {
+                const nextCat = cats.slice(cats.indexOf(cat) + 1).find(c => academy.picks[c] === undefined);
+                if (nextCat) academy.cat = nextCat;
+            }
+            renderBuild({ keepScroll: true });
+        }
+
+        function meter(label, valueText, pct, cls) {
+            return el('div', { class: 'meter' },
+                el('div', { class: 'meter-row' }, el('span', { text: label }), el('b', { text: valueText })),
+                el('div', { class: 'meter-track' }, el('div', { class: `meter-fill ${cls}`, style: { width: Math.min(100, pct) + '%' } })));
+        }
+
+        function renderBuild({ keepScroll = false } = {}) {
+            const q = academy.data.sim.quest;
+            if (!q || q.kind !== 'build') return go('hub');
+            resetQuestUi(q);
+            const g = academy.game;
+            const parts = selectedParts();
+            const total = buildTotal(parts);
+            const need = powerNeed(parts);
+            const psu = parts.psu;
+
+            const reqs = [
+                el('span', { class: 'chip chip--accent', text: `Бюджет ${fmtRub(q.budget)}` }),
+                el('span', { class: 'chip', text: `CPU ≥ ${q.req.cpu_perf}` }),
+                q.req.gpu_perf ? el('span', { class: 'chip', text: `GPU ≥ ${q.req.gpu_perf}` }) : null,
+                el('span', { class: 'chip', text: `RAM ≥ ${q.req.ram} ГБ` }),
+                el('span', { class: 'chip', text: q.req.need_gpu ? 'Нужна видеокарта' : 'Видеокарта не обязательна' }),
+                el('span', { class: 'chip', text: `+${q.reward} EXP` })
+            ];
+            const budgetPct = (total / q.budget) * 100;
+            const powerText = need == null ? 'выберите процессор'
+                : psu ? `нужно ${need} Вт · БП ${psu.watts} Вт` : `нужно от ${need} Вт`;
+            const powerPct = need == null ? 0 : psu ? (need / psu.watts) * 100 : 100;
+            const powerCls = need == null ? '' : !psu ? 'warn' : need > psu.watts ? 'bad' : 'good';
+
+            const tabs = el('div', { class: 'cat-tabs', role: 'tablist' }, g.categories.map(c => {
+                const b = el('button', { type: 'button', class: `cat-tab${academy.picks[c.id] !== undefined ? ' done' : ''}`, role: 'tab', 'aria-selected': String(academy.cat === c.id) },
+                    el('span', { class: 'cat-dot' }), el('span', { text: c.short }));
+                b.addEventListener('click', () => { haptic.select(); academy.cat = c.id; renderBuild({ keepScroll: true }); });
+                return b;
+            }));
+            const cat = g.categories.find(c => c.id === academy.cat);
+            const list = el('div', { class: 'parts' },
+                academy.cat === 'gpu' ? partCard('gpu', null) : null,
+                g.parts[academy.cat].map(p => partCard(academy.cat, p)));
+
+            const submit = el('button', { type: 'button', class: 'btn btn--primary', text: 'Отдать сборку клиенту' });
+            submit.addEventListener('click', submitBuild);
+            const abandon = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'Отказаться от заказа' });
+            abandon.addEventListener('click', abandonQuest);
+
+            const errors = academy.buildErrors && academy.buildErrors.length
+                ? el('div', { class: 'build-errors', role: 'alert' }, academy.buildErrors.map(e => el('div', { class: 'build-error' }, ICON.warn(), el('span', { text: e.msg }))))
+                : null;
+
+            const y = window.scrollY;
+            $('academy-root').replaceChildren(
+                backBtn('К заказам', () => go('hub')),
+                el('div', { class: 'panel order-card' },
+                    el('div', { class: 'order-client', text: q.client }),
+                    el('div', { class: 'order-title', text: q.title }),
+                    el('div', { class: 'order-brief', text: q.brief }),
+                    el('div', { class: 'order-reqs' }, reqs),
+                    q.fails ? el('div', { class: 'part-tier', style: { marginTop: '10px' }, text: `Неудачных попыток: ${q.fails} · каждая −${10} EXP и −3 репутации` }) : null),
+                el('div', { class: 'panel build-summary' },
+                    meter('Стоимость', `${fmtRub(total)} / ${fmtRub(q.budget)}`, budgetPct, budgetPct > 100 ? 'bad' : budgetPct > 90 ? 'warn' : 'good'),
+                    meter('Питание', powerText, powerPct, powerCls)),
+                tabs,
+                el('div', { class: 'cat-title', text: `${cat.title}${cat.required ? '' : ' · необязательно'}` }),
+                list,
+                errors,
+                el('div', { class: 'build-actions' }, submit, abandon));
+            if (keepScroll) window.scrollTo(0, y);
+            else if (errors) errors.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+        }
+
+        async function submitBuild() {
+            if (academy.busy) return;
+            academy.busy = true;
+            haptic.press();
+            try {
+                const parts = {};
+                for (const [cat, id] of Object.entries(academy.picks)) if (id) parts[cat] = id;
+                const res = await academyApi('/api/academy/sim/build', { parts });
+                applyState(res.state, res.level_up);
+                if (res.ok) {
+                    haptic.success();
+                    showXpGain(res.exp_gained + res.bonus);
+                    academy.result = { kind: 'build', ok: true, res };
+                    try { localStorage.removeItem(PICKS_KEY); } catch (_) {}
+                    academy.questKey = null;
+                    go('result');
+                } else {
+                    haptic.error();
+                    academy.buildErrors = res.errors;
+                    renderBuild();
+                }
+            } catch (e) { toast(netMessage(e, 'Сборка не отправлена.')); }
+            finally { academy.busy = false; }
+        }
+
+        /* ---------- Диагностика: текстовый квест-детектив ---------- */
+        function renderFix() {
+            const q = academy.data.sim.quest;
+            if (!q || q.kind !== 'fix') return go('hub');
+            resetQuestUi(q);
+            const hearts = el('span', { class: 'patience', 'aria-label': `Терпение клиента: ${q.patience_left} из ${q.patience}` },
+                Array.from({ length: q.patience }, (_, i) => el('span', { class: i < q.patience_left ? '' : 'gone', text: '💙' })));
+
+            const clues = el('div', { class: 'clues' }, q.clues.map((c, i) => {
+                const open = academy.clues.has(i);
+                const b = el('button', { type: 'button', class: `panel clue${open ? ' open' : ''}`, 'aria-expanded': String(open) },
+                    el('div', { class: 'clue-label' }, ICON.search(), el('span', { text: c.label })),
+                    el('div', { class: 'clue-result', text: c.result }));
+                b.addEventListener('click', () => {
+                    if (academy.clues.has(i)) return;
+                    haptic.tap();
+                    academy.clues.add(i);
+                    b.classList.add('open');
+                    b.setAttribute('aria-expanded', 'true');
+                });
+                return b;
+            }));
+
+            const options = el('div', { class: 'quiz-options' });
+            const feedback = el('div');
+            q.options.forEach((text, idx) => {
+                const wrong = q.wrong.includes(idx);
+                const b = el('button', { type: 'button', class: `panel quiz-option${wrong ? ' wrong' : ''}`, disabled: wrong },
+                    el('span', { class: 'quiz-letter', text: String.fromCharCode(65 + idx) }), el('span', { text }));
+                b.addEventListener('click', () => submitFix(idx, b, options, feedback));
+                options.append(b);
+            });
+            if (academy.fixFeedback) feedback.append(fixFeedbackBox(academy.fixFeedback));
+
+            const abandon = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'Отказаться от заказа' });
+            abandon.addEventListener('click', abandonQuest);
+
+            $('academy-root').replaceChildren(
+                backBtn('К заказам', () => go('hub')),
+                el('div', { class: 'panel complaint' },
+                    el('div', { class: 'complaint-head' },
+                        el('div', { class: 'order-client', text: `${q.device} · ${q.client}` }), hearts),
+                    el('div', { class: 'complaint-quote', text: q.complaint })),
+                el('div', { class: 'academy-label', text: `Диагностика · улик открыто ${academy.clues.size} из ${q.clues.length}` }),
+                clues,
+                el('div', { class: 'quiz-meta' }, el('span', { text: 'Что делаем?' }), el('span', { class: 'quiz-xp', text: `+${q.reward} EXP` })),
+                options,
+                feedback,
+                abandon);
+        }
+
+        const fixFeedbackBox = f => el('div', { class: 'quiz-feedback bad' },
+            el('b', { text: `Клиент недоволен · терпения осталось: ${f.left}` }), el('span', { text: f.why }));
+
+        async function submitFix(idx, btn, wrap, feedback) {
+            if (academy.busy || btn.disabled) return;
+            academy.busy = true;
+            haptic.tap();
+            const buttons = [...wrap.children];
+            buttons.forEach(b => { b.disabled = true; });
+            try {
+                const res = await academyApi('/api/academy/sim/fix', { option: idx });
+                applyState(res.state, res.level_up);
+                if (res.correct) {
+                    haptic.success();
+                    showXpGain(res.exp_gained);
+                    academy.result = { kind: 'fix', ok: true, res };
+                    academy.questKey = null;
+                    go('result');
+                } else if (res.lost) {
+                    haptic.error();
+                    academy.result = { kind: 'fix', ok: false, res, options: [...buttons].map(b => b.lastChild.textContent) };
+                    academy.questKey = null;
+                    go('result');
+                } else {
+                    haptic.error();
+                    academy.fixFeedback = { why: res.why, left: res.patience_left };
+                    renderFix();
+                }
+            } catch (e) {
+                buttons.forEach(b => { if (!b.classList.contains('wrong')) b.disabled = false; });
+                toast(netMessage(e, 'Ответ не отправлен.'));
+            } finally { academy.busy = false; }
+        }
+
+        /* ---------- Итог заказа ---------- */
+        function renderSimResult() {
+            const r = academy.result;
+            if (!r) return go(screenForQuest());
+            const res = r.res;
+            let title, text, chips;
+            if (r.kind === 'build') {
+                title = 'Клиент доволен';
+                text = res.saved > 0 ? `Сборка на ${fmtRub(res.total)} — сэкономили клиенту ${fmtRub(res.saved)}.` : `Сборка на ${fmtRub(res.total)} — точно в бюджет.`;
+                chips = [el('span', { class: 'chip chip--good', text: `+${res.exp_gained} EXP` }),
+                    res.bonus ? el('span', { class: 'chip chip--good', text: `+${res.bonus} EXP за экономию` }) : null,
+                    el('span', { class: 'chip', text: 'Репутация +2' })];
+            } else if (r.ok) {
+                title = 'Устройство исправно';
+                text = res.explanation;
+                chips = [el('span', { class: 'chip chip--good', text: `+${res.exp_gained} EXP` }), el('span', { class: 'chip', text: 'Репутация +3' })];
+            } else {
+                title = 'Клиент ушёл';
+                text = `Правильное решение: «${r.options[res.correct_option]}». ${res.explanation}`;
+                chips = [el('span', { class: 'chip chip--bad', text: '0 EXP' }), el('span', { class: 'chip chip--bad', text: 'Репутация упала' })];
+            }
+            const again = el('button', { type: 'button', class: 'btn btn--primary', text: r.kind === 'build' ? 'Следующий заказ на сборку' : 'Следующая диагностика' });
+            again.addEventListener('click', () => { academy.result = null; takeQuest(r.kind); });
+            const hub = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'К выбору заказа' });
+            hub.addEventListener('click', () => { haptic.tap(); academy.result = null; go('hub'); });
+            $('academy-root').replaceChildren(el('div', { class: 'sim-result' },
+                el('div', { class: `sim-result-icon ${r.ok ? 'ok' : 'bad'}` }, r.ok ? ICON.bigCheck() : ICON.bigX()),
+                el('h2', { text: title }),
+                el('p', { text }),
+                el('div', { class: 'reward-row' }, chips),
+                again, hub));
+        }
+
+        /* ---------- Обучение: дерево навыков ---------- */
+        function findModule(id) { return academy.data.training.modules.find(m => m.id === id); }
 
         function renderTree() {
-            const mods = academy.state.modules;
+            const mods = academy.data.training.modules;
             const tree = el('div', { class: 'skill-tree' });
             mods.forEach((m, i) => {
                 const meta = m.status === 'locked' ? `Откроется после модуля «${mods[i - 1].title}»`
-                    : m.status === 'completed' ? `Пройден · ${m.xp_earned} / ${m.max_xp} XP`
-                    : `${m.correct_count} / ${m.question_count} вопросов · до ${m.max_xp} XP`;
-                const badge = el('div', { class: 'skill-badge' },
-                    m.status === 'completed' ? ICON.check() : m.status === 'locked' ? ICON.lock() : String(i + 1));
-                const node = el('button', {
-                    type: 'button', class: `panel skill-node ${m.status}`,
-                    'aria-disabled': m.status === 'locked' ? 'true' : null
-                },
-                    badge,
+                    : m.status === 'completed' ? `Пройден · ${m.xp_earned} / ${m.max_xp} EXP`
+                    : `${m.correct_count} / ${m.question_count} вопросов · до ${m.max_xp} EXP`;
+                const node = el('button', { type: 'button', class: `panel skill-node ${m.status}`, 'aria-disabled': m.status === 'locked' ? 'true' : null },
+                    el('div', { class: 'skill-badge' }, m.status === 'completed' ? ICON.check() : m.status === 'locked' ? ICON.lock() : String(i + 1)),
                     el('div', { class: 'skill-body' },
                         el('div', { class: 'skill-title', text: m.title }),
                         el('div', { class: 'skill-sub', text: m.subtitle }),
@@ -3778,33 +4464,34 @@
                     if (m.status === 'locked') { call(HF, 'notificationOccurred', 'warning'); return; }
                     haptic.select();
                     academy.moduleId = m.id;
-                    goAcademy('module');
+                    go('module');
                 });
                 tree.append(node);
             });
-            const reset = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'Сбросить прогресс' });
+            const reset = el('button', { type: 'button', class: 'text-btn academy-reset', text: 'Сбросить весь прогресс' });
             reset.addEventListener('click', resetAcademy);
             $('academy-root').replaceChildren(el('div', { class: 'academy-label', text: 'Дерево навыков' }), tree, reset);
         }
 
         async function resetAcademy() {
-            if (!(await confirmAsync('Сбросить весь прогресс Академии? XP и пройденные модули обнулятся.'))) return;
+            if (!(await confirmAsync('Сбросить весь прогресс Академии? EXP, уровень, репутация, заказы и квизы обнулятся.'))) return;
             try {
-                academy.state = await academyApi('/api/academy/reset', {});
-                updateXp(academy.state.progress);
-                goAcademy('tree');
+                applyState(await academyApi('/api/academy/reset', {}));
+                academy.result = null;
+                academy.questKey = null;
+                try { localStorage.removeItem(PICKS_KEY); } catch (_) {}
+                go('tree');
             } catch (e) { toast(netMessage(e, 'Не удалось сбросить прогресс.')); }
         }
 
         function renderModule() {
             const m = findModule(academy.moduleId);
-            if (!m || m.status === 'locked') return goAcademy('tree');
+            if (!m || m.status === 'locked') return go('tree');
             const done = m.status === 'completed';
-            const start = el('button', { type: 'button', class: `btn ${done ? 'btn--secondary' : 'btn--primary'}`,
-                text: done ? 'Повторить квиз (без XP)' : 'Перейти к квизу' });
+            const start = el('button', { type: 'button', class: `btn ${done ? 'btn--secondary' : 'btn--primary'}`, text: done ? 'Повторить квиз (без EXP)' : 'Перейти к квизу' });
             start.addEventListener('click', () => { haptic.press(); startQuiz(m); });
             $('academy-root').replaceChildren(
-                backBtn('Дерево навыков', () => goAcademy('tree')),
+                backBtn('Дерево навыков', () => go('tree')),
                 el('div', { class: 'module-head' },
                     el('div', { class: 'kicker', text: `Модуль ${m.order}` }),
                     el('h2', { text: m.title }),
@@ -3822,13 +4509,13 @@
             const done = new Set(m.correct_question_ids);
             const first = m.quiz.findIndex(q => !done.has(q.id));
             academy.qIndex = first === -1 ? 0 : first;
-            academy.lastResult = null;
-            goAcademy('quiz');
+            academy.lastQuiz = null;
+            go('quiz');
         }
 
         function renderQuiz() {
             const m = findModule(academy.moduleId);
-            if (!m || !m.quiz.length) return goAcademy('tree');
+            if (!m || !m.quiz.length) return go('tree');
             const q = m.quiz[academy.qIndex];
             const done = new Set(m.correct_question_ids);
             const isLast = academy.qIndex === m.quiz.length - 1;
@@ -3843,16 +4530,16 @@
             });
             next.addEventListener('click', () => {
                 haptic.press();
-                if (isLast) goAcademy('complete');
-                else { academy.qIndex += 1; goAcademy('quiz'); }
+                if (isLast) go('complete');
+                else { academy.qIndex += 1; go('quiz'); }
             });
             $('academy-root').replaceChildren(
-                backBtn('К теории', () => goAcademy('module')),
+                backBtn('К теории', () => go('module')),
                 el('div', { class: 'quiz-dots' }, m.quiz.map((qq, i) =>
                     el('div', { class: `quiz-dot${i === academy.qIndex ? ' current' : done.has(qq.id) ? ' done' : ''}` }))),
                 el('div', { class: 'quiz-meta' },
                     el('span', { text: `Вопрос ${academy.qIndex + 1} из ${m.quiz.length}` }),
-                    el('span', { class: 'quiz-xp', text: done.has(q.id) ? 'Повторение' : `+${q.xp} XP` })),
+                    el('span', { class: 'quiz-xp', text: done.has(q.id) ? 'Повторение' : `+${q.xp} EXP` })),
                 el('div', { class: 'quiz-question', text: q.question }),
                 options, feedback, next);
         }
@@ -3866,17 +4553,15 @@
             const reopen = () => buttons.forEach(b => { if (!b.classList.contains('wrong')) b.disabled = false; });
             try {
                 const res = await academyApi('/api/academy/answer', { module_id: m.id, question_id: q.id, option: idx });
-                academy.state = res.state;
-                updateXp(res.state.progress, res.level_up);
-                const box = el('div', { class: `quiz-feedback ${res.correct ? 'ok' : 'bad'}` },
-                    el('b', { text: res.correct ? 'Верно!' : 'Не совсем' }), el('span', { text: res.feedback }));
-                feedback.replaceChildren(box);
+                applyState(res.state, res.level_up);
+                feedback.replaceChildren(el('div', { class: `quiz-feedback ${res.correct ? 'ok' : 'bad'}` },
+                    el('b', { text: res.correct ? 'Верно!' : 'Не совсем' }), el('span', { text: res.feedback })));
                 if (res.correct) {
                     btn.classList.add('correct');
                     buttons.forEach(b => { if (b !== btn && !b.classList.contains('wrong')) b.classList.add('dimmed'); });
                     haptic.success();
                     showXpGain(res.xp_gained + res.bonus_xp);
-                    academy.lastResult = res;
+                    academy.lastQuiz = res;
                     next.hidden = false;
                 } else {
                     btn.classList.add('wrong');
@@ -3893,22 +4578,27 @@
 
         function renderComplete() {
             const m = findModule(academy.moduleId);
-            const r = academy.lastResult || {};
-            const p = academy.state.progress;
+            const r = academy.lastQuiz || {};
+            const t = academy.data.training;
             const toTree = el('button', { type: 'button', class: 'btn btn--primary', text: 'К дереву навыков' });
-            toTree.addEventListener('click', () => { haptic.press(); goAcademy('tree'); });
+            toTree.addEventListener('click', () => { haptic.press(); go('tree'); });
             $('academy-root').replaceChildren(el('div', { class: 'academy-complete' },
                 el('div', { class: 'academy-complete-icon' }, ICON.bigCheck()),
                 el('h2', { text: 'Модуль пройден' }),
                 el('p', { text: r.module_completed_now
-                    ? `«${m.title}» закрыт. Бонус за модуль: +${r.bonus_xp} XP`
-                    : `«${m.title}» — повторение без начисления XP. Знания освежены.` }),
+                    ? `«${m.title}» закрыт. Бонус за модуль: +${r.bonus_xp} EXP`
+                    : `«${m.title}» — повторение без начисления EXP. Знания освежены.` }),
                 r.unlocked_module
                     ? el('div', { class: 'unlock-chip' }, ICON.unlock(), el('span', { text: `Открыт модуль: «${r.unlocked_module.title}»` }))
-                    : r.module_completed_now && p.completed_modules === p.total_modules
+                    : r.module_completed_now && t.completed_modules === t.total_modules
                         ? el('div', { class: 'unlock-chip', text: '🏆 Вся программа пройдена' }) : null,
                 toTree));
         }
+
+        $('academy-tabs').addEventListener('click', e => {
+            const btn = e.target.closest('.segment');
+            if (btn) setTab(btn.dataset.tab);
+        });
 
         /* ==================================================================
            Старт

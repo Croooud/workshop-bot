@@ -2,6 +2,7 @@ import asyncio
 import hmac
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -154,6 +155,12 @@ def init_db():
             attempts INTEGER NOT NULL DEFAULT 0, is_correct INTEGER NOT NULL DEFAULT 0,
             xp_awarded INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, question_id))""")
+        # Симулятор мастера: опыт, репутация, статистика и текущий заказ (JSON)
+        conn.execute("""CREATE TABLE IF NOT EXISTS academy_sim (
+            user_id INTEGER PRIMARY KEY, exp INTEGER NOT NULL DEFAULT 0, reputation INTEGER NOT NULL DEFAULT 50,
+            builds_done INTEGER NOT NULL DEFAULT 0, builds_failed INTEGER NOT NULL DEFAULT 0,
+            fixes_done INTEGER NOT NULL DEFAULT 0, fixes_failed INTEGER NOT NULL DEFAULT 0,
+            quest TEXT, recent TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_orders_status ON orders(status, created_at)")
         try:
             conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_reviews ON reviews(order_id, user_id)")
@@ -766,17 +773,21 @@ async def api_admin_me(user=Depends(current_user)):
 
 
 # ───────────────────────── Академия: обучение мастеров (только ADMIN_IDS) ─────────────────────────
-TRAINING_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "academy", "training_data.js")
+ACADEMY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "academy")
 
 
-def _load_training_data() -> dict:
-    """academy/training_data.js: всё между первой '{' и последней '}' — строгий JSON."""
-    with open(TRAINING_DATA_PATH, encoding="utf-8") as f:
+def _read_js_json(name: str) -> dict:
+    """academy/*.js: всё между первой '{' и последней '}' — строгий JSON."""
+    with open(os.path.join(ACADEMY_DIR, name), encoding="utf-8") as f:
         raw = f.read()
     start, end = raw.find("{"), raw.rfind("}")
     if start == -1 or end == -1:
-        raise RuntimeError("training_data.js: не найден JSON-объект")
-    data = json.loads(raw[start:end + 1])
+        raise RuntimeError(f"{name}: не найден JSON-объект")
+    return json.loads(raw[start:end + 1])
+
+
+def _load_training_data() -> dict:
+    data = _read_js_json("training_data.js")
     seen = set()
     for m in data["modules"]:
         for key in ("id", "order", "title", "subtitle", "xp_bonus", "theory", "quiz"):
@@ -788,30 +799,68 @@ def _load_training_data() -> dict:
             seen.add(q["id"])
             if not 0 <= q["correct"] < len(q["options"]):
                 raise ValueError(f"Академия: у вопроса {q['id']} индекс correct вне диапазона")
-    if not data.get("levels"):
-        raise ValueError("Академия: не заданы уровни")
     data["modules"].sort(key=lambda m: m["order"])
-    data["levels"].sort(key=lambda lvl: lvl["xp"])
     return data
 
 
-# Читаем и проверяем контент при старте: ошибка в JSON не всплывёт посреди квиза.
+def _load_game_data() -> dict:
+    data = _read_js_json("game_data.js")
+    cats = {c["id"] for c in data["categories"]}
+    if cats != set(data["parts"]):
+        raise ValueError("Симулятор: категории не совпадают с каталогом деталей")
+    ids = [p["id"] for group in data["parts"].values() for p in group]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Симулятор: повторяющиеся id деталей")
+    for o in data["build_orders"]:
+        lo, hi = o["budget"]
+        if not 0 < lo <= hi:
+            raise ValueError(f"Симулятор: неверный бюджет заказа {o['id']}")
+    for f in data["faults"]:
+        if not 0 <= f["correct"] < len(f["options"]):
+            raise ValueError(f"Симулятор: у поломки {f['id']} индекс correct вне диапазона")
+    data["levels"].sort(key=lambda lvl: lvl["exp"])
+    if not data["levels"] or data["levels"][0]["exp"] != 0:
+        raise ValueError("Симулятор: первый уровень должен начинаться с 0 EXP")
+    data["part_index"] = {p["id"]: (cat, p) for cat, group in data["parts"].items() for p in group}
+    return data
+
+
+# Читаем и проверяем контент при старте: ошибка в JSON не всплывёт посреди игры.
 TRAINING = _load_training_data()
+GAME = _load_game_data()
+RULES = GAME["rules"]
+ORDERS = {o["id"]: o for o in GAME["build_orders"]}
+FAULTS = {f["id"]: f for f in GAME["faults"]}
+# Каталог и правила — публичны, отдаются клиенту целиком для живых подсказок совместимости
+GAME_PUBLIC = {"categories": GAME["categories"], "parts": GAME["parts"],
+               "rules": {k: RULES[k] for k in ("psu_reserve", "fix_patience")}}
 
 
-def academy_state(answers: dict) -> dict:
-    """Дерево навыков для клиента. correct / explanation / hint наружу не уходят."""
-    modules_out, total_xp, max_xp, completed_count, prev_completed = [], 0, 0, 0, True
+def player_progress(exp: int, reputation: int) -> dict:
+    """Уровень и ранг по суммарному EXP (квизы + симулятор)."""
+    levels = GAME["levels"]
+    cur = max((lvl for lvl in levels if exp >= lvl["exp"]), key=lambda lvl: lvl["exp"])
+    nxt = next((lvl for lvl in levels if lvl["exp"] > exp), None)
+    return {
+        "exp": exp, "level": cur["level"], "rank": cur["rank"], "level_exp": cur["exp"],
+        "next_exp": nxt["exp"] if nxt else None, "next_rank": nxt["rank"] if nxt else None,
+        "max_level": levels[-1]["level"], "reputation": reputation,
+    }
+
+
+def training_state(answers: dict) -> dict:
+    """Дерево навыков. correct / explanation / hint наружу не уходят."""
+    modules_out, total_xp, completed_count, prev_completed = [], 0, 0, True
     for m in TRAINING["modules"]:
         quiz = m["quiz"]
         correct_ids = [q["id"] for q in quiz if answers.get(q["id"], {}).get("is_correct")]
         completed = len(correct_ids) == len(quiz)
         status = "completed" if completed else ("available" if prev_completed else "locked")
-        m_max = sum(q["xp"] for q in quiz) + m["xp_bonus"]
         m_xp = sum(answers[qid]["xp_awarded"] for qid in correct_ids) + (m["xp_bonus"] if completed else 0)
         item = {
             "id": m["id"], "order": m["order"], "title": m["title"], "subtitle": m["subtitle"],
-            "status": status, "xp_bonus": m["xp_bonus"], "xp_earned": m_xp, "max_xp": m_max,
+            "status": status, "xp_bonus": m["xp_bonus"], "xp_earned": m_xp,
+            "max_xp": sum(q["xp"] for q in quiz) + m["xp_bonus"],
             "question_count": len(quiz), "correct_count": len(correct_ids),
             "correct_question_ids": correct_ids, "theory": [], "quiz": [],
         }
@@ -821,22 +870,62 @@ def academy_state(answers: dict) -> dict:
                             for q in quiz]
         modules_out.append(item)
         total_xp += m_xp
-        max_xp += m_max
         completed_count += completed
         prev_completed = completed
+    return {"xp": total_xp, "completed_modules": completed_count, "total_modules": len(modules_out),
+            "modules": modules_out}
 
-    level, next_level = TRAINING["levels"][0], None
-    for lvl in TRAINING["levels"]:
-        if total_xp >= lvl["xp"]:
-            level = lvl
-        else:
-            next_level = lvl
-            break
-    return {
-        "progress": {"xp": total_xp, "max_xp": max_xp, "level": level, "next_level": next_level,
-                     "completed_modules": completed_count, "total_modules": len(modules_out)},
-        "modules": modules_out,
-    }
+
+# ── Хранилище: ответы квизов и состояние симулятора ──
+SIM_FIELDS = ("exp", "reputation", "builds_done", "builds_failed", "fixes_done", "fixes_failed", "quest", "recent")
+
+
+def _sim_default() -> dict:
+    return {"exp": 0, "reputation": RULES["reputation_start"], "builds_done": 0, "builds_failed": 0,
+            "fixes_done": 0, "fixes_failed": 0, "quest": None, "recent": []}
+
+
+def _sim_row(conn, user_id: int) -> dict:
+    r = conn.execute(f"SELECT {', '.join(SIM_FIELDS)} FROM academy_sim WHERE user_id = ?", (user_id,)).fetchone()
+    if not r:
+        return _sim_default()
+    row = dict(r)
+    row["quest"] = json.loads(row["quest"]) if row["quest"] else None
+    row["recent"] = json.loads(row["recent"] or "[]")
+    return row
+
+
+def _sim_txn(user_id: int, fn):
+    """Читает строку симулятора, применяет fn(row) -> result и сохраняет — атомарно (BEGIN IMMEDIATE),
+    чтобы двойной тап не начислил EXP дважды."""
+    with closing(sqlite3.connect(DB_PATH, timeout=10, isolation_level=None)) as conn:
+        conn.row_factory = sqlite3.Row
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            row = _sim_row(conn, user_id)
+            result = fn(row)
+            conn.execute(
+                "INSERT INTO academy_sim (user_id, exp, reputation, builds_done, builds_failed, fixes_done, "
+                "fixes_failed, quest, recent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET exp = excluded.exp, reputation = excluded.reputation, "
+                "builds_done = excluded.builds_done, builds_failed = excluded.builds_failed, "
+                "fixes_done = excluded.fixes_done, fixes_failed = excluded.fixes_failed, "
+                "quest = excluded.quest, recent = excluded.recent, updated_at = CURRENT_TIMESTAMP",
+                (user_id, row["exp"], row["reputation"], row["builds_done"], row["builds_failed"],
+                 row["fixes_done"], row["fixes_failed"],
+                 json.dumps(row["quest"], ensure_ascii=False) if row["quest"] else None,
+                 json.dumps(row["recent"][-6:])))
+            conn.execute("COMMIT")
+            return result
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+
+
+def _sim_read(user_id: int) -> dict:
+    with closing(sqlite3.connect(DB_PATH, timeout=10)) as conn:
+        conn.row_factory = sqlite3.Row
+        return _sim_row(conn, user_id)
 
 
 async def academy_answers(user_id: int) -> dict:
@@ -845,15 +934,124 @@ async def academy_answers(user_id: int) -> dict:
     return {r["question_id"]: r for r in rows}
 
 
+def clamp_rep(v: int) -> int:
+    return max(0, min(100, v))
+
+
+# ── Квесты: публичное представление (без правильных ответов) ──
+def quest_view(q: dict | None) -> dict | None:
+    if not q:
+        return None
+    if q["kind"] == "build":
+        o = ORDERS[q["order_id"]]
+        return {"kind": "build", "id": o["id"], "client": o["client"], "title": o["title"], "brief": o["brief"],
+                "budget": q["budget"], "req": o["req"], "reward": o["reward"], "fails": q["fails"]}
+    f = FAULTS[q["fault_id"]]
+    return {"kind": "fix", "id": f["id"], "device": f["device"], "client": f["client"], "complaint": f["complaint"],
+            "clues": f["clues"], "options": [o["text"] for o in f["options"]], "reward": f["reward"],
+            "patience": RULES["fix_patience"], "patience_left": RULES["fix_patience"] - len(q["wrong"]),
+            "wrong": q["wrong"]}
+
+
+def sim_stats(row: dict) -> dict:
+    return {k: row[k] for k in ("builds_done", "builds_failed", "fixes_done", "fixes_failed")}
+
+
+# ── Валидация сборки (источник истины; клиент повторяет те же правила для живых подсказок) ──
+def rub_fmt(n: int) -> str:
+    return f"{n:,}".replace(",", " ") + " ₽"
+
+
+def validate_build(order: dict, budget: int, picks: dict) -> dict:
+    parts, errors = {}, []
+
+    def err(code, msg):
+        errors.append({"code": code, "msg": msg})
+
+    for cat in GAME["categories"]:
+        pid = picks.get(cat["id"])
+        if pid:
+            found = GAME["part_index"].get(pid)
+            if not found or found[0] != cat["id"]:
+                raise HTTPException(422, f"Неизвестная деталь: {pid}")
+            parts[cat["id"]] = found[1]
+        elif cat["required"]:
+            err("missing_" + cat["id"], f"Не выбрано: {cat['title'].lower()}.")
+
+    cpu, mb, ram, gpu, psu = (parts.get(k) for k in ("cpu", "mb", "ram", "gpu", "psu"))
+    req = order["req"]
+    if cpu and mb and cpu["socket"] != mb["socket"]:
+        err("socket", f"Процессор не лезет в сокет! {cpu['name']} — {cpu['socket']}, а плата под {mb['socket']}.")
+    if ram and mb and ram["type"] != mb["ram"]:
+        err("ram_type", f"Память {ram['type']} не встанет в плату под {mb['ram']}: у них разные разъёмы.")
+    if cpu and not gpu:
+        if req["need_gpu"]:
+            err("need_gpu", "Клиенту нужна видеокарта: встроенная графика с этой задачей не справится.")
+        elif not cpu["igpu"]:
+            err("no_video", f"Нет видеовыхода: у {cpu['name']} нет встроенной графики, нужна видеокарта.")
+    power_need = None
+    if cpu:
+        load = cpu["tdp"] + (gpu["tdp"] if gpu else 0)
+        power_need = math.ceil(load * RULES["psu_reserve"])
+        if psu and psu["watts"] < power_need:
+            gpu_part = f" + GPU {gpu['tdp']} Вт" if gpu else ""
+            err("psu_power", f"Блок питания не вытянет: CPU {cpu['tdp']} Вт{gpu_part} + 20% запаса = "
+                             f"{power_need} Вт, а у БП всего {psu['watts']} Вт.")
+    if gpu and psu and psu["watts"] < gpu["min_psu"]:
+        err("psu_min", f"Для {gpu['name']} производитель требует БП от {gpu['min_psu']} Вт, а стоит {psu['watts']} Вт.")
+    if cpu and cpu["perf"] < req["cpu_perf"]:
+        err("cpu_weak", f"Процессор слабоват: {cpu['name']} не потянет задачу «{order['title']}».")
+    if gpu and gpu["perf"] < req["gpu_perf"]:
+        err("gpu_weak", f"Видеокарта слабовата: {gpu['name']} не потянет задачу «{order['title']}».")
+    if ram and ram["size"] < req["ram"]:
+        err("ram_small", f"Мало памяти: для этой задачи нужно минимум {req['ram']} ГБ, выбрано {ram['size']} ГБ.")
+    total = sum(p["price"] for p in parts.values())
+    if total > budget:
+        err("budget", f"Вышли за бюджет на {rub_fmt(total - budget)}: сборка стоит {rub_fmt(total)} "
+                      f"при бюджете {rub_fmt(budget)}.")
+    return {"ok": not errors, "errors": errors, "total": total, "power_need": power_need}
+
+
+class SimQuestIn(BaseModel):
+    kind: str = Field(..., pattern="^(build|fix)$")
+
+
+class SimBuildIn(BaseModel):
+    parts: dict[str, str] = Field(..., max_length=8)
+
+
+class SimFixIn(BaseModel):
+    option: int = Field(..., ge=0, le=10)
+
+
 class AcademyAnswerIn(BaseModel):
     module_id: str = Field(..., max_length=32)
     question_id: str = Field(..., max_length=32)
     option: int = Field(..., ge=0, le=20)
 
 
+async def academy_snapshot(user_id: int) -> dict:
+    answers = await academy_answers(user_id)
+    sim = await asyncio.to_thread(_sim_read, user_id)
+    tr = training_state(answers)
+    return {
+        "progress": player_progress(tr["xp"] + sim["exp"], sim["reputation"]),
+        "training": tr,
+        "sim": {"quest": quest_view(sim["quest"]), "stats": sim_stats(sim)},
+    }
+
+
+def _with_level_up(before: dict, after: dict, payload: dict) -> dict:
+    payload["level_up"] = after["progress"]["level"] > before["progress"]["level"]
+    payload["state"] = after
+    return payload
+
+
 @app.get("/api/academy/content")
 async def api_academy_content(admin=Depends(admin_user)):
-    return academy_state(await academy_answers(admin.id))
+    snap = await academy_snapshot(admin.id)
+    snap["game"] = GAME_PUBLIC
+    return snap
 
 
 @app.post("/api/academy/answer")
@@ -865,9 +1063,9 @@ async def api_academy_answer(payload: AcademyAnswerIn, admin=Depends(admin_user)
     if payload.option >= len(question["options"]):
         raise HTTPException(422, "Нет такого варианта ответа.")
 
+    before = await academy_snapshot(admin.id)
     answers = await academy_answers(admin.id)
-    before = academy_state(answers)
-    before_m = next(m for m in before["modules"] if m["id"] == module["id"])
+    before_m = next(m for m in before["training"]["modules"] if m["id"] == module["id"])
     if before_m["status"] == "locked":
         raise HTTPException(403, "Модуль ещё заблокирован.")
 
@@ -885,33 +1083,136 @@ async def api_academy_answer(payload: AcademyAnswerIn, admin=Depends(admin_user)
                          xp_awarded = excluded.xp_awarded, updated_at = CURRENT_TIMESTAMP
                      WHERE academy_answers.is_correct = 0""",
                   (admin.id, module["id"], question["id"], int(is_correct), xp_gained))
-        answers = await academy_answers(admin.id)
 
-    after = academy_state(answers)
-    after_m = next(m for m in after["modules"] if m["id"] == module["id"])
+    after = await academy_snapshot(admin.id)
+    after_m = next(m for m in after["training"]["modules"] if m["id"] == module["id"])
     completed_now = before_m["status"] != "completed" and after_m["status"] == "completed"
     unlocked = None
     if completed_now:
-        idx = [m["id"] for m in after["modules"]].index(module["id"])
-        if idx + 1 < len(after["modules"]):
-            nxt = after["modules"][idx + 1]
-            unlocked = {"id": nxt["id"], "title": nxt["title"]}
-    return {
+        mods = after["training"]["modules"]
+        idx = [m["id"] for m in mods].index(module["id"])
+        if idx + 1 < len(mods):
+            unlocked = {"id": mods[idx + 1]["id"], "title": mods[idx + 1]["title"]}
+    return _with_level_up(before, after, {
         "correct": is_correct,
         "feedback": question["explanation"] if is_correct else question.get("hint", "Попробуй ещё раз."),
         "xp_gained": xp_gained,
         "bonus_xp": module["xp_bonus"] if completed_now else 0,
         "module_completed_now": completed_now,
         "unlocked_module": unlocked,
-        "level_up": after["progress"]["level"]["xp"] > before["progress"]["level"]["xp"],
-        "state": after,
-    }
+    })
+
+
+@app.post("/api/academy/sim/quest")
+async def api_sim_quest(payload: SimQuestIn, admin=Depends(admin_user)):
+    """Выдаёт новый заказ. Если есть незавершённый — возвращает его (чтобы нельзя было «перекатывать» задания)."""
+    def take(row):
+        if row["quest"]:
+            return False
+        recent = row["recent"]
+        if payload.kind == "build":
+            pool = [o for o in GAME["build_orders"] if o["id"] not in recent[-2:]] or GAME["build_orders"]
+            o = secrets.choice(pool)
+            lo, hi, step = o["budget"][0], o["budget"][1], RULES["budget_round"]
+            budget = lo + secrets.randbelow((hi - lo) // step + 1) * step
+            row["quest"] = {"kind": "build", "order_id": o["id"], "budget": budget, "fails": 0}
+            recent.append(o["id"])
+        else:
+            pool = [f for f in GAME["faults"] if f["id"] not in recent[-5:]] or GAME["faults"]
+            f = secrets.choice(pool)
+            row["quest"] = {"kind": "fix", "fault_id": f["id"], "wrong": []}
+            recent.append(f["id"])
+        return True
+
+    created = await asyncio.to_thread(_sim_txn, admin.id, take)
+    snap = await academy_snapshot(admin.id)
+    return {"created": created, "state": snap}
+
+
+@app.post("/api/academy/sim/abandon")
+async def api_sim_abandon(admin=Depends(admin_user)):
+    """Отказ от заказа: клиент недоволен, репутация падает."""
+    def drop(row):
+        if row["quest"]:
+            row["quest"] = None
+            row["reputation"] = clamp_rep(row["reputation"] - 2)
+
+    await asyncio.to_thread(_sim_txn, admin.id, drop)
+    return {"state": await academy_snapshot(admin.id)}
+
+
+@app.post("/api/academy/sim/build")
+async def api_sim_build(payload: SimBuildIn, admin=Depends(admin_user)):
+    before = await academy_snapshot(admin.id)
+
+    def check(row):
+        q = row["quest"]
+        if not q or q["kind"] != "build":
+            raise HTTPException(409, "Нет активного заказа на сборку.")
+        order = ORDERS[q["order_id"]]
+        res = validate_build(order, q["budget"], payload.parts)
+        rep = RULES["reputation"]
+        if not res["ok"]:
+            q["fails"] += 1
+            row["builds_failed"] += 1
+            row["reputation"] = clamp_rep(row["reputation"] + rep["build_fail"])
+            return {**res, "exp_gained": 0, "bonus": 0}
+        base = max(order["reward"] - RULES["build_penalty_per_fail"] * q["fails"], order["reward"] // 2)
+        bonus = (round(order["reward"] * RULES["build_saving_bonus_pct"] / 100)
+                 if res["total"] <= q["budget"] * RULES["build_saving_threshold"] else 0)
+        row["exp"] += base + bonus
+        row["builds_done"] += 1
+        row["reputation"] = clamp_rep(row["reputation"] + rep["build_ok"])
+        row["quest"] = None
+        return {**res, "exp_gained": base, "bonus": bonus, "saved": q["budget"] - res["total"]}
+
+    result = await asyncio.to_thread(_sim_txn, admin.id, check)
+    return _with_level_up(before, await academy_snapshot(admin.id), result)
+
+
+@app.post("/api/academy/sim/fix")
+async def api_sim_fix(payload: SimFixIn, admin=Depends(admin_user)):
+    before = await academy_snapshot(admin.id)
+
+    def answer(row):
+        q = row["quest"]
+        if not q or q["kind"] != "fix":
+            raise HTTPException(409, "Нет активной диагностики.")
+        f = FAULTS[q["fault_id"]]
+        if payload.option >= len(f["options"]):
+            raise HTTPException(422, "Нет такого варианта.")
+        if payload.option in q["wrong"]:
+            raise HTTPException(409, "Этот вариант уже пробовали.")
+        rep = RULES["reputation"]
+        if payload.option == f["correct"]:
+            gained = max(f["reward"] - RULES["fix_penalty_per_mistake"] * len(q["wrong"]), f["reward"] // 3)
+            row["exp"] += gained
+            row["fixes_done"] += 1
+            row["reputation"] = clamp_rep(row["reputation"] + rep["fix_ok"])
+            row["quest"] = None
+            return {"correct": True, "exp_gained": gained, "explanation": f["explanation"], "lost": False}
+        q["wrong"].append(payload.option)
+        row["reputation"] = clamp_rep(row["reputation"] + rep["fix_mistake"])
+        why = f["options"][payload.option]["why"]
+        if len(q["wrong"]) >= RULES["fix_patience"]:
+            row["fixes_failed"] += 1
+            row["reputation"] = clamp_rep(row["reputation"] + rep["fix_lost"])
+            row["quest"] = None
+            return {"correct": False, "why": why, "lost": True, "exp_gained": 0,
+                    "correct_option": f["correct"], "explanation": f["explanation"]}
+        return {"correct": False, "why": why, "lost": False, "exp_gained": 0,
+                "patience_left": RULES["fix_patience"] - len(q["wrong"])}
+
+    result = await asyncio.to_thread(_sim_txn, admin.id, answer)
+    return _with_level_up(before, await academy_snapshot(admin.id), result)
 
 
 @app.post("/api/academy/reset")
 async def api_academy_reset(admin=Depends(admin_user)):
+    """Полный сброс: квизы и симулятор."""
     await adb("DELETE FROM academy_answers WHERE user_id = ?", (admin.id,))
-    return academy_state({})
+    await adb("DELETE FROM academy_sim WHERE user_id = ?", (admin.id,))
+    return await academy_snapshot(admin.id)
 
 
 @app.get("/api/admin/orders")
