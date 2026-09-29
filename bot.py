@@ -122,11 +122,26 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
         # миграция для уже существующей БД
         for ddl in ("ALTER TABLE orders ADD COLUMN done_at TEXT",
-                    "ALTER TABLE orders ADD COLUMN review_sent INTEGER DEFAULT 0"):
+                    "ALTER TABLE orders ADD COLUMN review_sent INTEGER DEFAULT 0",
+                    # «Доска мастера»: контакты и детали заявки + привязка к сообщению в рабочем чате
+                    "ALTER TABLE orders ADD COLUMN phone TEXT",
+                    "ALTER TABLE orders ADD COLUMN client_name TEXT",
+                    "ALTER TABLE orders ADD COLUMN client_username TEXT",
+                    "ALTER TABLE orders ADD COLUMN is_b2b INTEGER DEFAULT 0",
+                    "ALTER TABLE orders ADD COLUMN device TEXT",
+                    "ALTER TABLE orders ADD COLUMN problem TEXT",
+                    "ALTER TABLE orders ADD COLUMN workplaces INTEGER",
+                    "ALTER TABLE orders ADD COLUMN office_info TEXT",
+                    "ALTER TABLE orders ADD COLUMN has_photo INTEGER DEFAULT 0",
+                    "ALTER TABLE orders ADD COLUMN admin_msg_id INTEGER",
+                    "ALTER TABLE orders ADD COLUMN admin_text TEXT",
+                    "ALTER TABLE orders ADD COLUMN status_at TEXT",
+                    "ALTER TABLE orders ADD COLUMN status_by TEXT"):
             try:
                 conn.execute(ddl)
             except sqlite3.OperationalError:
                 pass
+        conn.execute("CREATE INDEX IF NOT EXISTS ix_orders_status ON orders(status, created_at)")
         try:
             conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_reviews ON reviews(order_id, user_id)")
         except sqlite3.IntegrityError:
@@ -201,6 +216,13 @@ async def current_user(x_init_data: str | None = Header(None)):
     if data.user is None or time.time() - data.auth_date.timestamp() > INITDATA_MAX_AGE:
         raise HTTPException(401, "Сессия устарела, откройте приложение заново.")
     return data.user
+
+
+async def admin_user(user=Depends(current_user)):
+    """Доступ к «Доске мастера»: подпись initData проверена выше, здесь — только белый список ADMIN_IDS."""
+    if user.id not in ADMIN_IDS:
+        raise HTTPException(403, "Отказано в доступе.")
+    return user
 
 
 # ───────────────────────── Gemini ─────────────────────────
@@ -457,12 +479,19 @@ async def api_order(
     # Запись в БД: уникальный id, при сбое заказ НЕ отправляем мастерам
     items_str = ", ".join(f"{x['name']} ({x['price']}₽)" for x in items_list)
     client_link = f"tg://user?id={chat_id}"
+    client_name = " ".join(p for p in (user.first_name, user.last_name) if p)[:128] or None
+    client_username = user.username or None
     order_id = None
     for _ in range(5):
         cand = f"#{secrets.token_hex(3).upper()}"
         try:
-            await adb("INSERT INTO orders (order_id, user_id, client_link, items, total) VALUES (?, ?, ?, ?, ?)",
-                      (cand, chat_id, client_link, items_str, total))
+            await adb(
+                "INSERT INTO orders (order_id, user_id, client_link, items, total, phone, client_name, client_username, "
+                "is_b2b, device, problem, workplaces, office_info, has_photo) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (cand, chat_id, client_link, items_str, total, phone_clean, client_name, client_username,
+                 int(mode == "b2b"), None if mode == "b2b" else device, None if mode == "b2b" else (problem or None),
+                 wp, (office_info or None) if mode == "b2b" else None, int(bool(file_bytes))))
             order_id = cand
             break
         except sqlite3.IntegrityError:
@@ -503,6 +532,12 @@ async def api_order(
                                  caption=f"📷 Фото к заказу {order_id}")
         admin_msg = await bot.send_message(ADMIN_CHAT_ID, admin_receipt, reply_markup=build_kb("Новый", order_id),
                                            parse_mode="HTML")
+        # Запоминаем сообщение в рабочем чате: смена статуса из CRM обновит его текст и кнопки
+        try:
+            await adb("UPDATE orders SET admin_msg_id=?, admin_text=? WHERE order_id=?",
+                      (admin_msg.message_id, admin_receipt, order_id))
+        except Exception:
+            log.exception("Не удалось сохранить admin_msg_id для %s", order_id)
         if file_bytes:
             spawn(send_ai_verdict(admin_msg.message_id, file_bytes, mime))
     except TelegramAPIError:
@@ -595,6 +630,49 @@ async def process_review_rating(callback: CallbackQuery):
 
 STATUS_MAP = {"in_progress": "В работе", "done": "Готово", "cancelled": "Отменен"}
 ALLOWED_FROM = {"В работе": ("Новый",), "Готово": ("Новый", "В работе"), "Отменен": ("Новый", "В работе")}
+CLIENT_STATUS_TEXT = {"В работе": "передан в работу.", "Готово": "успешно выполнен.", "Отменен": "отменен."}
+
+
+async def transition_order(order_id: str, new_status: str, actor: str):
+    """Атомарная смена статуса по правилам ALLOWED_FROM. Общая для инлайн-кнопок чата и CRM.
+    Возвращает строку заказа после обновления или None, если переход невозможен (гонка / неверный статус)."""
+    src = ALLOWED_FROM[new_status]
+    changed = await adb(
+        f"UPDATE orders SET status=?, status_at=datetime('now'), status_by=?, "
+        f"done_at = CASE WHEN ?='Готово' THEN datetime('now') ELSE done_at END "
+        f"WHERE order_id=? AND status IN ({','.join('?' * len(src))})",
+        (new_status, actor[:128], new_status, order_id, *src))
+    if not changed:
+        return None
+    return await adb("SELECT order_id, user_id, status, admin_msg_id, admin_text FROM orders WHERE order_id=?",
+                     (order_id,), mode="one")
+
+
+async def notify_client_status(user_id, order_id: str, new_status: str):
+    if not user_id:
+        return
+    try:
+        await bot.send_message(user_id, f"СИСТЕМА: Заказ <b>{escape(order_id)}</b> {CLIENT_STATUS_TEXT[new_status]}",
+                               parse_mode="HTML")
+    except TelegramAPIError as e:
+        log.warning("DM error: %s", e)
+
+
+def status_line(new_status: str, actor: str, via_crm: bool = False) -> str:
+    return f"\n\n📌 <b>Статус: {new_status}</b> ({escape(actor)}{' · CRM' if via_crm else ''})"
+
+
+async def sync_admin_message(row: dict, new_status: str, actor: str):
+    """Смена статуса из CRM: обновляем карточку заказа в рабочем чате, чтобы там не остались устаревшие кнопки."""
+    if not row.get("admin_msg_id") or not row.get("admin_text"):
+        return  # заказ создан до обновления — ссылки на сообщение нет
+    try:
+        await bot.edit_message_text(
+            text=row["admin_text"] + status_line(new_status, actor, via_crm=True),
+            chat_id=ADMIN_CHAT_ID, message_id=row["admin_msg_id"],
+            parse_mode="HTML", reply_markup=build_kb(new_status, row["order_id"]))
+    except TelegramAPIError as e:
+        log.warning("Не удалось обновить сообщение заказа %s в чате: %s", row["order_id"], e)
 
 
 @dp.callback_query(F.data.startswith("status:"))
@@ -608,21 +686,16 @@ async def process_status_change(callback: CallbackQuery):
         await callback.answer("Неизвестное действие.", show_alert=True)
         return
     order_id = parts[2]
+    actor = callback.from_user.full_name
 
-    src = ALLOWED_FROM[new_status]
-    changed = await adb(
-        f"UPDATE orders SET status=?, done_at = CASE WHEN ?='Готово' THEN datetime('now') ELSE done_at END "
-        f"WHERE order_id=? AND status IN ({','.join('?' * len(src))})",
-        (new_status, new_status, order_id, *src))
-    if not changed:
+    row = await transition_order(order_id, new_status, actor)
+    if not row:
         await callback.answer("Переход невозможен или заказ не найден.", show_alert=True)
         return
-    row = await adb("SELECT user_id FROM orders WHERE order_id=?", (order_id,), mode="one")
-    client_chat_id = row["user_id"] if row else None
 
     # html_text сохраняет разметку; отрезаем прошлую строку статуса
     base = (callback.message.html_text or "").split("\n\n📌")[0]
-    updated = base + f"\n\n📌 <b>Статус: {new_status}</b> ({escape(callback.from_user.full_name)})"
+    updated = base + status_line(new_status, actor)
     kb = build_kb(new_status, order_id)
     try:
         if callback.message.photo:  # старые заказы с фото в подписи
@@ -632,14 +705,94 @@ async def process_status_change(callback: CallbackQuery):
     except TelegramAPIError:
         log.exception("Не удалось обновить сообщение заказа %s", order_id)
 
-    if client_chat_id:
-        msgs = {"В работе": "передан в работу.", "Готово": "успешно выполнен.", "Отменен": "отменен."}
-        try:
-            await bot.send_message(client_chat_id, f"СИСТЕМА: Заказ <b>{escape(order_id)}</b> {msgs[new_status]}",
-                                   parse_mode="HTML")
-        except TelegramAPIError as e:
-            log.warning("DM error: %s", e)
+    await notify_client_status(row["user_id"], order_id, new_status)
     await callback.answer(f"Статус обновлен: {new_status}")
+
+
+# ───────────────────────── «Доска мастера» (CRM внутри Mini App) ─────────────────────────
+ACTIVE_STATUSES = ("Новый", "В работе")
+ADMIN_ORDER_FIELDS = ("order_id, user_id, items, total, status, created_at, done_at, status_at, status_by, phone, "
+                      "client_name, client_username, is_b2b, device, problem, workplaces, office_info, has_photo")
+_USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{4,32}$")
+
+
+def admin_order_view(r: dict) -> dict:
+    """Только нужные доске поля; username проверяется, чтобы фронт мог безопасно собрать ссылку t.me."""
+    username = r.get("client_username") or r.get("u_username") or ""
+    return {
+        "order_id": r["order_id"],
+        "status": r["status"] or "Новый",
+        "items": r["items"] or "",
+        "total": r["total"] or 0,
+        "created_at": r["created_at"],
+        "status_at": r.get("status_at"),
+        "status_by": r.get("status_by"),
+        "client": {
+            "id": r["user_id"],
+            "name": r.get("client_name") or r.get("u_full_name") or None,
+            "username": username if _USERNAME_RE.match(username) else None,
+            "phone": r.get("phone"),
+        },
+        "is_b2b": bool(r.get("is_b2b")),
+        "device": r.get("device"),
+        "problem": r.get("problem"),
+        "workplaces": r.get("workplaces"),
+        "office_info": r.get("office_info"),
+        "has_photo": bool(r.get("has_photo")),
+    }
+
+
+@app.get("/api/admin/me")
+async def api_admin_me(user=Depends(current_user)):
+    """Тихая проверка прав при старте Mini App: не-админ получает 200 с admin=false, без ошибок в консоли."""
+    return {"success": True, "admin": user.id in ADMIN_IDS}
+
+
+@app.get("/api/admin/orders")
+async def api_admin_orders(scope: str = "active", admin=Depends(admin_user)):
+    """Активные заказы (Новый → В работе, внутри — свежие сверху). scope=all добавляет последние завершённые."""
+    base = (f"SELECT o.{ADMIN_ORDER_FIELDS.replace(', ', ', o.')}, u.username AS u_username, u.full_name AS u_full_name "
+            "FROM orders o LEFT JOIN users u ON u.user_id = o.user_id ")
+    active = await adb(
+        base + "WHERE o.status IN ('Новый', 'В работе') "
+        "ORDER BY CASE o.status WHEN 'Новый' THEN 0 ELSE 1 END, o.created_at DESC LIMIT 200", mode="all")
+    closed = []
+    if scope == "all":
+        closed = await adb(
+            base + "WHERE o.status NOT IN ('Новый', 'В работе') "
+            "ORDER BY COALESCE(o.status_at, o.done_at, o.created_at) DESC LIMIT 30", mode="all")
+    counts = await adb("SELECT status, COUNT(*) AS n FROM orders GROUP BY status", mode="all")
+    by = {c["status"]: c["n"] for c in counts}
+    return {
+        "success": True,
+        "orders": [admin_order_view(r) for r in active + closed],
+        "counts": {"new": by.get("Новый", 0), "in_progress": by.get("В работе", 0),
+                   "done": by.get("Готово", 0), "cancelled": by.get("Отменен", 0)},
+    }
+
+
+@app.post("/api/admin/order/{order_id}/status")
+async def api_admin_set_status(order_id: str, status: str = Form(...), admin=Depends(admin_user)):
+    """Смена статуса из CRM. order_id вида «#A1B2C3» — фронт передаёт его через encodeURIComponent."""
+    new_status = STATUS_MAP.get(status)
+    if not new_status:
+        raise HTTPException(400, "Неизвестный статус.")
+    if not 1 <= len(order_id) <= 32:
+        raise HTTPException(404, "Заказ не найден.")
+    actor = " ".join(p for p in (admin.first_name, admin.last_name) if p) or f"ID {admin.id}"
+
+    row = await transition_order(order_id, new_status, actor)
+    if not row:
+        current = await adb("SELECT status FROM orders WHERE order_id=?", (order_id,), mode="one")
+        if not current:
+            raise HTTPException(404, "Заказ не найден.")
+        raise HTTPException(409, f"Заказ уже в статусе «{current['status']}».")
+
+    # Telegram не держит ответ: уведомление клиенту и правка сообщения в рабочем чате — в фоне
+    spawn(notify_client_status(row["user_id"], order_id, new_status))
+    spawn(sync_admin_message(row, new_status, actor))
+    log.info("CRM: %s → %s (%s, id %s)", order_id, new_status, actor, admin.id)
+    return {"success": True, "order_id": order_id, "status": new_status}
 
 
 @dp.message(Command("start", "restart"))
