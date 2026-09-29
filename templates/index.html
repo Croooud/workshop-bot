@@ -1441,6 +1441,266 @@
         .toast--info .toast-icon { color: var(--accent); }
 
         /* =====================================================================
+           Доска мастера (CRM) — видна только администраторам
+           ===================================================================== */
+        :root {
+            --warning: #FFB020;
+            --warning-rgb: 255, 176, 32;
+        }
+        .nav-item[hidden] { display: none; }
+        .nav-item--crm .nav-icon svg { fill: currentColor; fill-opacity: 0.15; }
+        .nav-badge {
+            position: absolute;
+            top: 8px;
+            left: calc(50% + 6px);
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            font-weight: 700;
+            line-height: 16px;
+            letter-spacing: 0;
+            text-align: center;
+            color: #FFFFFF;
+            background: var(--accent);
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8);
+        }
+        .nav-badge[hidden] { display: none; }
+
+        .crm-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .crm-stat {
+            padding: 12px;
+            background: rgba(20, 20, 20, 0.72);
+            -webkit-backdrop-filter: blur(8px);
+                    backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--highlight);
+        }
+        .crm-stat-value {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            font-variant-numeric: tabular-nums;
+        }
+        .crm-stat-label {
+            display: block;
+            margin-top: 2px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .crm-stat--new .crm-stat-value { color: var(--accent); text-shadow: 0 0 16px rgba(var(--accent-rgb), 0.45); }
+        .crm-stat--work .crm-stat-value { color: var(--warning); }
+        .crm-stat--done .crm-stat-value { color: var(--success); }
+
+        .crm-filter { margin-bottom: 16px; }
+        .segment-control[data-mode="all"] .segment-slider { transform: translateX(100%); }
+
+        /* Карточка заказа мастера: матовая подложка, статус — цветной кромкой слева */
+        .job {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 16px 16px 16px 19px;
+            overflow: hidden;
+            background: rgba(14, 14, 14, 0.82);
+            -webkit-backdrop-filter: blur(10px);
+                    backdrop-filter: blur(10px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-panel), var(--highlight);
+            animation: cardIn 0.4s var(--ease-out) both;
+            transition: border-color var(--t-base), opacity var(--t-base), transform var(--t-base) var(--ease-snap);
+        }
+        .job::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--graphite-line);
+            transition: background-color var(--t-base), box-shadow var(--t-base);
+        }
+        .job[data-status="Новый"] { border-color: rgba(var(--accent-rgb), 0.35); }
+        .job[data-status="Новый"]::before { background: var(--accent); box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.9); }
+        .job[data-status="В работе"]::before { background: var(--warning); box-shadow: 0 0 12px rgba(var(--warning-rgb), 0.7); }
+        .job[data-status="Готово"]::before { background: var(--success); }
+        .job[data-status="Отменен"]::before { background: var(--danger); }
+        .job[data-status="Готово"],
+        .job[data-status="Отменен"] { opacity: 0.62; }
+        .job.no-anim { animation: none; }
+        .job.is-updating { pointer-events: none; }
+        .job.flash { animation: jobFlash 0.9s var(--ease-out); }
+        @keyframes jobFlash {
+            0%   { box-shadow: var(--shadow-panel), 0 0 0 1px rgba(var(--success-rgb), 0.8), 0 0 32px rgba(var(--success-rgb), 0.35); }
+            100% { box-shadow: var(--shadow-panel), var(--highlight); }
+        }
+
+        .job-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .job-id {
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
+        .job-age {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .badge--work { color: var(--warning); background: rgba(var(--warning-rgb), 0.1); border-color: rgba(var(--warning-rgb), 0.25); }
+        .badge--b2b { color: var(--text-primary); background: var(--surface-3); border-color: var(--border-strong); }
+
+        .job-client {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+        .job-client-name { font-size: 15px; font-weight: 600; }
+        .job-contacts { display: flex; flex-wrap: wrap; gap: 8px; }
+        .job-contact {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 36px;
+            padding: 0 12px;
+            font-size: 14px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            color: var(--accent);
+            text-decoration: none;
+            background: var(--accent-bg);
+            border: 1px solid rgba(var(--accent-rgb), 0.22);
+            border-radius: var(--radius-sm);
+            transition: transform var(--t-fast) var(--ease-snap), background-color var(--t-base);
+        }
+        .job-contact:active { transform: scale(0.96); background: rgba(var(--accent-rgb), 0.16); }
+        .job-contact--muted { color: var(--text-secondary); background: var(--surface-2); border-color: var(--border-strong); }
+
+        .job-facts { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.45; }
+        .job-fact { display: flex; gap: 8px; }
+        .job-fact-k {
+            flex-shrink: 0;
+            min-width: 76px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.6px;
+            line-height: 1.9;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+        }
+        .job-fact-v { overflow-wrap: anywhere; color: var(--text-primary); }
+
+        .job-sum {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .job-sum-total { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .job-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+
+        /* Крупные кнопки статуса — удобно нажимать одной рукой */
+        .job-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .job-actions--single { grid-template-columns: 1fr; }
+        .job-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 52px;
+            padding: 0 14px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            text-align: center;
+            border-radius: var(--radius-md);
+            transition: transform var(--t-fast) var(--ease-snap), background-color var(--t-base), box-shadow var(--t-base), opacity var(--t-base);
+        }
+        .job-btn:active { transform: scale(0.96); }
+        .job-btn:disabled { opacity: 0.5; }
+        .job-btn--work {
+            color: #FFFFFF;
+            background: var(--accent);
+            box-shadow: var(--accent-glow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .job-btn--done {
+            color: #04130A;
+            background: var(--success);
+            box-shadow: 0 8px 24px rgba(var(--success-rgb), 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .job-btn .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        .job-cancel {
+            justify-self: center;
+            grid-column: 1 / -1;
+            padding: 8px 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: center;
+            color: var(--text-tertiary);
+            border-radius: var(--radius-sm);
+            transition: color var(--t-base), background-color var(--t-base);
+        }
+        .job-cancel:active { color: var(--danger); background: rgba(var(--danger-rgb), 0.08); }
+
+        .sk-job { display: flex; flex-direction: column; gap: 14px; padding: 16px; animation: skIn 0.35s var(--ease-out) both; }
+        .sk-job:nth-child(2) { opacity: 0.7; }
+        .sk-job:nth-child(2) .skeleton::after { animation-delay: 0.18s; }
+        .sk-job:nth-child(3) { opacity: 0.45; }
+        .sk-job:nth-child(3) .skeleton::after { animation-delay: 0.36s; }
+        .sk-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .sk-btns .skeleton { height: 52px; border-radius: var(--radius-md); }
+
+        .crm-updated {
+            margin: 14px 0 0;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0.8px;
+            text-align: center;
+            color: var(--text-tertiary);
+        }
+
+        /* =====================================================================
            Доступность
            ===================================================================== */
         @media (prefers-reduced-motion: reduce) {
@@ -1530,6 +1790,35 @@
                 </div>
             </div>
         </div>
+    </main>
+
+    <!-- ===================== ДОСКА МАСТЕРА (только админы) ===================== -->
+    <main id="view-master" class="view" aria-labelledby="master-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / CRM</div>
+            <div class="view-header-row">
+                <h1 id="master-title">Доска мастера</h1>
+                <button type="button" class="icon-btn icon-btn--ghost" id="board-refresh" aria-label="Обновить доску">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+                </button>
+            </div>
+            <p class="desc">Заявки в реальном времени. Статусы синхронизируются с рабочим чатом.</p>
+        </header>
+
+        <div class="crm-stats" aria-live="polite">
+            <div class="crm-stat crm-stat--new"><span class="crm-stat-value" id="crm-count-new">—</span><span class="crm-stat-label">Новые</span></div>
+            <div class="crm-stat crm-stat--work"><span class="crm-stat-value" id="crm-count-work">—</span><span class="crm-stat-label">В работе</span></div>
+            <div class="crm-stat crm-stat--done"><span class="crm-stat-value" id="crm-count-done">—</span><span class="crm-stat-label">Готово</span></div>
+        </div>
+
+        <div class="segment-control crm-filter" id="crm-filter" data-mode="active" role="tablist" aria-label="Фильтр заявок">
+            <div class="segment-slider" aria-hidden="true"></div>
+            <button type="button" class="segment" role="tab" data-scope="active" aria-selected="true">Активные</button>
+            <button type="button" class="segment" role="tab" data-scope="all" aria-selected="false">Все + архив</button>
+        </div>
+
+        <div class="list-group" id="board-list" aria-live="polite" aria-busy="false"></div>
+        <p class="crm-updated" id="board-updated"></p>
     </main>
 
     <!-- ===================== ОФОРМЛЕНИЕ ===================== -->
@@ -1677,6 +1966,14 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </span>
             <span>Контакты</span>
+        </button>
+        <!-- Вкладка CRM: скрыта, пока сервер не подтвердит права администратора -->
+        <button type="button" class="nav-item nav-item--crm" id="nav-master" data-view="master" hidden style="display: none;">
+            <span class="nav-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+            </span>
+            <span>CRM</span>
+            <span class="nav-badge" id="nav-master-badge" hidden></span>
         </button>
     </nav>
 
@@ -2019,6 +2316,7 @@
 
             if (view !== 'summary' && state.upsellCtrl) { state.upsellCtrl.abort(); state.upsellCtrl = null; }
             if (view !== 'cabinet' && state.ordersCtrl) { state.ordersCtrl.abort(); state.ordersCtrl = null; }
+            if (view !== 'master') stopBoard();
 
             if (view === 'summary') {
                 setupSummary();
@@ -2030,6 +2328,7 @@
                 call(BackButton, 'hide');
             }
             if (view === 'cabinet') loadOrders();
+            if (view === 'master') startBoard();
             if (view === 'success') burstParticles();
         }
 
@@ -2586,6 +2885,306 @@
         }
 
         /* ==================================================================
+           Доска мастера (CRM). Вкладка появляется, только если сервер
+           подтвердил права по подписанному initData. Все проверки — на сервере.
+           ================================================================== */
+        const STATUS_ACTIONS = Object.freeze({ in_progress: 'В работе', done: 'Готово', cancelled: 'Отменен' });
+        const FINAL = new Set(['Готово', 'Отменен']);
+        const BOARD_POLL_MS = 30000;
+        const master = {
+            isAdmin: false,
+            scope: 'active',
+            data: null,
+            ctrl: null,
+            timer: 0,
+            pending: new Set(),      // заказы, по которым летит запрос
+            optimistic: new Map()    // orderId → статус, показанный до ответа сервера
+        };
+        ICON.phone = () => svg(15, [['path', { d: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z' }]], { 'stroke-width': 2 });
+        ICON.send = () => svg(15, [['path', { d: 'M22 2 11 13' }], ['path', { d: 'M22 2 15 22l-4-9-9-4 20-7z' }]], { 'stroke-width': 2 });
+        ICON.bolt = () => svg(16, [['path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' }]], { 'stroke-width': 2.2 });
+
+        const parseUtc = v => new Date(String(v ?? '').replace(' ', 'T') + 'Z');
+        function relTime(value) {
+            const d = parseUtc(value);
+            if (Number.isNaN(d.getTime())) return '';
+            const min = Math.round((Date.now() - d.getTime()) / 60000);
+            if (min < 1) return 'только что';
+            if (min < 60) return `${min} мин назад`;
+            if (min < 24 * 60) return `${Math.floor(min / 60)} ч назад`;
+            return fmtDate(value);
+        }
+        const hhmm = v => { const d = parseUtc(v); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
+        const prettyPhone = p => (/^\+7\d{10}$/.test(p) ? formatPhone(p.slice(1)) : p);
+
+        /* Тихая проверка прав: не-админ получает admin=false, вкладка просто не появляется */
+        async function checkAdmin() {
+            if (!tg.initData) return;
+            try {
+                const { ok, data } = await request('/api/admin/me', { headers: authHeaders(), timeout: 10000 });
+                if (!ok || !data || data.admin !== true) return;
+                master.isAdmin = true;
+                const nav = $('nav-master');
+                nav.hidden = false;
+                nav.style.removeProperty('display');
+                // Счётчик новых заявок на вкладке — без отрисовки доски
+                const res = await request('/api/admin/orders', { headers: authHeaders(), timeout: 15000 });
+                if (res.ok && res.data && res.data.counts) updateBadge(res.data.counts.new);
+            } catch (_) { /* тихо: клиентская часть работает как раньше */ }
+        }
+
+        function updateBadge(n) {
+            const badge = $('nav-master-badge');
+            badge.hidden = !(n > 0);
+            badge.textContent = n > 9 ? '9+' : String(n || '');
+        }
+
+        function skeletonJobs(n = 3) {
+            return Array.from({ length: n }, () =>
+                el('div', { class: 'panel sk-job', 'aria-hidden': 'true' },
+                    el('div', { class: 'sk-row' },
+                        el('div', { class: 'skeleton sk-line', style: { width: '30%' } }),
+                        el('div', { class: 'skeleton', style: { width: '70px', height: '22px' } })
+                    ),
+                    el('div', { class: 'skeleton', style: { height: '68px' } }),
+                    el('div', null,
+                        el('div', { class: 'skeleton sk-line', style: { width: '80%' } }),
+                        el('div', { class: 'skeleton sk-line', style: { width: '55%' } })
+                    ),
+                    el('div', { class: 'sk-btns' }, el('div', { class: 'skeleton' }), el('div', { class: 'skeleton' }))
+                ));
+        }
+
+        function jobCard(o, { animate = true, index = 0, pending = false } = {}) {
+            const st = o.status || 'Новый';
+            const badgeCls = { 'Новый': '', 'В работе': 'badge--work', 'Готово': 'badge--done', 'Отменен': 'badge--cancelled' }[st] ?? '';
+            const client = o.client || {};
+
+            const contacts = [];
+            if (client.phone && /^\+\d{10,15}$/.test(client.phone)) {
+                contacts.push(el('a', { class: 'job-contact', href: `tel:${client.phone}` }, ICON.phone(), prettyPhone(client.phone)));
+            }
+            if (client.username && /^[A-Za-z0-9_]{4,32}$/.test(client.username)) {
+                contacts.push(el('a', { class: 'job-contact', href: `https://t.me/${client.username}`, target: '_blank', rel: 'noopener', dataset: { tg: '1' } },
+                    ICON.send(), `@${client.username}`));
+            }
+            if (!client.phone) contacts.push(el('span', { class: 'job-contact job-contact--muted', text: 'Телефон — в рабочем чате' }));
+            if (!client.username && client.id) contacts.push(el('span', { class: 'job-contact job-contact--muted', text: `TG ID ${client.id}` }));
+
+            const facts = [];
+            const fact = (k, v) => { if (v != null && v !== '') facts.push(el('div', { class: 'job-fact' }, el('span', { class: 'job-fact-k', text: k }), el('span', { class: 'job-fact-v', text: String(v) }))); };
+            if (o.is_b2b) {
+                fact('Мест', o.workplaces);
+                fact('Офис', o.office_info);
+            } else {
+                fact('Техника', o.device);
+                fact('Проблема', o.problem);
+                if (o.has_photo) fact('Фото', 'есть — в рабочем чате');
+            }
+
+            const actions = [];
+            if (!FINAL.has(st)) {
+                const btn = (action, cls, label) => el('button', { type: 'button', class: `job-btn ${cls}`, disabled: pending, dataset: { setStatus: action, id: o.order_id } },
+                    pending ? el('span', { class: 'spinner', 'aria-hidden': 'true' }) : (action === 'in_progress' ? ICON.bolt() : ICON.check()), label);
+                if (st === 'Новый') actions.push(btn('in_progress', 'job-btn--work', 'В работу'));
+                actions.push(btn('done', 'job-btn--done', 'Готово'));
+                actions.push(el('button', { type: 'button', class: 'job-cancel', disabled: pending, dataset: { setStatus: 'cancelled', id: o.order_id }, text: 'Отменить заказ' }));
+            }
+
+            const meta = pending ? 'синхронизация…'
+                : o.status_by && o.status_at ? `${o.status_by} · ${hhmm(o.status_at)}` : fmtDate(o.created_at);
+
+            return el('article', {
+                class: `job${animate ? '' : ' no-anim'}${pending ? ' is-updating' : ''}`,
+                dataset: { id: o.order_id, status: st },
+                style: animate ? { animationDelay: `${Math.min(index, 6) * 50}ms` } : null
+            },
+                el('div', { class: 'job-head' },
+                    el('span', { class: 'job-id', text: String(o.order_id) }),
+                    el('span', { class: `badge ${badgeCls}`, text: st }),
+                    o.is_b2b ? el('span', { class: 'badge badge--b2b', text: 'B2B' }) : null,
+                    el('span', { class: 'job-age', text: relTime(o.created_at) })
+                ),
+                el('div', { class: 'job-client' },
+                    el('span', { class: 'job-client-name', text: client.name || 'Клиент' }),
+                    el('div', { class: 'job-contacts' }, contacts)
+                ),
+                facts.length ? el('div', { class: 'job-facts' }, facts) : null,
+                el('div', null,
+                    el('span', { class: 'order-label', text: 'СОСТАВ' }),
+                    el('ul', { class: 'order-items' }, parseItems(o.items).map(it =>
+                        el('li', null,
+                            el('span', { text: it.name }),
+                            it.price == null ? null : el('span', { class: 'price', text: it.price > 0 ? rub(it.price) : 'договорная' })
+                        )))
+                ),
+                el('div', { class: 'job-sum' },
+                    el('span', { class: 'job-meta', text: meta }),
+                    el('span', { class: 'job-sum-total', text: totalLabel(Number(o.total) || 0) })
+                ),
+                actions.length ? el('div', { class: `job-actions${st === 'В работе' ? ' job-actions--single' : ''}` }, actions) : null
+            );
+        }
+
+        function renderBoard({ animate = false } = {}) {
+            const d = master.data;
+            if (!d) return;
+            const c = d.counts || {};
+            $('crm-count-new').textContent = String(c.new ?? 0);
+            $('crm-count-work').textContent = String(c.in_progress ?? 0);
+            $('crm-count-done').textContent = String(c.done ?? 0);
+            updateBadge(c.new);
+
+            const orders = (Array.isArray(d.orders) ? d.orders : []).map(o =>
+                master.optimistic.has(o.order_id) ? { ...o, status: master.optimistic.get(o.order_id) } : o);
+            const list = $('board-list');
+            if (!orders.length) {
+                list.replaceChildren(emptyState(master.scope === 'active'
+                    ? 'Активных заявок нет. Новые появятся здесь автоматически.'
+                    : 'Заявок пока нет.'));
+            } else {
+                list.replaceChildren(...orders.map((o, i) => jobCard(o, { animate, index: i, pending: master.pending.has(o.order_id) })));
+            }
+            $('board-updated').textContent = `Обновлено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} · автообновление каждые 30 с`;
+        }
+
+        async function loadBoard({ silent = false, quiet = false } = {}) {
+            const list = $('board-list');
+            const refresh = $('board-refresh');
+            if (!tg.initData) {
+                list.replaceChildren(emptyState('Откройте приложение через Telegram.', { error: true }));
+                return;
+            }
+            if (master.ctrl) master.ctrl.abort();
+            const ctrl = new AbortController();
+            master.ctrl = ctrl;
+            refresh.classList.add('spinning');
+            refresh.disabled = true;
+            if (!silent) {
+                list.setAttribute('aria-busy', 'true');
+                list.replaceChildren(...skeletonJobs());
+            }
+            const started = performance.now();
+            try {
+                const { ok, status, data } = await request(`/api/admin/orders?scope=${master.scope}`, { headers: authHeaders(), signal: ctrl.signal, timeout: 15000 });
+                if (!silent) {
+                    const wait = 350 - (performance.now() - started);
+                    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+                }
+                if (ctrl.signal.aborted) return;
+                if (!ok || !data || !data.success) throw new Error(errorMessage(status, data, 'Не удалось загрузить доску.'));
+                master.data = data;
+                renderBoard({ animate: !silent });
+            } catch (e) {
+                if (ctrl.signal.aborted) return;
+                if (!silent || !master.data) {
+                    list.replaceChildren(emptyState(netMessage(e, 'Не удалось загрузить доску.'), { error: true, action: { id: 'retry-board', label: 'Повторить' } }));
+                } else if (!quiet) {
+                    toast(netMessage(e, 'Не удалось обновить доску.'));
+                }
+            } finally {
+                if (master.ctrl === ctrl) {
+                    master.ctrl = null;
+                    list.setAttribute('aria-busy', 'false');
+                    refresh.classList.remove('spinning');
+                    refresh.disabled = false;
+                }
+            }
+        }
+
+        function startBoard() {
+            loadBoard();
+            clearInterval(master.timer);
+            master.timer = setInterval(() => {
+                // Не перерисовываем доску, пока мастер ждёт ответа по своему нажатию
+                if (state.view === 'master' && document.visibilityState === 'visible' && !master.pending.size) loadBoard({ silent: true, quiet: true });
+            }, BOARD_POLL_MS);
+        }
+        function stopBoard() {
+            clearInterval(master.timer);
+            master.timer = 0;
+            if (master.ctrl) { master.ctrl.abort(); master.ctrl = null; }
+        }
+
+        function confirmAsync(message) {
+            if (isVer('6.2') && typeof tg.showConfirm === 'function') {
+                return new Promise(resolve => { try { tg.showConfirm(message, ok => resolve(!!ok)); } catch (_) { resolve(window.confirm(message)); } });
+            }
+            return Promise.resolve(window.confirm(message));
+        }
+
+        function replaceJob(orderId, opts) {
+            const card = $('board-list').querySelector(`.job[data-id="${CSS.escape(orderId)}"]`);
+            const order = master.data && master.data.orders.find(o => o.order_id === orderId);
+            if (!card || !order) return null;
+            const status = master.optimistic.get(orderId) || order.status;
+            const next = jobCard({ ...order, status }, { animate: false, ...opts });
+            card.replaceWith(next);
+            return next;
+        }
+
+        async function setJobStatus(orderId, action) {
+            const target = STATUS_ACTIONS[action];
+            if (!target || master.pending.has(orderId)) return;
+            if (action === 'cancelled') {
+                haptic.tap();
+                if (!(await confirmAsync(`Отменить заказ ${orderId}? Клиент получит уведомление.`))) return;
+            }
+            // Мгновенный отклик: вибрация + карточка сразу в новом статусе
+            haptic.success();
+            master.pending.add(orderId);
+            master.optimistic.set(orderId, target);
+            const card = replaceJob(orderId, { pending: true });
+            if (card && !REDUCED_MOTION) card.classList.add('flash');
+
+            const body = new FormData();
+            body.append('status', action);
+            let success = false;
+            try {
+                const { ok, status, data } = await request(`/api/admin/order/${encodeURIComponent(orderId)}/status`, { method: 'POST', headers: authHeaders(), body, timeout: 15000 });
+                if (!ok || !data || !data.success) throw new Error(errorMessage(status, data, 'Не удалось сменить статус.'));
+                success = true;
+                toast(`${orderId} → ${target}. Клиент уведомлён.`, 'info');
+            } catch (e) {
+                toast(netMessage(e, 'Не удалось сменить статус.'));
+            } finally {
+                master.pending.delete(orderId);
+                if (!success) { master.optimistic.delete(orderId); replaceJob(orderId, {}); }
+            }
+            // Завершённый заказ на вкладке «Активные» успевает мигнуть и уезжает при обновлении
+            if (success && FINAL.has(target) && master.scope === 'active') await new Promise(r => setTimeout(r, 500));
+            master.optimistic.delete(orderId);
+            if (state.view === 'master') await loadBoard({ silent: true, quiet: !success });
+        }
+
+        const boardList = $('board-list');
+        boardList.addEventListener('click', e => {
+            const statusBtn = e.target.closest('[data-set-status]');
+            if (statusBtn) { setJobStatus(statusBtn.dataset.id, statusBtn.dataset.setStatus); return; }
+            const tgLink = e.target.closest('a[data-tg]');
+            if (tgLink) {
+                haptic.tap();
+                if (tg.initData && isVer('6.1') && typeof tg.openTelegramLink === 'function') { e.preventDefault(); call(tg, 'openTelegramLink', tgLink.href); }
+                return;
+            }
+            const retry = e.target.closest('[data-action="retry-board"]');
+            if (retry) { haptic.tap(); loadBoard(); }
+        });
+        $('board-refresh').addEventListener('click', () => { haptic.tap(); loadBoard(); });
+        $('crm-filter').addEventListener('click', e => {
+            const btn = e.target.closest('.segment');
+            if (!btn || btn.dataset.scope === master.scope) return;
+            haptic.select();
+            master.scope = btn.dataset.scope;
+            $('crm-filter').dataset.mode = master.scope;
+            $('crm-filter').querySelectorAll('.segment').forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+            loadBoard();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && state.view === 'master' && !master.pending.size) loadBoard({ silent: true, quiet: true });
+        });
+
+        /* ==================================================================
            События: делегирование — по одному обработчику на группу
            ================================================================== */
         const servicesList = $('services-list');
@@ -2710,6 +3309,7 @@
            ================================================================== */
         renderServices();
         updateCart();
+        checkAdmin();
     })();
     </script>
 </body>
