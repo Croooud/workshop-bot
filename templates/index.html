@@ -1683,6 +1683,59 @@
         }
         .job-cancel:active { color: var(--danger); background: rgba(var(--danger-rgb), 0.08); }
 
+        /* Кнопка «Сформировать КП» (B2B): графитовая, с синим акцентом; при генерации — бегущий блик */
+        .job-kp {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 48px;
+            padding: 0 14px;
+            overflow: hidden;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            background: var(--graphite);
+            border: 1px solid var(--graphite-line);
+            border-radius: var(--radius-md);
+            box-shadow: var(--highlight);
+            transition: transform var(--t-fast) var(--ease-snap), border-color var(--t-base), background-color var(--t-base);
+        }
+        .job-kp svg { flex-shrink: 0; color: var(--accent); }
+        .job-kp:active { transform: scale(0.97); border-color: var(--accent); }
+        .job-kp-meta {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            text-transform: none;
+            color: var(--success);
+            white-space: nowrap;
+        }
+        .job-kp.is-loading { pointer-events: none; border-color: var(--accent-line); }
+        .job-kp.is-loading .job-kp-meta { color: var(--text-secondary); }
+        .job-kp.is-loading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(100deg, transparent 20%, rgba(var(--accent-rgb), 0.22) 50%, transparent 80%);
+            transform: translateX(-100%);
+            animation: shimmer 1.3s var(--ease-snap) infinite;
+        }
+        .job-kp .spinner {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            border: 2px solid var(--accent);
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
         .sk-job { display: flex; flex-direction: column; gap: 14px; padding: 16px; animation: skIn 0.35s var(--ease-out) both; }
         .sk-job:nth-child(2) { opacity: 0.7; }
         .sk-job:nth-child(2) .skeleton::after { animation-delay: 0.18s; }
@@ -2898,10 +2951,12 @@
             ctrl: null,
             timer: 0,
             pending: new Set(),      // заказы, по которым летит запрос
+            kpPending: new Set(),    // заказы, по которым формируется КП
             optimistic: new Map()    // orderId → статус, показанный до ответа сервера
         };
         ICON.phone = () => svg(15, [['path', { d: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z' }]], { 'stroke-width': 2 });
         ICON.send = () => svg(15, [['path', { d: 'M22 2 11 13' }], ['path', { d: 'M22 2 15 22l-4-9-9-4 20-7z' }]], { 'stroke-width': 2 });
+        ICON.file = () => svg(18, [['path', { d: 'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z' }], ['path', { d: 'M14 2v4a2 2 0 0 0 2 2h4' }], ['path', { d: 'M10 9H8' }], ['path', { d: 'M16 13H8' }], ['path', { d: 'M16 17H8' }]], { 'stroke-width': 1.9 });
         ICON.bolt = () => svg(16, [['path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' }]], { 'stroke-width': 2.2 });
 
         const parseUtc = v => new Date(String(v ?? '').replace(' ', 'T') + 'Z');
@@ -2991,6 +3046,17 @@
                 actions.push(el('button', { type: 'button', class: 'job-cancel', disabled: pending, dataset: { setStatus: 'cancelled', id: o.order_id }, text: 'Отменить заказ' }));
             }
 
+            // КП (PDF-смета) — только для B2B, пока заказ не отменён
+            let kp = null;
+            if (o.is_b2b && st !== 'Отменен') {
+                const busy = master.kpPending.has(o.order_id);
+                kp = el('button', { type: 'button', class: `job-kp${busy ? ' is-loading' : ''}`, disabled: busy, dataset: { kp: o.order_id } },
+                    busy ? el('span', { class: 'spinner', 'aria-hidden': 'true' }) : ICON.file(),
+                    busy ? 'Готовим КП…' : 'Сформировать КП',
+                    busy ? el('span', { class: 'job-kp-meta', text: 'ИИ + PDF' })
+                        : o.kp_sent_at ? el('span', { class: 'job-kp-meta', title: 'КП отправлено клиенту', text: `✓ ${hhmm(o.kp_sent_at)}` }) : null);
+            }
+
             const meta = pending ? 'синхронизация…'
                 : o.status_by && o.status_at ? `${o.status_by} · ${hhmm(o.status_at)}` : fmtDate(o.created_at);
 
@@ -3022,6 +3088,7 @@
                     el('span', { class: 'job-meta', text: meta }),
                     el('span', { class: 'job-sum-total', text: totalLabel(Number(o.total) || 0) })
                 ),
+                kp,
                 actions.length ? el('div', { class: `job-actions${st === 'В работе' ? ' job-actions--single' : ''}` }, actions) : null
             );
         }
@@ -3157,8 +3224,46 @@
             if (state.view === 'master') await loadBoard({ silent: true, quiet: !success });
         }
 
+        /* «Сформировать КП»: сервер считает смету, Gemini пишет тексты, PDF уходит клиенту в Telegram */
+        async function sendProposal(orderId, force = false) {
+            if (master.kpPending.has(orderId)) return;
+            if (!force) {
+                haptic.tap();
+                if (!(await confirmAsync(`Сформировать КП по заказу ${orderId} и отправить клиенту в Telegram?`))) return;
+            }
+            haptic.press();
+            master.kpPending.add(orderId);
+            replaceJob(orderId, {});
+            let retry = false;
+            try {
+                const body = new FormData();
+                body.append('force', String(force));
+                // Gemini + PDF + отправка: обычно 5–20 с
+                const { ok, status, data } = await request(`/api/admin/order/${encodeURIComponent(orderId)}/proposal`, { method: 'POST', headers: authHeaders(), body, timeout: 90000 });
+                if (status === 409 && data && data.code === 'already_sent') {
+                    master.kpPending.delete(orderId);
+                    replaceJob(orderId, {});
+                    retry = await confirmAsync(String(data.detail || 'КП уже отправлено. Отправить повторно?'));
+                } else {
+                    if (!ok || !data || !data.success) throw new Error(errorMessage(status, data, 'Не удалось сформировать КП.'));
+                    haptic.success();
+                    const order = master.data && master.data.orders.find(x => x.order_id === orderId);
+                    if (order) order.kp_sent_at = data.kp_sent_at;
+                    toast(`${data.number} отправлено клиенту${data.ai ? '' : ' (стандартный текст: ИИ недоступен)'}.`, 'info');
+                }
+            } catch (e) {
+                toast(netMessage(e, 'Не удалось сформировать КП.'));
+            } finally {
+                master.kpPending.delete(orderId);
+                replaceJob(orderId, {});
+            }
+            if (retry) sendProposal(orderId, true);
+        }
+
         const boardList = $('board-list');
         boardList.addEventListener('click', e => {
+            const kpBtn = e.target.closest('[data-kp]');
+            if (kpBtn) { sendProposal(kpBtn.dataset.kp); return; }
             const statusBtn = e.target.closest('[data-set-status]');
             if (statusBtn) { setJobStatus(statusBtn.dataset.id, statusBtn.dataset.setStatus); return; }
             const tgLink = e.target.closest('a[data-tg]');
