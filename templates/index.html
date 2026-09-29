@@ -121,32 +121,56 @@
             z-index: 0;
             pointer-events: none;
             overflow: hidden;
+            /* Глубокий графит вместо плоского чёрного */
+            background:
+                radial-gradient(ellipse 120% 70% at 50% -10%, #16181C 0%, #0B0B0D 45%, #000000 100%);
         }
-        .atmosphere::before {
+        /* Два пятна Electric Blue (15% / 10%) медленно дрейфуют навстречу друг другу */
+        .atmosphere::before,
+        .aurora-b {
             content: '';
             position: absolute;
-            left: -20%;
-            right: -20%;
-            top: -35%;
-            height: 80%;
-            background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(var(--accent-rgb), 0.17), transparent 70%);
-            animation: aurora 18s ease-in-out infinite alternate;
+            border-radius: 50%;
+            will-change: transform;
         }
+        .atmosphere::before {
+            width: 130vmax;
+            height: 130vmax;
+            left: -55vmax;
+            top: -78vmax;
+            background: radial-gradient(circle, rgba(var(--accent-rgb), 0.15) 0%, rgba(var(--accent-rgb), 0.05) 35%, transparent 60%);
+            animation: auroraA 26s ease-in-out infinite alternate;
+        }
+        .aurora-b {
+            width: 110vmax;
+            height: 110vmax;
+            right: -62vmax;
+            bottom: -60vmax;
+            background: radial-gradient(circle, rgba(var(--accent-rgb), 0.10) 0%, rgba(var(--accent-rgb), 0.03) 40%, transparent 62%);
+            animation: auroraB 32s ease-in-out infinite alternate;
+        }
+        /* Инженерная сетка, растворяющаяся к краям */
         .atmosphere::after {
             content: '';
             position: absolute;
             inset: 0;
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 32px 32px;
             background-position: center top;
-            -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
-                    mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
+            -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 80%);
+                    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 80%);
         }
-        @keyframes aurora {
-            0%   { transform: translate3d(-6%, 0, 0) scale(1); }
-            100% { transform: translate3d(6%, 4%, 0) scale(1.12); }
+        @keyframes auroraA {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            50%  { transform: translate3d(18vw, 10vh, 0) scale(1.08); }
+            100% { transform: translate3d(34vw, 4vh, 0) scale(0.96); }
+        }
+        @keyframes auroraB {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            50%  { transform: translate3d(-16vw, -12vh, 0) scale(1.1); }
+            100% { transform: translate3d(-28vw, -4vh, 0) scale(0.94); }
         }
 
         /* =====================================================================
@@ -354,19 +378,41 @@
             to   { opacity: 1; transform: none; }
         }
 
+        /* Кромка, подсвеченная под бликом (Aceternity spotlight border) */
+        .card-glow {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: radial-gradient(160px circle at var(--mx) var(--my), rgba(var(--accent-rgb), 0.85), transparent 70%);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+                    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--t-slow) var(--ease-snap);
+        }
+
+        /* Блик: мышь — на hover, палец — .is-lit с мягким затуханием после отпускания */
         @media (hover: hover) {
-            .card:hover {
-                background: var(--surface-2);
-                border-color: var(--accent);
-            }
-            .card:hover::before { opacity: 1; }
+            .card:hover { background: var(--surface-2); }
+            .card:hover::before,
+            .card:hover .card-glow { opacity: 1; }
         }
-        .card:active {
+        .card.is-lit::before,
+        .card.is-lit .card-glow { opacity: 1; }
+        .card.is-lit { background: var(--surface-2); }
+
+        /* Прожатие: .is-pressed ставится из JS, т.к. :active в iOS WebView ненадёжен */
+        .card:active,
+        .card.is-pressed {
             background: var(--surface-2);
-            border-color: var(--accent);
-            transform: scale(0.98);
+            transform: scale(0.97);
+            transition-duration: var(--t-base), var(--t-base), var(--t-slow), 0.1s;
         }
-        .card:active::before { opacity: 1; }
+        .card:active::before,
+        .card.is-pressed::before { opacity: 1; }
 
         .card[aria-checked="true"] {
             background: linear-gradient(var(--accent-bg), var(--accent-bg)), var(--surface-2);
@@ -437,20 +483,27 @@
         .card[aria-checked="true"] .checkbox {
             background: var(--accent);
             border-color: var(--accent);
-            box-shadow: var(--accent-glow);
-            animation: checkPop 0.35s var(--ease-spring);
+            box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55), var(--accent-glow);
         }
-        @keyframes checkPop {
-            0%   { transform: scale(0.8); }
-            100% { transform: scale(1); }
+        /* Микро-прыжок: класс .pop ставится только в момент тапа (не при перерисовке) */
+        .checkbox.pop { animation: checkJump 0.45s var(--ease-snap); }
+        @keyframes checkJump {
+            0%   { transform: translateY(0) scale(1); }
+            30%  { transform: translateY(-4px) scale(1.2); }
+            60%  { transform: translateY(0) scale(0.9); }
+            80%  { transform: scale(1.05); }
+            100% { transform: none; }
         }
         .checkbox svg {
             stroke: #FFFFFF;
             stroke-dasharray: 24;
             stroke-dashoffset: 24;
-            transition: stroke-dashoffset 0.3s var(--ease-snap) 0.05s;
+            transition: stroke-dashoffset 0.18s var(--ease-snap);
         }
-        .card[aria-checked="true"] .checkbox svg { stroke-dashoffset: 0; }
+        .card[aria-checked="true"] .checkbox svg {
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.32s cubic-bezier(0.65, 0, 0.35, 1) 0.1s;
+        }
 
         /* =====================================================================
            Формы
@@ -818,7 +871,13 @@
         @keyframes shimmer { to { transform: translateX(100%); } }
         .sk-line { height: 12px; }
         .sk-line + .sk-line { margin-top: 10px; }
-        .sk-order { display: flex; flex-direction: column; gap: 16px; padding: 18px 16px; }
+        .sk-order { display: flex; flex-direction: column; gap: 16px; padding: 18px 16px; animation: skIn 0.35s var(--ease-out) both; }
+        @keyframes skIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { transform: none; } }
+        /* Волна: вторая карточка чуть тусклее и переливается со сдвигом */
+        .sk-order:nth-child(2) { opacity: 0.7; animation-delay: 60ms; }
+        .sk-order:nth-child(3) { opacity: 0.45; animation-delay: 120ms; }
+        .sk-order:nth-child(2) .skeleton::after { animation-delay: 0.18s; }
+        .sk-order:nth-child(3) .skeleton::after { animation-delay: 0.36s; }
         .sk-row { display: flex; justify-content: space-between; align-items: center; }
         .sk-dots { display: flex; justify-content: space-between; padding: 0 12%; }
         .sk-dot { width: 24px; height: 24px; }
@@ -1099,23 +1158,45 @@
             20%  { opacity: 1; }
             100% { opacity: 0; transform: translateY(82px); }
         }
-        .particle {
+        /* Неоновая рамка, дорисовывающаяся вокруг эмблемы */
+        .success-frame {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: var(--s, 4px);
-            height: var(--s, 4px);
-            margin: calc(var(--s, 4px) / -2) 0 0 calc(var(--s, 4px) / -2);
-            border-radius: 1px;
-            background: var(--c, var(--accent));
-            box-shadow: 0 0 8px var(--c, var(--accent));
+            inset: 6px;
+            width: calc(100% - 12px);
+            height: calc(100% - 12px);
+            overflow: visible;
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-dasharray: 380;
+            stroke-dashoffset: 380;
+            filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 1)) drop-shadow(0 0 12px rgba(var(--accent-rgb), 0.6));
+            animation: drawCheck 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards, frameFade 0.6s ease 1.4s forwards;
+        }
+        @keyframes frameFade { to { opacity: 0.35; } }
+        /* Ударная волна в момент «защёлкивания» галочки */
+        .success-shock {
+            position: absolute;
+            inset: 18px;
+            border: 2px solid rgba(var(--accent-rgb), 0.9);
+            border-radius: 20px;
             opacity: 0;
             pointer-events: none;
-            animation: burst var(--d, 1s) var(--ease-out) var(--delay, 0.5s) forwards;
+            animation: shock 0.9s var(--ease-out) 0.85s both;
         }
-        @keyframes burst {
-            0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
-            100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.4); }
+        @keyframes shock {
+            0%   { opacity: 0.9; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.9); }
+        }
+        /* Частицы рисуются на canvas поверх экрана */
+        .particles-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 150;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
         .success-kicker {
             margin-bottom: 10px;
@@ -1369,12 +1450,13 @@
                 animation-delay: 0s !important;
                 transition-duration: 0.01ms !important;
             }
-            .particle { display: none; }
+            .particles-canvas { display: none; }
+            .success-frame { stroke-dashoffset: 0; }
         }
     </style>
 </head>
 <body>
-    <div class="atmosphere" aria-hidden="true"></div>
+    <div class="atmosphere" aria-hidden="true"><div class="aurora-b"></div></div>
 
     <!-- ===================== УСЛУГИ ===================== -->
     <main id="view-services" class="view active" aria-labelledby="services-title">
@@ -1547,9 +1629,11 @@
         <div class="success-emblem" id="success-emblem" aria-hidden="true">
             <div class="success-ring"></div>
             <div class="success-ring"></div>
+            <svg class="success-frame" viewBox="0 0 108 108"><rect x="1.5" y="1.5" width="105" height="105" rx="26" ry="26"></rect></svg>
             <div class="success-core">
                 <svg class="success-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </div>
+            <div class="success-shock"></div>
             <div class="success-scan"></div>
         </div>
         <div class="success-kicker">СИСТЕМА / ПРИНЯТО</div>
@@ -1595,6 +1679,8 @@
             <span>Контакты</span>
         </button>
     </nav>
+
+    <canvas class="particles-canvas" id="particles" aria-hidden="true"></canvas>
 
     <div class="toast" id="toast" role="alert">
         <svg class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1828,6 +1914,7 @@
                     dataset: { id: s.id },
                     style: { animationDelay: `${i * 35}ms` }
                 },
+                    el('span', { class: 'card-glow', 'aria-hidden': 'true' }),
                     el('span', { class: 'card-index', 'aria-hidden': 'true', text: String(i + 1).padStart(2, '0') }),
                     el('span', { class: 'card-content' },
                         el('span', { class: 'card-title', text: s.name }),
@@ -2262,30 +2349,96 @@
             navigate('success');
         }
 
-        /* Технологичные частицы, разлетающиеся от эмблемы */
-        function burstParticles() {
-            if (REDUCED_MOTION) return;
-            const host = $('success-emblem');
-            host.querySelectorAll('.particle').forEach(p => p.remove());
-            clearTimeout(state.particlesTimer);
-            const colors = ['#007BFF', '#4DA3FF', '#FFFFFF', '#32D74B'];
-            const frag = document.createDocumentFragment();
-            const count = 28;
+        /* Частицы на canvas: разлёт с сопротивлением, гравитацией и неоновым свечением.
+           Две волны — в момент «защёлкивания» галочки. Цикл rAF сам останавливается. */
+        const fx = { canvas: $('particles'), ctx: null, list: [], raf: 0, last: 0, w: 0, h: 0 };
+        const FX_COLORS = ['#007BFF', '#3395FF', '#66B0FF', '#9CCBFF', '#FFFFFF'];
+
+        function fxResize() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            fx.w = window.innerWidth;
+            fx.h = window.innerHeight;
+            fx.canvas.width = Math.round(fx.w * dpr);
+            fx.canvas.height = Math.round(fx.h * dpr);
+            fx.ctx = fx.canvas.getContext('2d');
+            if (fx.ctx) fx.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function fxSpawn(x, y, count) {
             for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.25;
-                const dist = 70 + Math.random() * 80;
-                frag.append(el('span', { class: 'particle', style: {
-                    '--x': `${(Math.cos(angle) * dist).toFixed(1)}px`,
-                    '--y': `${(Math.sin(angle) * dist).toFixed(1)}px`,
-                    '--r': `${Math.round(Math.random() * 360)}deg`,
-                    '--s': `${(2 + Math.random() * 4).toFixed(1)}px`,
-                    '--d': `${(0.8 + Math.random() * 0.6).toFixed(2)}s`,
-                    '--delay': `${(0.5 + Math.random() * 0.15).toFixed(2)}s`,
-                    '--c': colors[i % colors.length]
-                } }));
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2.5 + Math.random() * 7;
+                fx.list.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1.2,
+                    size: 1.2 + Math.random() * 2.6,
+                    color: FX_COLORS[(Math.random() * FX_COLORS.length) | 0],
+                    life: 900 + Math.random() * 900,
+                    age: 0,
+                    streak: Math.random() < 0.35
+                });
             }
-            host.append(frag);
-            state.particlesTimer = setTimeout(() => host.querySelectorAll('.particle').forEach(p => p.remove()), 2600);
+            if (!fx.raf) { fx.last = performance.now(); fx.raf = requestAnimationFrame(fxTick); }
+        }
+
+        function fxTick(now) {
+            const ctx = fx.ctx;
+            const elapsed = Math.min(now - fx.last, 48);
+            const dt = elapsed / 16.667;
+            const drag = Math.pow(0.955, dt);
+            fx.last = now;
+            ctx.clearRect(0, 0, fx.w, fx.h);
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.shadowBlur = 10;
+            ctx.lineCap = 'round';
+
+            fx.list = fx.list.filter(p => {
+                p.age += elapsed;
+                if (p.age >= p.life) return false;
+                p.vx *= drag;
+                p.vy = p.vy * drag + 0.09 * dt;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                const t = p.age / p.life;
+                ctx.globalAlpha = Math.max(0, t < 0.1 ? t / 0.1 : 1 - (t - 0.1) / 0.9);
+                ctx.shadowColor = p.color;
+                if (p.streak) {
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.size * 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x - p.vx * 2.2, p.y - p.vy * 2.2);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 - t * 0.5), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                return true;
+            });
+
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.globalCompositeOperation = 'source-over';
+            if (fx.list.length) fx.raf = requestAnimationFrame(fxTick);
+            else { fx.raf = 0; ctx.clearRect(0, 0, fx.w, fx.h); }
+        }
+
+        function burstParticles() {
+            if (REDUCED_MOTION || !fx.canvas) return;
+            clearTimeout(state.particlesTimer);
+            fxResize();
+            if (!fx.ctx) return;
+            // Галочка дорисовывается к ~0.85 с — тогда и «взрываемся»
+            state.particlesTimer = setTimeout(() => {
+                if (state.view !== 'success') return;
+                const r = $('success-emblem').getBoundingClientRect();
+                const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                fxSpawn(cx, cy, 64);
+                state.particlesTimer = setTimeout(() => fxSpawn(cx, cy, 28), 160);
+            }, 850);
         }
 
         /* ==================================================================
@@ -2359,7 +2512,7 @@
             );
         }
 
-        function skeletonOrders(n = 2) {
+        function skeletonOrders(n = 3) {
             return Array.from({ length: n }, () =>
                 el('div', { class: 'panel sk-order', 'aria-hidden': 'true' },
                     el('div', { class: 'sk-row' },
@@ -2440,16 +2593,84 @@
             const card = e.target.closest('.card');
             if (card) toggleService(card);
         });
-        /* Световое пятно следует за пальцем/курсором */
-        const trackSpot = e => {
+        /* ---------- Визуальные эффекты карточек (не влияют на логику корзины) ---------- */
+
+        /* Spotlight: пятно и кромка следуют за пальцем/курсором, позиция — раз в кадр */
+        const spot = { card: null, x: 0, y: 0, raf: 0, fade: new WeakMap() };
+        const applySpot = () => {
+            spot.raf = 0;
+            if (!spot.card) return;
+            const r = spot.card.getBoundingClientRect();
+            spot.card.style.setProperty('--mx', `${spot.x - r.left}px`);
+            spot.card.style.setProperty('--my', `${spot.y - r.top}px`);
+        };
+        const trackSpot = (card, e, now) => {
+            spot.card = card; spot.x = e.clientX; spot.y = e.clientY;
+            if (now) { cancelAnimationFrame(spot.raf); applySpot(); }
+            else if (!spot.raf) spot.raf = requestAnimationFrame(applySpot);
+        };
+        const lightOn = card => {
+            clearTimeout(spot.fade.get(card));
+            servicesList.querySelectorAll('.card.is-lit').forEach(c => { if (c !== card) c.classList.remove('is-lit'); });
+            card.classList.add('is-lit');
+        };
+        const lightOff = (card, delay) => {
+            clearTimeout(spot.fade.get(card));
+            spot.fade.set(card, setTimeout(() => card.classList.remove('is-lit'), delay));
+        };
+        const release = card => {
+            card.classList.remove('is-pressed');
+            lightOff(card, 450);        // на тач-экране блик мягко гаснет после отпускания
+        };
+
+        servicesList.addEventListener('pointerdown', e => {
             const card = e.target.closest('.card');
             if (!card) return;
-            const r = card.getBoundingClientRect();
-            card.style.setProperty('--mx', `${e.clientX - r.left}px`);
-            card.style.setProperty('--my', `${e.clientY - r.top}px`);
-        };
-        servicesList.addEventListener('pointermove', trackSpot, { passive: true });
-        servicesList.addEventListener('pointerdown', trackSpot, { passive: true });
+            trackSpot(card, e, true);
+            card.classList.add('is-pressed');
+            if (e.pointerType !== 'mouse') lightOn(card);
+        }, { passive: true });
+        servicesList.addEventListener('pointermove', e => {
+            const card = e.target.closest('.card');
+            if (!card) return;
+            trackSpot(card, e, false);
+            if (e.pointerType !== 'mouse' && e.buttons) lightOn(card);
+        }, { passive: true });
+        ['pointerup', 'pointercancel'].forEach(type => servicesList.addEventListener(type, e => {
+            const card = e.target.closest('.card');
+            if (card) release(card);
+        }, { passive: true }));
+        servicesList.addEventListener('pointerout', e => {
+            const card = e.target.closest('.card');
+            if (!card || card.contains(e.relatedTarget)) return;
+            card.classList.remove('is-pressed');
+            if (e.pointerType !== 'mouse') lightOff(card, 450);
+        }, { passive: true });
+
+        /* Анимация появления (fill: both) удерживает transform и глушит прожатие —
+           снимаем её, как только карточка появилась */
+        servicesList.addEventListener('animationend', e => {
+            const card = e.target;
+            if (e.animationName !== 'cardIn' || !card.classList.contains('card')) return;
+            card.classList.remove('card-enter');
+            card.style.removeProperty('animation-delay');
+        });
+
+        /* Микро-прыжок чекбокса: только если тап действительно изменил выбор
+           (при лимите MAX_ITEMS toggleService состояние не меняет) */
+        servicesList.addEventListener('click', e => {
+            const card = e.target.closest('.card');
+            if (card) card.dataset.wasChecked = card.getAttribute('aria-checked');
+        }, true);
+        servicesList.addEventListener('click', e => {
+            const card = e.target.closest('.card');
+            if (!card || card.dataset.wasChecked === card.getAttribute('aria-checked')) return;
+            const box = card.querySelector('.checkbox');
+            if (!box || REDUCED_MOTION) return;
+            box.classList.remove('pop');
+            void box.offsetWidth;
+            box.classList.add('pop');
+        });
 
         $('segment').addEventListener('click', e => {
             const btn = e.target.closest('.segment');
