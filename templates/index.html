@@ -196,7 +196,8 @@
         /* =====================================================================
            Типографика
            ===================================================================== */
-        .view-header { margin-bottom: 28px; }
+        .view-header { min-width: 0; margin-bottom: 28px; }
+        .view-header h1 { overflow-wrap: break-word; }
         .view-header-row {
             display: flex;
             align-items: flex-start;
@@ -240,7 +241,8 @@
         }
 
         .desc {
-            max-width: 36ch;
+            max-width: min(36ch, 100%);
+            overflow-wrap: break-word;
             font-size: 15px;
             line-height: 1.55;
             letter-spacing: -0.1px;
@@ -333,9 +335,11 @@
             position: relative;
             isolation: isolate;
             display: flex;
+            flex-wrap: wrap;           /* при нехватке места блок цены уходит под заголовок */
             align-items: center;
-            gap: 14px;
+            gap: 10px 14px;            /* row / column */
             width: 100%;
+            min-width: 0;
             padding: 18px 16px;
             overflow: hidden;
             background: var(--surface);
@@ -433,9 +437,11 @@
         }
         .card[aria-checked="true"] .card-index { color: var(--accent); }
 
-        .card-content { flex: 1; min-width: 0; }
+        .card-content { flex: 1 1 150px; min-width: 0; }
         .card-title {
             display: block;
+            min-width: 0;
+            overflow-wrap: break-word;
             margin-bottom: 5px;
             font-size: 16px;
             font-weight: 600;
@@ -444,6 +450,8 @@
         }
         .card-subtitle {
             display: block;
+            min-width: 0;
+            overflow-wrap: break-word;
             font-size: 13px;
             line-height: 1.45;
             color: var(--text-secondary);
@@ -452,15 +460,27 @@
         .card-side {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 14px;
-            flex-shrink: 0;
+            flex: 0 1 auto;
+            min-width: 0;
+            max-width: 100%;
+            margin-left: auto;         /* в обёрнутой строке прижимается вправо */
         }
         .card-price {
+            min-width: 0;
+            overflow-wrap: break-word;
             font-size: 14px;
             font-weight: 600;
+            line-height: 1.3;
+            text-align: right;
+            text-wrap: balance;
             font-variant-numeric: tabular-nums;
-            white-space: nowrap;
             transition: color var(--t-base);
+        }
+        @media (max-width: 360px) {
+            .card { gap: 8px 12px; padding: 16px 14px; }
+            .card-title { font-size: 15px; }
         }
         .card[aria-checked="true"] .card-price { color: var(--accent); }
 
@@ -697,6 +717,7 @@
             display: flex;
             align-items: center;
             gap: 16px;
+            min-width: 0;
             padding: 18px 16px;
             color: inherit;
             text-decoration: none;
@@ -726,8 +747,8 @@
             border-radius: var(--radius-sm);
         }
         .contact-info { flex: 1; min-width: 0; }
-        .contact-info h3 { margin-bottom: 3px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
-        .contact-info p { font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+        .contact-info h3 { margin-bottom: 3px; overflow-wrap: anywhere; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+        .contact-info p { overflow-wrap: anywhere; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
         .contact-chevron {
             flex-shrink: 0;
             color: var(--text-tertiary);
@@ -750,43 +771,57 @@
         .summary-row {
             display: flex;
             align-items: baseline;
+            flex-wrap: wrap;           /* длинная цена уходит под название */
             justify-content: space-between;
-            gap: 12px;
+            gap: 4px 16px;
+            min-width: 0;
         }
         .summary-name {
-            display: flex;
-            flex: 1;
-            gap: 10px;
+            position: relative;
+            flex: 1 1 150px;
+            min-width: 0;
+            padding-left: 16px;        /* место под маркер; текст — один блок, а не анонимный flex-item */
+            overflow-wrap: break-word;
             font-size: 15px;
             font-weight: 500;
             line-height: 1.4;
         }
         .summary-name::before {
             content: '';
-            flex-shrink: 0;
+            position: absolute;
+            top: 8px;
+            left: 0;
             width: 6px;
             height: 6px;
-            margin-top: 8px;
             border-radius: 2px;
             background: var(--accent);
             box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7);
         }
         .summary-price {
+            flex: 0 1 auto;
+            min-width: 0;
+            max-width: 100%;
+            margin-left: auto;
+            overflow-wrap: break-word;
             font-size: 14px;
             font-weight: 600;
+            text-align: right;
+            text-wrap: balance;
             font-variant-numeric: tabular-nums;
-            white-space: nowrap;
         }
         .summary-details {
             margin: 8px 0 0 16px;
+            overflow-wrap: break-word;
             font-size: 13px;
             line-height: 1.5;
             color: var(--text-secondary);
         }
         .summary-total {
             display: flex;
+            flex-wrap: wrap;
             align-items: baseline;
             justify-content: space-between;
+            gap: 4px 12px;
             padding-top: 16px;
         }
         .summary-total-label {
@@ -800,12 +835,14 @@
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.3px;
+            overflow-wrap: anywhere;
             font-variant-numeric: tabular-nums;
             color: var(--accent);
             text-shadow: 0 0 16px rgba(var(--accent-rgb), 0.28);
         }
         .summary-note {
             margin-top: 10px;
+            overflow-wrap: break-word;
             font-size: 12px;
             line-height: 1.5;
             color: var(--text-tertiary);
@@ -889,6 +926,7 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
+            min-width: 0;
             padding: 18px 16px;
             animation: cardIn 0.45s var(--ease-out) both;
         }
@@ -910,16 +948,16 @@
             color: var(--text-secondary);
         }
         .badge {
-            flex-shrink: 0;
-            max-width: 50%;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            flex: 0 1 auto;
+            max-width: 55%;
             padding: 4px 10px;
+            overflow-wrap: break-word; /* длинный статус переносится по словам, а не обрезается */
             font-size: 11px;
             font-weight: 700;
+            line-height: 1.25;
             letter-spacing: 0.6px;
+            text-align: center;
             text-transform: uppercase;
-            white-space: nowrap;
             color: var(--accent);
             background: var(--accent-bg);
             border: 1px solid rgba(var(--accent-rgb), 0.2);
@@ -940,26 +978,32 @@
         .order-items { list-style: none; display: flex; flex-direction: column; gap: 6px; }
         .order-items li {
             display: flex;
-            overflow-wrap: anywhere;
+            align-items: baseline;
             justify-content: space-between;
-            gap: 12px;
+            gap: 8px 12px;
             font-size: 14px;
             line-height: 1.45;
         }
+        .order-items li > span:first-child { flex: 1 1 0; min-width: 0; overflow-wrap: break-word; }
         .order-items .price {
-            flex-shrink: 0;
+            flex: 0 1 auto;
+            max-width: 45%;
+            text-align: right;
+            overflow-wrap: break-word;
             font-variant-numeric: tabular-nums;
             color: var(--text-secondary);
         }
         .order-footer {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
+            gap: 4px 12px;
             padding-top: 12px;
             border-top: 1px solid var(--border);
         }
         .order-date { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
-        .order-total { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .order-total { margin-left: auto; overflow-wrap: anywhere; text-align: right; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
         .empty-state {
             display: flex;
@@ -1034,7 +1078,9 @@
         .timeline-step {
             position: relative;
             z-index: 1;
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 0 2px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1043,6 +1089,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
             width: 24px;
             height: 24px;
             font-family: var(--font-mono);
@@ -1066,6 +1113,8 @@
         }
         .timeline-step.cancelled .timeline-bullet { color: #FFFFFF; background: var(--danger); border-color: var(--danger); }
         .timeline-label {
+            max-width: 100%;
+            overflow-wrap: anywhere;
             margin-top: 8px;
             font-family: var(--font-mono);
             font-size: 9.5px;
@@ -2088,8 +2137,8 @@
 
         .order-card { padding: 16px; margin-bottom: 16px; }
         .order-client { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
-        .order-title { margin: 6px 0 6px; font-size: 18px; font-weight: 700; line-height: 1.25; }
-        .order-brief { font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); }
+        .order-title { margin: 6px 0 6px; overflow-wrap: break-word; font-size: 18px; font-weight: 700; line-height: 1.25; }
+        .order-brief { overflow-wrap: break-word; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); }
         .order-reqs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
         .chip {
             display: inline-flex;
