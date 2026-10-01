@@ -36,6 +36,7 @@ from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, Field
 
+from leads_api import setup_leads
 from proposal import build_proposal_pdf
 
 logging.basicConfig(level=logging.INFO)
@@ -43,9 +44,14 @@ log = logging.getLogger("elevate")
 
 # ───────────────────────── Конфигурация (только из окружения) ─────────────────────────
 TOKEN = os.environ["TOKEN"].replace('"', "").replace("'", "").strip()  # KeyError на старте, если не задан
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://workshop-bot-dcyv.onrender.com")
+# Адрес мини-аппа: явный WEBAPP_URL → адрес, который Render выдаёт сервису сам → запасной.
+# Нужен, т.к. при каждом старте бот перезаписывает кнопку меню в Telegram этим адресом.
+WEBAPP_URL = (os.getenv("WEBAPP_URL") or os.getenv("RENDER_EXTERNAL_URL")
+              or "https://workshop-bot-1-vcns.onrender.com").strip().rstrip("/")
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "-5308446621"))
 ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "1044338073,602535191").split(",") if x.strip()}
+# Основатели: видят раздел «B2B Лиды». Пусто = раздел закрыт для всех (в ADMIN_IDS могут быть мастера).
+FOUNDER_IDS = {int(x) for x in os.getenv("FOUNDER_IDS", "").split(",") if x.strip().lstrip("-").isdigit()}
 DB_PATH = os.getenv("DB_PATH", "database.db")  # на Render укажите путь на Persistent Disk, напр. /data/database.db
 ADMIN_DB_KEY = os.getenv("ADMIN_DB_KEY", "")  # пусто = эндпоинт выгрузки БД отключён
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -347,10 +353,12 @@ async def review_loop():
 async def lifespan(app: FastAPI):
     await bot.delete_webhook(drop_pending_updates=True)
     await set_bot_commands()
+    await leads.startup()
     polling = asyncio.create_task(dp.start_polling(bot, handle_signals=False))
     worker = asyncio.create_task(review_loop())
+    leads_worker = asyncio.create_task(leads.reminder_loop())
     yield
-    for t in (polling, worker):
+    for t in (polling, worker, leads_worker):
         t.cancel()
     await bot.session.close()
 
@@ -359,6 +367,10 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# B2B-лиды (закрытый раздел основателей). leads.json лежит рядом с базой: на Render — на Persistent Disk.
+leads = setup_leads(app, current_user=current_user, bot=bot, founder_ids=FOUNDER_IDS, webapp_url=WEBAPP_URL,
+                    data_dir=os.getenv("LEADS_DATA_DIR") or os.path.dirname(os.path.abspath(DB_PATH)))
 
 
 @app.middleware("http")
