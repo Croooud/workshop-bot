@@ -2244,6 +2244,82 @@
         .reward-row .chip { padding: 7px 11px; font-size: 12px; }
         .chip--good { color: #000; background: var(--success); }
         .chip--bad { color: #fff; background: var(--danger); }
+
+        /* =====================================================================
+           B2B Лиды (только основатели). Префикс ld-, чтобы не пересечься с .crm-* доски мастера
+           ===================================================================== */
+        .ld-chips {
+            display: flex; gap: 8px; margin: 0 calc(-1 * var(--gutter)) 16px; padding: 0 var(--gutter) 2px;
+            overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+        }
+        .ld-chips::-webkit-scrollbar { display: none; }
+        .ld-chip {
+            flex: 0 0 auto; scroll-snap-align: start; padding: 9px 14px; white-space: nowrap; cursor: pointer;
+            font: 600 13px var(--font-sans); color: var(--text-secondary);
+            background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+            transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+        }
+        .ld-chip:active { transform: scale(0.96); }
+        .ld-chip[aria-pressed="true"] { color: var(--text-primary); background: var(--accent-bg); border-color: var(--accent-line); }
+        .ld-chip b { margin-left: 6px; font: 600 12px var(--font-mono); color: var(--text-tertiary); }
+        .ld-chip[aria-pressed="true"] b { color: var(--accent); }
+
+        [data-ld="todo"]        { --ld-rgb: 255, 176, 32; }
+        [data-ld="in_progress"] { --ld-rgb: 0, 123, 255; }
+        [data-ld="thinking"]    { --ld-rgb: 191, 90, 242; }
+        [data-ld="won"]         { --ld-rgb: 50, 215, 75; }
+        [data-ld="rejected"]    { --ld-rgb: 142, 142, 147; }
+
+        .ld-card {
+            position: relative; display: block; width: 100%; margin-bottom: 10px; padding: 14px 16px 14px 20px;
+            text-align: left; font-family: inherit; color: var(--text-primary); cursor: pointer; overflow: hidden;
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--highlight);
+            transition: transform var(--t-fast), border-color var(--t-fast);
+        }
+        .ld-card:active { transform: scale(0.985); border-color: var(--border-strong); }
+        .ld-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: rgb(var(--ld-rgb)); }
+        .ld-card[data-ld="rejected"] { opacity: 0.6; }
+        .ld-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .ld-name { font-size: 16px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+        .ld-loc { margin-top: 5px; font-size: 13px; line-height: 1.4; color: var(--text-secondary); overflow-wrap: anywhere; }
+        .ld-badge {
+            flex-shrink: 0; padding: 4px 9px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; white-space: nowrap;
+            color: rgb(var(--ld-rgb)); background: rgba(var(--ld-rgb), 0.12); border: 1px solid rgba(var(--ld-rgb), 0.3);
+            border-radius: var(--radius-sm);
+        }
+        .ld-empty { padding: 36px 0; text-align: center; color: var(--text-secondary); }
+        .ld-updated { margin-top: 14px; text-align: center; font: 500 11px var(--font-mono); color: var(--text-tertiary); }
+
+        .ld-backdrop {
+            position: fixed; inset: 0; z-index: 180; background: rgba(0, 0, 0, 0.66);
+            opacity: 0; pointer-events: none; transition: opacity var(--t-base);
+        }
+        .ld-backdrop.open { opacity: 1; pointer-events: auto; }
+        .ld-sheet {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 190; display: flex; flex-direction: column;
+            max-width: var(--max-width); margin: 0 auto; max-height: 88vh; visibility: hidden;
+            background: var(--surface-2); border: 1px solid var(--border-strong); border-bottom: 0; border-radius: 20px 20px 0 0;
+            box-shadow: var(--shadow-panel); transform: translateY(105%);
+            transition: transform var(--t-slow) var(--ease-out), visibility 0s linear var(--t-slow);
+        }
+        .ld-sheet.open { visibility: visible; transform: none; transition-delay: 0s; }
+        .ld-grip { padding: 10px 0 6px; touch-action: none; cursor: grab; }
+        .ld-grip::after { content: ""; display: block; width: 40px; height: 4px; margin: 0 auto; border-radius: 2px; background: var(--graphite-line); }
+        .ld-sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 4px var(--gutter) calc(22px + var(--safe-bottom)); }
+        .ld-sheet h2 { margin: 2px 0 4px; font-size: 21px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+        .ld-map { margin-top: 6px; padding: 0; font: 600 13px var(--font-sans); color: var(--accent); background: none; border: 0; cursor: pointer; }
+        .ld-sec { margin-top: 18px; }
+        .ld-sec h3 { margin: 0 0 6px; font: 600 11px var(--font-mono); letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-tertiary); }
+        .ld-sec p { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .ld-statuses { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .ld-st {
+            padding: 12px 8px; font: 600 14px var(--font-sans); color: var(--text-secondary); cursor: pointer;
+            background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+            transition: transform var(--t-fast), background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+        }
+        .ld-st:active { transform: scale(0.96); }
+        .ld-st[aria-pressed="true"] { color: rgb(var(--ld-rgb)); background: rgba(var(--ld-rgb), 0.14); border-color: rgba(var(--ld-rgb), 0.55); }
+        .ld-meta { margin-top: 12px; font: 500 12px var(--font-mono); color: var(--text-tertiary); }
     </style>
 </head>
 <body>
@@ -2388,6 +2464,23 @@
 
         <div class="list-group" id="board-list" aria-live="polite" aria-busy="false"></div>
         <p class="crm-updated" id="board-updated"></p>
+    </main>
+
+    <!-- ===================== B2B ЛИДЫ (только основатели) ===================== -->
+    <main id="view-leads" class="view" aria-labelledby="leads-title">
+        <header class="view-header">
+            <div class="kicker"><span class="kicker-dot"></span>ЭЛИВЕЙТ / B2B</div>
+            <div class="view-header-row">
+                <h1 id="leads-title">B2B Лиды (CRM)</h1>
+                <button type="button" class="icon-btn icon-btn--ghost" id="leads-refresh" aria-label="Обновить лиды">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+                </button>
+            </div>
+            <p class="desc">Статусы общие для обоих основателей и обновляются автоматически.</p>
+        </header>
+        <div class="ld-chips" id="leads-chips" role="group" aria-label="Фильтр по нишам"></div>
+        <div id="leads-list" aria-live="polite" aria-busy="false"></div>
+        <p class="ld-updated" id="leads-updated"></p>
     </main>
 
     <!-- ===================== ОФОРМЛЕНИЕ ===================== -->
@@ -2551,7 +2644,20 @@
             </span>
             <span>Академия</span>
         </button>
+        <!-- Вкладка B2B-лидов: скрыта, пока сервер не подтвердит, что вы основатель -->
+        <button type="button" class="nav-item" id="nav-leads" data-view="leads" hidden style="display: none;" aria-label="B2B Лиды (CRM)">
+            <span class="nav-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <span>Лиды</span>
+        </button>
     </nav>
+
+    <div class="ld-backdrop" id="leads-backdrop"></div>
+    <aside class="ld-sheet" id="leads-sheet" role="dialog" aria-modal="true" aria-label="Карточка лида">
+        <div class="ld-grip" id="leads-grip"></div>
+        <div class="ld-sheet-body" id="leads-sheet-body"></div>
+    </aside>
 
     <canvas class="particles-canvas" id="particles" aria-hidden="true"></canvas>
 
@@ -2893,6 +2999,7 @@
             if (view !== 'summary' && state.upsellCtrl) { state.upsellCtrl.abort(); state.upsellCtrl = null; }
             if (view !== 'cabinet' && state.ordersCtrl) { state.ordersCtrl.abort(); state.ordersCtrl = null; }
             if (view !== 'master') stopBoard();
+            if (view !== 'leads') stopLeads();
 
             if (view === 'summary') {
                 setupSummary();
@@ -2905,6 +3012,7 @@
             }
             if (view === 'cabinet') loadOrders();
             if (view === 'master') startBoard();
+            if (view === 'leads') startLeads();
             if (view === 'academy' && changed) loadAcademy();
             if (view === 'success') burstParticles();
         }
@@ -4601,11 +4709,187 @@
         });
 
         /* ==================================================================
+           B2B Лиды (CRM). Вкладка появляется, только если сервер подтвердил, что вы
+           основатель. Все проверки — на сервере; здесь только отображение.
+           ================================================================== */
+        const LEADS_POLL_MS = 20000;
+        const leads = { isFounder: false, items: [], statuses: [], niches: [], niche: 'all', openId: null, timer: 0, ctrl: null, pending: new Set(), loaded: false };
+        const leadStatusLabel = id => (leads.statuses.find(s => s.id === id) || {}).label || id;
+
+        async function checkLeads() {
+            if (!tg.initData) return;
+            try {
+                const { ok, data } = await request('/api/leads/access', { headers: authHeaders(), timeout: 10000 });
+                if (!ok || !data || data.founder !== true) return;
+                leads.isFounder = true;
+                const nav = $('nav-leads');
+                nav.hidden = false;
+                nav.style.removeProperty('display');
+                // Переход из пуша: кнопка «Открыть лиды» ведёт на /?view=leads
+                if (new URLSearchParams(location.search).get('view') === 'leads') navigate('leads');
+            } catch (_) { /* тихо: обычный интерфейс работает как раньше */ }
+        }
+
+        function renderLeadChips() {
+            const make = (id, label, count) => el('button', { type: 'button', class: 'ld-chip', 'aria-pressed': String(leads.niche === id), dataset: { niche: id } }, label, el('b', { text: String(count) }));
+            $('leads-chips').replaceChildren(
+                make('all', 'Все', leads.items.length),
+                ...leads.niches.map(n => make(n.id, n.label, leads.items.filter(l => l.niche === n.id).length))
+            );
+        }
+
+        function leadBadge(statusId) {
+            return el('span', { class: 'ld-badge', dataset: { ld: statusId }, text: leadStatusLabel(statusId) });
+        }
+
+        function renderLeadList() {
+            const list = $('leads-list');
+            const items = leads.items.filter(l => leads.niche === 'all' || l.niche === leads.niche);
+            if (!items.length) { list.replaceChildren(el('div', { class: 'ld-empty', text: 'В этой нише пока пусто' })); return; }
+            list.replaceChildren(...items.map(l =>
+                el('button', { type: 'button', class: 'ld-card', dataset: { id: l.id, ld: l.status } },
+                    el('div', { class: 'ld-card-top' }, el('div', { class: 'ld-name', text: l.name }), leadBadge(l.status)),
+                    el('div', { class: 'ld-loc', text: l.address })
+                )));
+            $('leads-updated').textContent = `Обновлено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} · автообновление каждые 20 с`;
+        }
+
+        function renderLeadSheet() {
+            const l = leads.items.find(x => x.id === leads.openId);
+            if (!l) return;
+            const section = (title, text) => el('div', { class: 'ld-sec' }, el('h3', { text: title }), el('p', { text }));
+            const grid = el('div', { class: 'ld-statuses', role: 'group', 'aria-label': 'Статус лида' },
+                ...leads.statuses.map(s => el('button', { type: 'button', class: 'ld-st', dataset: { status: s.id, ld: s.id }, 'aria-pressed': String(l.status === s.id), text: s.label })));
+            const who = l.updated_by && l.updated_by.name
+                ? `Изменил: ${l.updated_by.name}, ${new Date(l.updated_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : '';
+            $('leads-sheet-body').replaceChildren(
+                el('h2', { text: l.name }),
+                el('div', { class: 'ld-loc', text: l.address }),
+                el('button', { type: 'button', class: 'ld-map', dataset: { action: 'lead-map' }, text: 'Показать на карте' }),
+                section('Боли клиента', l.pain),
+                section('Скрипт продажи', l.script),
+                el('div', { class: 'ld-sec' }, el('h3', { text: 'Статус' }), grid),
+                ...(who ? [el('div', { class: 'ld-meta', text: who })] : [])
+            );
+        }
+
+        function openLead(id) {
+            leads.openId = id;
+            renderLeadSheet();
+            $('leads-sheet-body').scrollTop = 0;
+            $('leads-backdrop').classList.add('open');
+            $('leads-sheet').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeLead() {
+            leads.openId = null;
+            $('leads-backdrop').classList.remove('open');
+            $('leads-sheet').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        async function loadLeads({ silent = false } = {}) {
+            if (!tg.initData) return;
+            if (leads.ctrl) leads.ctrl.abort();
+            const ctrl = leads.ctrl = new AbortController();
+            const list = $('leads-list');
+            const refresh = $('leads-refresh');
+            if (!silent) { refresh.classList.add('spinning'); refresh.disabled = true; if (!leads.loaded) list.replaceChildren(el('div', { class: 'ld-empty', text: 'Загружаем…' })); }
+            try {
+                const { ok, status, data } = await request('/api/leads', { headers: authHeaders(), signal: ctrl.signal, timeout: 20000 });
+                if (!ok || !data || !Array.isArray(data.leads)) throw new Error(errorMessage(status, data, 'Не удалось загрузить лиды.'));
+                leads.items = data.leads; leads.statuses = data.statuses; leads.niches = data.niches; leads.loaded = true;
+                if (leads.niche !== 'all' && !leads.niches.some(n => n.id === leads.niche)) leads.niche = 'all';
+                renderLeadChips(); renderLeadList();
+                if (leads.openId) renderLeadSheet();
+            } catch (e) {
+                if (ctrl.signal.aborted) return;
+                if (!silent) list.replaceChildren(emptyState(netMessage(e, 'Не удалось загрузить лиды.'), { error: true, action: { id: 'retry-leads', label: 'Повторить' } }));
+            } finally {
+                if (leads.ctrl === ctrl) leads.ctrl = null;
+                if (!leads.ctrl) { refresh.classList.remove('spinning'); refresh.disabled = false; }
+            }
+        }
+
+        async function setLeadStatus(id, newStatus) {
+            const lead = leads.items.find(l => l.id === id);
+            if (!lead || lead.status === newStatus || leads.pending.has(id)) return;
+            const prev = { status: lead.status, updated_at: lead.updated_at, updated_by: lead.updated_by };
+            leads.pending.add(id);
+            lead.status = newStatus;                    // мгновенно в интерфейсе, сервер подтвердит ниже
+            haptic.select(); renderLeadSheet(); renderLeadList();
+            try {
+                const { ok, status, data } = await request(`/api/leads/${encodeURIComponent(id)}/status`, {
+                    method: 'POST', timeout: 15000,
+                    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!ok || !data || !data.id) throw new Error(errorMessage(status, data, 'Не удалось сохранить статус.'));
+                Object.assign(lead, data);
+                haptic.success();
+            } catch (e) {
+                Object.assign(lead, prev);              // сервер не принял — возвращаем как было
+                toast(netMessage(e, 'Не удалось сохранить статус.'));
+            } finally {
+                leads.pending.delete(id);
+                renderLeadSheet(); renderLeadList();
+            }
+        }
+
+        function startLeads() {
+            loadLeads();
+            clearInterval(leads.timer);
+            // подтягиваем изменения напарника; не трогаем список, пока летит наш запрос
+            leads.timer = setInterval(() => {
+                if (state.view === 'leads' && document.visibilityState === 'visible' && !leads.pending.size) loadLeads({ silent: true });
+            }, LEADS_POLL_MS);
+        }
+        function stopLeads() {
+            clearInterval(leads.timer); leads.timer = 0;
+            if (leads.ctrl) { leads.ctrl.abort(); leads.ctrl = null; }
+            if (leads.openId) closeLead();
+        }
+
+        $('leads-chips').addEventListener('click', e => {
+            const chip = e.target.closest('.ld-chip');
+            if (!chip) return;
+            haptic.select(); leads.niche = chip.dataset.niche; renderLeadChips(); renderLeadList();
+        });
+        $('leads-list').addEventListener('click', e => {
+            const card = e.target.closest('.ld-card');
+            if (card) { haptic.tap(); openLead(card.dataset.id); return; }
+            if (e.target.closest('[data-action="retry-leads"]')) { haptic.tap(); loadLeads(); }
+        });
+        $('leads-sheet-body').addEventListener('click', e => {
+            const st = e.target.closest('.ld-st');
+            if (st) { setLeadStatus(leads.openId, st.dataset.status); return; }
+            if (e.target.closest('[data-action="lead-map"]')) {
+                const l = leads.items.find(x => x.id === leads.openId);
+                if (!l) return;
+                haptic.tap();
+                const url = 'https://yandex.ru/maps/?text=' + encodeURIComponent(l.address);
+                if (typeof tg.openLink === 'function') call(tg, 'openLink', url); else window.open(url, '_blank', 'noopener');
+            }
+        });
+        $('leads-backdrop').addEventListener('click', closeLead);
+        $('leads-refresh').addEventListener('click', () => { haptic.tap(); loadLeads(); });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && state.view === 'leads' && !leads.pending.size) loadLeads({ silent: true });
+        });
+        {   // свайп шторки вниз за «ручку»
+            let y0 = null;
+            const grip = $('leads-grip');
+            grip.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+            grip.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 50) closeLead(); y0 = null; });
+        }
+
+        /* ==================================================================
            Старт
            ================================================================== */
         renderServices();
         updateCart();
         checkAdmin();
+        checkLeads();
     })();
     </script>
 </body>
